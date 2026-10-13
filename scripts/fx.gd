@@ -121,16 +121,16 @@ func smoke(p: Vector3, drift: Vector3, size := 1.0) -> void:
 ## `body` colours the voxel debris.
 func explode(p: Vector3, scale := 1.0, drift := Vector3.ZERO, body := Color(0.4, 0.4, 0.4), c := Color(1.0, 0.55, 0.2)) -> void:
 	var balls := int(clampf(3.0 + scale * 3.0, 3.0, 40.0))
-	sprite(p, drift, scale * 1.3, scale * 2.6, 0.16, Color(1.0, 0.7, 0.4), 0.0)
+	sprite(p, drift, scale * 0.9, scale * 1.8, 0.12, Color(1.0, 0.7, 0.4) * 0.7, 0.0)
 	for i in balls:
 		var off := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.4, 0.8), rng.randf_range(-1, 1)) * scale * 0.7
 		var v := off * rng.randf_range(1.0, 3.0) + drift
 		var delay := rng.randf_range(0.0, 0.08 * scale) if i > 2 else 0.0
-		sprite(p + off * 0.3, v, scale * rng.randf_range(0.8, 1.3), scale * rng.randf_range(2.0, 3.0), rng.randf_range(0.5, 0.85) + scale * 0.05, c, 1.0, delay)
+		sprite(p + off * 0.3, v, scale * rng.randf_range(0.5, 0.85), scale * rng.randf_range(1.3, 2.0), rng.randf_range(0.45, 0.75) + scale * 0.05, c, 1.0, delay)
 	var sparks := int(clampf(scale * 6.0, 4.0, 40.0))
 	for i in sparks:
 		var v := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.1, 0.25), rng.randf_range(-1, 1)).normalized() * rng.randf_range(6, 16) * sqrt(scale)
-		sprite(p, v + drift, 0.35, 0.05, rng.randf_range(0.3, 0.6), Color(1.0, 0.75, 0.4), 0.0)
+		sprite(p, v + drift, 0.22, 0.04, rng.randf_range(0.25, 0.5), Color(1.0, 0.8, 0.5), 0.0)
 	if scale >= 2.0:
 		sprite(p, drift, scale * 0.5, scale * 5.5, 0.45, Color(1.0, 0.7, 0.4), 2.0)
 	var chunks := int(clampf(scale * 6.0, 5.0, 60.0))
@@ -179,9 +179,9 @@ func popup(p: Vector3, text: String, c := Color(1, 1, 1), big := false) -> void:
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.no_depth_test = true
 	l.fixed_size = true
-	l.pixel_size = 0.0013 if big else 0.0009
+	l.pixel_size = 0.0008 if big else 0.0006
 	l.font_size = 40
-	l.outline_size = 10
+	l.outline_size = 8
 	l.modulate = c
 	l.outline_modulate = Color(0, 0, 0, 0.85)
 	l.position = p + Vector3(0, 1.0, 0)

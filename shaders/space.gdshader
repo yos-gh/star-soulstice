@@ -5,10 +5,10 @@ render_mode unshaded, fog_disabled, shadows_disabled;
 
 uniform float scroll = 0.0;
 uniform float brightness = 1.0;
-uniform vec3 base : source_color = vec3(0.01, 0.012, 0.03);
-uniform vec3 neb_a : source_color = vec3(0.16, 0.07, 0.3);
-uniform vec3 neb_b : source_color = vec3(0.04, 0.16, 0.3);
-uniform vec3 neb_c : source_color = vec3(0.32, 0.08, 0.16);
+uniform vec3 base : source_color = vec3(0.004, 0.005, 0.01);
+uniform vec3 neb_a : source_color = vec3(0.05, 0.07, 0.13);
+uniform vec3 neb_b : source_color = vec3(0.03, 0.09, 0.12);
+uniform vec3 neb_c : source_color = vec3(0.12, 0.07, 0.08);
 
 float hash(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);

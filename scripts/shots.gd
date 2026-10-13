@@ -162,12 +162,13 @@ func draw() -> void:
 	for i in n:
 		var m := mul[i]
 		var f := (m - 1.0) / (Player.CONC_MAX_MUL - 1.0)
-		var w := 0.32 + 0.3 * f
-		var l := 1.3 + 0.5 * f
+		var w := 0.22 + 0.16 * f
+		var l := 1.7 + 0.5 * f
 		var dir := vel[i].normalized()
-		var b := Basis(Vector3(-dir.z, 0, dir.x) * w, Vector3.UP, dir * l)
+		# local -z (UV.y = 0) is the head
+		var b := Basis(Vector3(-dir.z, 0, dir.x) * w, Vector3.UP, -dir * l)
 		mm.set_instance_transform(i, Transform3D(b, pos[i] + Vector3(0, 0.4, 0)))
-		mm.set_instance_color(i, Color(0.45, 0.8, 1.0).lerp(Color(1.0, 0.7, 0.25), f))
+		mm.set_instance_color(i, Color(0.4, 0.85, 1.0).lerp(Color(1.0, 0.78, 0.3), f))
 	ribbon_mesh.clear_surfaces()
 	var any := false
 	for h: Dictionary in homing:

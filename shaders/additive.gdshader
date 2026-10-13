@@ -33,13 +33,13 @@ void fragment() {
 		col = c * ring * 2.0;
 	} else if (cust.y > 0.5) {
 		// blocky fireball: quantise the uv so flames read as voxels
-		vec2 q = floor(d * 9.0) / 9.0;
+		vec2 q = floor(d * 7.0) / 7.0;
 		float n = hash(q * 17.0 + floor(cust.z * 50.0) + floor(age * 6.0)) * 0.45;
 		float rq = length(q) * 2.0;
 		float body = step(rq + n * 0.6, 0.95 - age * 0.25);
-		vec3 hot = mix(vec3(1.7, 1.5, 1.1), c, smoothstep(0.0, 0.5, age + rq * 0.4));
+		vec3 hot = mix(vec3(1.3, 1.1, 0.8), c, smoothstep(0.0, 0.4, age + rq * 0.4));
 		vec3 cool = mix(hot, vec3(0.07, 0.06, 0.06), smoothstep(0.45, 1.0, age));
-		col = cool * body * (1.0 - smoothstep(0.75, 1.0, age)) * 1.5;
+		col = cool * body * (1.0 - smoothstep(0.75, 1.0, age)) * 0.85;
 	} else {
 		float g = pow(max(1.0 - r, 0.0), 2.2);
 		col = c * g * 2.0 * (1.0 - age);

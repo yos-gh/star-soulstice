@@ -1,7 +1,8 @@
 class_name Boss
 extends Node3D
 ## Stage 1 boss STAR CORTEX (an homage to Star Soldier's Star Brain): an
-## octagonal fortress whose great eye opens and shuts. The hull is armour;
+## octagonal fortress whose great eye opens and shuts. The hull is armour
+## (two blocks on the flanks; a channel in front of the eye lets shots in);
 ## four pods at the corners fire shell fans; the eye is only vulnerable while
 ## its shutters are open, and then it answers with light energy patterns.
 ## Phase A: pods + eye cycle, hatches release darts.
@@ -9,12 +10,15 @@ extends Node3D
 ## spirals while shut and adds heavy orbs (not erasable by the Spear) when
 ## open. There are quiet gaps in every cycle to come in with the Spear.
 
-const EYE_HP := 520.0
+const EYE_HP := 800.0
 const POD_HP := 90.0
-const POD_OFF := [Vector3(-5.0, 0, -2.2), Vector3(5.0, 0, -2.2), Vector3(-4.4, 0, 2.8), Vector3(4.4, 0, 2.8)]
+const POD_OFF := [Vector3(-5.6, 0, -2.4), Vector3(5.6, 0, -2.4), Vector3(-4.3, 0, 3.3), Vector3(4.3, 0, 3.3)]
+const ARMOUR_OFF := [Vector3(-4.0, 0, 0.0), Vector3(4.0, 0, 0.0)]
+const ARMOUR_R := 2.7
 
 var game: Game
-var hull: Enemy
+var hull: MeshInstance3D
+var armour: Array[Enemy] = []
 var eye: Enemy
 var pods: Array[Enemy] = []
 var shutter_l: MeshInstance3D
@@ -40,7 +44,7 @@ func setup(g: Game) -> void:
 	game = g
 	center = Vector3(0, 0, game.field_top - 9.0)
 	# order matters: shots test enemies in list order, so the eye and pods
-	# come before the hull that would otherwise swallow them.
+	# come before the hull armour that would otherwise swallow them.
 	eye = game.spawn_part(self, "boss_eye", 1.9)
 	eye.hp = EYE_HP
 	eye.max_hp = EYE_HP
@@ -56,9 +60,14 @@ func setup(g: Game) -> void:
 		e.blast = 2.5
 		e.armored = true
 		pods.append(e)
-	hull = game.spawn_part(self, "boss_hull", 4.0)
-	hull.armored = true
-	hull.hp = 1e9
+	hull = MeshInstance3D.new()
+	hull.mesh = Vox.get_mesh("boss_hull")
+	add_child(hull)
+	for k in 2:
+		var a := game.spawn_part(self, "", ARMOUR_R)
+		a.armored = true
+		a.hp = 1e9
+		armour.append(a)
 	shutter_l = MeshInstance3D.new()
 	shutter_l.mesh = Vox.get_mesh("boss_shutter")
 	add_child(shutter_l)
@@ -70,8 +79,6 @@ func setup(g: Game) -> void:
 
 
 func on_hit(e: Enemy, dmg: float) -> float:
-	if e == eye:
-		hull.flash = maxf(hull.flash, 0.25)
 	return dmg
 
 
@@ -92,12 +99,12 @@ func pods_alive() -> int:
 
 func _place() -> void:
 	hull.position = center
-	hull.model.rotation.y = 0.0
+	for k in 2:
+		armour[k].position = center + ARMOUR_OFF[k]
 	eye.position = center + Vector3(0, -0.4, 0)
 	for k in 4:
 		if not pods[k].dead:
 			pods[k].position = center + POD_OFF[k]
-			pods[k].model.rotation.y += 0.0
 	var gap := open * 2.2
 	shutter_l.position = center + Vector3(-gap, 1.25, 0)
 	shutter_r.position = center + Vector3(gap, 1.25, 0)
@@ -166,7 +173,7 @@ func tick(dt: float) -> void:
 				game.shake(2.0)
 				destroyed = true
 				visible = false
-				for q in [hull, eye] + pods:
+				for q in [eye] + armour + pods:
 					game.remove_enemy(q)
 					q.visible = false
 				game.boss_destroyed()

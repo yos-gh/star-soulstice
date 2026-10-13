@@ -25,16 +25,16 @@ const DT := 1.0 / 60.0
 const GROUND_Y := -3.0
 const SCROLL := 4.0
 const BOSS_SCROLL := 2.5
-const CAM_PITCH := 66.0
-const CAM_DIST := 34.0
-const CAM_FOV := 40.0
+const CAM_PITCH := 70.0
+const CAM_DIST := 52.0
+const CAM_FOV := 28.0
 const CAM_TARGET := Vector3(0, 0, 0.0)
 const START_LIVES := 3
 const EXTENDS := [200000, 600000, 1200000]
 ## Time bonus: BONUS_RATE points for every second the stage took under
 ## BONUS_T. Tuned so a quick clear earns about as much as the destruction.
 const BONUS_T := 300.0
-const BONUS_RATE := 2200
+const BONUS_RATE := 1300
 
 var state := State.TITLE
 var state_t := 0.0
@@ -108,6 +108,7 @@ var bot_frame := 0
 var bot_goal := Vector3.ZERO
 var frames := 0
 var hide_layers := PackedStringArray()  # debug: --hide=sprites,debris,lights,bullets,shots,items,units,terrain
+var gallery := 0  # debug: --gallery=1|2 lays models out for inspection
 
 
 func _ready() -> void:
@@ -117,7 +118,9 @@ func _ready() -> void:
 	Input.joy_connection_changed.connect(Controls.on_joy_changed)
 	_setup_world()
 	_enter_title()
-	if autoplay:
+	if gallery > 0:
+		_build_gallery()
+	elif autoplay:
 		_start_game()
 
 
@@ -142,61 +145,84 @@ func _parse_args() -> void:
 			log_status = true
 		elif a == "--mute":
 			AudioServer.set_bus_mute(0, true)
+		elif a.begins_with("--gallery"):
+			gallery = int(a.get_slice("=", 1)) if a.contains("=") else 1
 		elif a.begins_with("--hide="):
 			hide_layers = a.get_slice("=", 1).split(",")
 
 
 func _setup_world() -> void:
 	Vox.materials()
+	# Space lighting: one hard white sun with crisp shadows, a faint cool
+	# fill from the opposite side, low ambient, ACES for contrast. Glow only
+	# catches emissive parts; SSAO and the edge pass (outline.gdshader) give
+	# the voxels their crisp, pixel-art definition.
 	env = Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.008, 0.008, 0.02)
+	env.background_color = Color(0.004, 0.005, 0.01)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.55, 0.58, 0.8)
-	env.ambient_light_energy = 0.55
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 1.05
+	env.ambient_light_color = Color(0.42, 0.47, 0.6)
+	env.ambient_light_energy = 0.42
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	env.tonemap_exposure = 1.0
+	env.tonemap_white = 6.0
 	env.glow_enabled = true
-	env.glow_intensity = 0.75
-	env.glow_bloom = 0.03
-	env.glow_hdr_threshold = 1.1
+	env.glow_intensity = 0.55
+	env.glow_bloom = 0.0
+	env.glow_hdr_threshold = 1.25
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
 	env.set_glow_level(0, 0.0)
-	env.set_glow_level(1, 1.0)
-	env.set_glow_level(2, 0.8)
-	env.set_glow_level(3, 0.5)
+	env.set_glow_level(1, 0.6)
+	env.set_glow_level(2, 0.7)
+	env.set_glow_level(3, 0.4)
+	env.set_glow_level(4, 0.15)
+	env.ssao_enabled = true
+	env.ssao_radius = 0.8
+	env.ssao_intensity = 2.2
+	env.ssao_power = 1.6
+	env.ssao_detail = 0.6
+	env.ssao_light_affect = 0.15
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
-	env.fog_light_color = Color(0.03, 0.03, 0.07)
-	env.fog_depth_begin = 44.0
-	env.fog_depth_end = 120.0
+	env.fog_light_color = Color(0.01, 0.012, 0.025)
+	env.fog_depth_begin = 60.0
+	env.fog_depth_end = 140.0
 	env.fog_depth_curve = 1.4
 	env.fog_density = 1.0
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.1
-	env.adjustment_contrast = 1.05
+	env.adjustment_saturation = 1.05
+	env.adjustment_contrast = 1.08
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 
 	sun = DirectionalLight3D.new()
-	sun.light_color = Color(1.0, 0.94, 0.86)
-	sun.light_energy = 1.25
+	sun.light_color = Color(1.0, 0.97, 0.92)
+	sun.light_energy = 1.9
 	sun.shadow_enabled = true
-	sun.shadow_bias = 0.05
-	sun.directional_shadow_max_distance = 70.0
+	sun.shadow_bias = 0.03
+	sun.shadow_normal_bias = 0.6
+	sun.shadow_blur = 0.4
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.directional_shadow_max_distance = 80.0
 	add_child(sun)
-	sun.look_at_from_position(Vector3.ZERO, Vector3(-0.45, -0.8, -0.2), Vector3.UP)
+	sun.look_at_from_position(Vector3.ZERO, Vector3(-0.55, -0.75, -0.35), Vector3.UP)
+	var fill := DirectionalLight3D.new()
+	fill.light_color = Color(0.45, 0.6, 0.9)
+	fill.light_energy = 0.35
+	fill.shadow_enabled = false
+	add_child(fill)
+	fill.look_at_from_position(Vector3.ZERO, Vector3(0.6, -0.4, 0.5), Vector3.UP)
 
 	camera = Camera3D.new()
 	camera.fov = CAM_FOV
-	camera.near = 1.0
+	camera.near = 2.0
 	camera.far = 400.0
 	var attrs := CameraAttributesPractical.new()
 	attrs.dof_blur_far_enabled = true
-	attrs.dof_blur_far_distance = CAM_DIST + 22.0  # islands and units stay sharp
-	attrs.dof_blur_far_transition = 18.0
-	attrs.dof_blur_amount = 0.09
+	attrs.dof_blur_far_distance = CAM_DIST + 24.0  # islands and units stay sharp
+	attrs.dof_blur_far_transition = 30.0
+	attrs.dof_blur_amount = 0.06
 	camera.attributes = attrs
 	add_child(camera)
 	camera.current = true
@@ -204,6 +230,17 @@ func _setup_world() -> void:
 	cam_pos = CAM_TARGET + Vector3(0, sin(pitch), cos(pitch)) * CAM_DIST
 	camera.look_at_from_position(cam_pos, CAM_TARGET, Vector3.UP)
 	_measure_field()
+	var edges := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	var emat := ShaderMaterial.new()
+	emat.shader = load("res://shaders/outline.gdshader")
+	emat.render_priority = -128
+	quad.material = emat
+	edges.mesh = quad
+	edges.extra_cull_margin = 16384.0
+	edges.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	edges.position = Vector3(0, 0, -3.0)
+	camera.add_child(edges)
 
 	terrain = Terrain.new()
 	terrain.game = self
@@ -287,6 +324,9 @@ func can_fire(p: Vector3) -> bool:
 # ------------------------------------------------------------ states
 
 func _enter_title() -> void:
+	if quit_after > 0.0 and play_t > 0.0:
+		get_tree().quit()
+		return
 	state = State.TITLE
 	state_t = 0.0
 	_clear_field()
@@ -420,7 +460,10 @@ func _physics_process(_delta: float) -> void:
 	state_t += dt
 	match state:
 		State.TITLE:
-			terrain.tick(dt, SCROLL)
+			terrain.tick(dt, SCROLL if gallery != 1 and gallery != 2 else 0.0)
+			if gallery > 0:
+				_gallery_tick(dt)
+				play_t += dt
 			fx.tick(dt, scroll_speed)
 			if Input.is_action_just_pressed("confirm") and state_t > 0.3:
 				_start_game()
@@ -525,7 +568,7 @@ func spawn_enemy(kind: String, params := {}) -> Enemy:
 		var isl: Island = params["island"]
 		var c: Vector2i = params["cell"]
 		isl.add_child(e)
-		e.position = isl.cell_center(c.x, c.y)
+		e.position = isl.cell_center(c.x, c.y) + Vector3(0, IslandGen.R, 0)
 		e.hit_pos = to_plane(e.global_position)
 	else:
 		units.add_child(e)
@@ -976,3 +1019,44 @@ func _automation(dt: float) -> void:
 	if quit_after > 0.0 and play_t >= quit_after:
 		print("QUIT score=%d t=%.1f" % [score, stage_t])
 		get_tree().quit()
+
+
+## Debug view (--gallery=1: units and items, 2: the boss, 3: islands only):
+## models laid out on the play plane, turning slowly.
+func _build_gallery() -> void:
+	hud.visible = false
+	terrain.spawning = gallery == 3
+	var row := func(names: Array, z: float, gap: float) -> void:
+		for i in names.size():
+			var m := MeshInstance3D.new()
+			m.mesh = Vox.get_mesh(names[i])
+			m.position = Vector3((i - (names.size() - 1) * 0.5) * gap, 0, z)
+			m.set_meta("spin", true)
+			units.add_child(m)
+	if gallery == 1:
+		row.call(["ship0", "ship1", "ship2", "power", "star", "energy"], -9.0, 4.5)
+		row.call(["dart", "swirl", "rammer", "container", "turret_base", "turret_head"], -3.0, 4.5)
+		row.call(["bulwark", "boss_pod", "lazaro_core", "tile0", "tile1", "tile2"], 4.0, 5.0)
+		for k in 4:
+			var m := MeshInstance3D.new()
+			m.mesh = Vox.get_mesh("lazaro_piece")
+			m.rotation.y = -k * PI / 2.0
+			m.position = Vector3(-11, 0, 10.5) + Vector3(0.95, 0, 0.95).rotated(Vector3.UP, -k * PI / 2.0) * 1.15
+			units.add_child(m)
+	elif gallery == 2:
+		for n in ["boss_hull", "boss_eye"]:
+			var m := MeshInstance3D.new()
+			m.mesh = Vox.get_mesh(n)
+			m.position = Vector3(0, 0 if n == "boss_hull" else -0.4, -2)
+			units.add_child(m)
+		for k in 4:
+			var m := MeshInstance3D.new()
+			m.mesh = Vox.get_mesh("boss_pod")
+			m.position = Vector3(0, 0, -2) + Boss.POD_OFF[k]
+			units.add_child(m)
+
+
+func _gallery_tick(dt: float) -> void:
+	for c in units.get_children():
+		if c.has_meta("spin"):
+			(c as Node3D).rotation.y += dt * 0.4

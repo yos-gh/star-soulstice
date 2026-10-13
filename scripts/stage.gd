@@ -103,7 +103,8 @@ func _next_wave() -> void:
 func _begin_warn() -> void:
 	phase = "warn"
 	warn_t = 5.5
-	game.terrain.spawning = false
+	# islands keep coming during the boss (tiles refill energy), minus turrets
+	game.terrain.turrets = false
 	game.show_msg("WARNING", "A HUGE ENERGY SOURCE IS APPROACHING", 4.5, true)
 	game.sfx.play("warning")
 

@@ -4,6 +4,8 @@ extends RefCounted
 ## cube faces: hidden faces are culled, every corner gets baked ambient
 ## occlusion, and each voxel a slight colour jitter so flat areas read as
 ## blocks. Glow voxels go to a second, self-lit surface that blooms.
+## Colour alpha is the surface finish: 1 = matte, lower = polished metal
+## (sharper, brighter highlights; see shaders/vox.gdshader).
 ## Grid coordinates: x in [-w/2, w/2), y in [0, h), z in [-d/2, d/2).
 ## Model space: x right, y up, -z forward (nose).
 
@@ -134,6 +136,38 @@ func blob(cx: int, cy: int, cz: int, rx: float, ry: float, rz: float, c: Color, 
 	return self
 
 
+## Paints one pixel-art layer seen from above. Each string is one row of
+## the sprite (the first row is the nose, -z), each character one column;
+## `pal` maps a character to [Color, height, glow := false]. Columns are
+## filled upward from y0. Unknown characters ('.', ' ') are empty. Rows are
+## centred on x = 0 and z = 0 (column w/2 sits on x = 0).
+func paint(rows: Array, pal: Dictionary, y0 := 0, dz := 0) -> Vox:
+	var w := (rows[0] as String).length()
+	var n := rows.size()
+	for r in n:
+		var s: String = rows[r]
+		if s.length() != w:
+			push_error("Vox.paint: row %d is %d wide, expected %d: %s" % [r, s.length(), w, s])
+		for c in s.length():
+			var ch := s[c]
+			if not pal.has(ch):
+				continue
+			var spec: Array = pal[ch]
+			var glow: bool = spec[2] if spec.size() > 2 else false
+			for y in range(y0, y0 + int(spec[1])):
+				put(c - w / 2, y, r - n / 2 + dz, spec[0], glow)
+	return self
+
+
+## Like paint, but each row holds only the left half up to and including
+## the centre column; the right half is mirrored from it.
+func paint_sym(rows: Array, pal: Dictionary, y0 := 0, dz := 0) -> Vox:
+	var full := []
+	for s: String in rows:
+		full.append(s + s.substr(0, s.length() - 1).reverse())
+	return paint(full, pal, y0, dz)
+
+
 static func _hash(x: int, y: int, z: int) -> float:
 	var h := (x * 73856093) ^ (y * 19349663) ^ (z * 83492791)
 	h = (h ^ (h >> 13)) * 1274126177
@@ -159,12 +193,17 @@ func mesh(unit: float, origin := Vector3.ZERO, soft_glow := false) -> ArrayMesh:
 				var id := cells[(gz * sy + y) * sx + gx]
 				if id == 0:
 					continue
+				# fast skip for buried voxels
+				if gx > 0 and gx < sx - 1 and y > 0 and y < sy - 1 and gz > 0 and gz < sz - 1:
+					var i0 := (gz * sy + y) * sx + gx
+					if cells[i0 - 1] != 0 and cells[i0 + 1] != 0 and cells[i0 - sx] != 0 and cells[i0 + sx] != 0 and cells[i0 - sx * sy] != 0 and cells[i0 + sx * sy] != 0:
+						continue
 				var x := gx - ox
 				var z := gz - oz
 				var glow := glows[id]
 				var base := colors[id]
 				var j := 1.0 + (_hash(x, y, z) - 0.5) * 2.0 * jitter
-				base = Color(base.r * j, base.g * j, base.b * j)
+				base = Color(base.r * j, base.g * j, base.b * j, base.a)
 				var cell := Vector3i(x, y, z)
 				for d in 6:
 					var nd: Vector3i = DIRS[d][0]
@@ -192,7 +231,7 @@ func mesh(unit: float, origin := Vector3.ZERO, soft_glow := false) -> ArrayMesh:
 							var a := 0 if (s1 and s2) else 3 - int(s1) - int(s2) - int(cc)
 							ao[k] = a
 							var f: float = AO[a]
-							col4.push_back(Color(base.r * f, base.g * f, base.b * f))
+							col4.push_back(Color(base.r * f, base.g * f, base.b * f, base.a))
 						else:
 							col4.push_back(base)
 						k += 1
