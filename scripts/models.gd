@@ -56,8 +56,6 @@ static func build(name: String) -> ArrayMesh:
 			return _boss_eye()
 		"boss_shutter":
 			return _boss_shutter()
-		"shell":
-			return _shell()
 		"energy":
 			return _energy()
 		"power":
@@ -309,23 +307,17 @@ static func _boss_shutter() -> ArrayMesh:
 	return v.mesh(0.2, Vector3(0, 0, 0))
 
 
-static func _shell() -> ArrayMesh:
-	var v := Vox.new(4, 4, 4)
-	v.jitter = 0.0
-	v.fill(-2, 0, -2, 1, 3, 1, Color(0.7, 0.62, 0.5))
-	v.fill(-1, 1, -2, 0, 2, 1, ORANGE, true)
-	v.fill(-2, 1, -1, 1, 2, 0, ORANGE, true)
-	return v.mesh(0.12, Vector3(0, 2.0, 0))
-
-
 static func _energy() -> ArrayMesh:
 	var v := Vox.new(4, 6, 4)
 	v.jitter = 0.0
-	v.fill(-1, 1, -1, 0, 4, 0, GREEN, true)
-	v.fill(-2, 2, -1, 1, 3, 0, Color(0.6, 1.0, 0.7), true)
-	v.fill(-1, 2, -2, 0, 3, 1, Color(0.6, 1.0, 0.7), true)
-	v.fill(-1, 0, -1, 0, 0, 0, GREEN, true)
-	v.fill(-1, 5, -1, 0, 5, 0, GREEN, true)
+	# a lit crystal with a dim self-lit band: readable, but no bloom
+	var body := Color(0.34, 0.66, 0.5)
+	var band := Color(0.3, 0.72, 0.46)
+	v.fill(-1, 1, -1, 0, 4, 0, body)
+	v.fill(-2, 2, -1, 1, 3, 0, band, true)
+	v.fill(-1, 2, -2, 0, 3, 1, band, true)
+	v.fill(-1, 0, -1, 0, 0, 0, body.darkened(0.2))
+	v.fill(-1, 5, -1, 0, 5, 0, body.lightened(0.2))
 	return v.mesh(0.09, Vector3(0, 3.0, 0), true)
 
 
@@ -355,22 +347,28 @@ static func _star() -> ArrayMesh:
 	return v.mesh(0.1, Vector3(0, 1.5, 0), true)
 
 
-## Destructible ground tile (1 x 1 cell). 0 soft panel, 1 armoured, 2 hard.
+## Destructible ground tile (one Island cell). 0 soft panel, 1 armoured, 2 hard.
 static func _tile(kind: int) -> ArrayMesh:
-	var v := Vox.new(8, 3, 8)
+	# 16 x 16 voxels = one 2 x 2 cell; the outer ring is a groove so the
+	# grid reads like the NES blocks
+	var v := Vox.new(16, 4, 16)
 	var top: Color = [Color(0.2, 0.42, 0.45), Color(0.34, 0.32, 0.58), Color(0.46, 0.48, 0.54)][kind]
-	var edge: Color = top.darkened(0.35)
-	var h := 1 + kind
-	v.fill(-4, 0, -4, 3, h - 1, 3, edge)
-	v.fill(-3, h - 1, -3, 2, h - 1, 2, top)
+	var edge: Color = top.darkened(0.4)
+	var h := 2 + kind
+	v.fill(-8, 0, -8, 7, h - 2, 7, edge)
+	v.fill(-7, h - 1, -7, 6, h - 1, 6, top)
+	v.fill(-7, h - 1, 6, 6, h - 1, 6, top.darkened(0.2))
+	v.fill(6, h - 1, -7, 6, h - 1, 6, top.darkened(0.2))
+	v.fill(-7, h - 1, -7, 6, h - 1, -7, top.lightened(0.15))
+	v.fill(-7, h - 1, -7, -7, h - 1, 6, top.lightened(0.15))
 	match kind:
 		0:
-			v.fill(-1, h - 1, -1, 0, h - 1, 0, Color(0.32, 0.62, 0.6))
+			v.fill(-2, h - 1, -2, 1, h - 1, 1, Color(0.32, 0.62, 0.6))
 		1:
-			v.fill(-3, h - 1, -1, 2, h - 1, 0, top.darkened(0.2))
-			v.fill(-1, h - 1, -3, 0, h - 1, 2, top.darkened(0.2))
+			v.fill(-5, h - 1, -1, 4, h - 1, 0, top.darkened(0.25))
+			v.fill(-1, h - 1, -5, 0, h - 1, 4, top.darkened(0.25))
 		2:
-			for c in [Vector2i(-3, -3), Vector2i(2, -3), Vector2i(-3, 2), Vector2i(2, 2)]:
+			for c in [Vector2i(-5, -5), Vector2i(4, -5), Vector2i(-5, 4), Vector2i(4, 4)]:
 				v.put(c.x, h - 1, c.y, Color(0.75, 0.76, 0.8))
 			v.fill(-1, h - 1, -1, 0, h - 1, 0, Color(0.55, 0.3, 0.9), true)
 	return v.mesh(0.125)
@@ -381,9 +379,9 @@ static func _rock(seed: int, s: float) -> ArrayMesh:
 	var v := Vox.new(16, 12, 16)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
-	v.blob(0, 6, 0, 6.5 * s / 1.4, 5.0, 6.0, Color(0.3, 0.28, 0.33))
+	v.blob(0, 6, 0, 6.5 * s / 1.4, 5.0, 6.0, Color(0.17, 0.16, 0.2))
 	for i in 7:
-		v.blob(rng.randi_range(-5, 5), rng.randi_range(3, 9), rng.randi_range(-5, 5), rng.randf_range(1.5, 3.0), rng.randf_range(1.5, 2.5), rng.randf_range(1.5, 3.0), Color(0.36, 0.33, 0.38))
+		v.blob(rng.randi_range(-5, 5), rng.randi_range(3, 9), rng.randi_range(-5, 5), rng.randf_range(1.5, 3.0), rng.randf_range(1.5, 2.5), rng.randf_range(1.5, 3.0), Color(0.21, 0.2, 0.25))
 	for i in 5:
 		v.put(rng.randi_range(-5, 5), rng.randi_range(6, 10), rng.randi_range(-5, 5), VIOLET, true)
 	return v.mesh(0.8, Vector3(0, 6, 0))

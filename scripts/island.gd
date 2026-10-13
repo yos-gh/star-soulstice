@@ -1,14 +1,16 @@
 class_name Island
 extends Node3D
 ## A floating island (rock or space-station deck) at Game.GROUND_Y, paved
-## with destructible tiles on a 1 x 1 grid. Tiles absorb your main shots,
+## with destructible tiles on a grid. Tiles absorb your main shots,
 ## give score and energy (harder tiles hide more energy), and a few hide a
-## score star. Cell (i, j) centre in local space: (i - w/2 + .5, 0, j - h/2 + .5).
+## score star. Cells are CELL x CELL units (like the NES 16 px blocks);
+## cell (i, j) centre in local space: ((i - w/2 + .5) * CELL, 0, (j - h/2 + .5) * CELL).
 
-const TILE_HP := [1.0, 5.0, 12.0]
-const TILE_ENERGY := [1.5, 4.0, 10.0]
-const TILE_SCORE := [30, 100, 300]
-const TILE_TOP := [0.125, 0.25, 0.375]
+const CELL := 2.0
+const TILE_HP := [1.0, 2.0, 4.0]
+const TILE_ENERGY := [2.0, 5.0, 10.0]
+const TILE_SCORE := [50, 150, 400]
+const TILE_TOP := [0.25, 0.375, 0.5]
 
 var game: Game
 var w := 0
@@ -16,7 +18,8 @@ var h := 0
 var types := PackedInt32Array()  # -1 = no tile
 var hp := PackedFloat32Array()
 var hidden := PackedByteArray()
-var inst := PackedInt32Array()
+var inst := PackedInt32Array()  # tile idx -> multimesh slot
+var slot_tile: Array = [[], [], []]  # per type: slot -> tile idx (plain Arrays: packed ones are copied on access)
 var mms: Array[MultiMesh] = []
 var alive_tiles := 0
 
@@ -37,6 +40,7 @@ func setup(g: Game, lay: Dictionary) -> void:
 		var t := types[idx]
 		if t >= 0:
 			inst[idx] = counts[t]
+			slot_tile[t].push_back(idx)
 			counts[t] += 1
 			hp[idx] = TILE_HP[t]
 			alive_tiles += 1
@@ -46,6 +50,7 @@ func setup(g: Game, lay: Dictionary) -> void:
 		mm.use_colors = true
 		mm.mesh = Vox.get_mesh("tile%d" % k)
 		mm.instance_count = counts[k]
+		mm.visible_instance_count = counts[k]
 		var mi := MultiMeshInstance3D.new()
 		mi.multimesh = mm
 		add_child(mi)
@@ -59,14 +64,14 @@ func setup(g: Game, lay: Dictionary) -> void:
 
 
 func cell_center(i: int, j: int) -> Vector3:
-	return Vector3(i - w * 0.5 + 0.5, 0.0, j - h * 0.5 + 0.5)
+	return Vector3((i - w * 0.5 + 0.5) * CELL, 0.0, (j - h * 0.5 + 0.5) * CELL)
 
 
 ## Tile index under a ground-level world point, or -1.
 func tile_at(g: Vector3) -> int:
 	var l := g - position
-	var i := int(floor(l.x + w * 0.5))
-	var j := int(floor(l.z + h * 0.5))
+	var i := int(floor(l.x / CELL + w * 0.5))
+	var j := int(floor(l.z / CELL + h * 0.5))
 	if i < 0 or j < 0 or i >= w or j >= h:
 		return -1
 	var idx := j * w + i
@@ -97,6 +102,22 @@ func _destroy(idx: int) -> void:
 	var world := position + cell_center(idx % w, idx / w)
 	types[idx] = -1
 	alive_tiles -= 1
-	# park it far away (a zero-scale basis makes NaN normals that bloom)
-	mms[t].set_instance_transform(inst[idx], Transform3D(Basis.IDENTITY, Vector3(0, -400, 0)))
+	_drop_slot(t, idx)
 	game.on_tile_broken(at, world, t, hidden[idx] == 1)
+
+
+## Removes a tile from its MultiMesh by moving the last visible slot into
+## its place and shrinking the visible count.
+func _drop_slot(t: int, idx: int) -> void:
+	var mm := mms[t]
+	var s := inst[idx]
+	var last := mm.visible_instance_count - 1
+	if last < 0:
+		last = mm.instance_count - 1
+	if s != last:
+		var moved: int = slot_tile[t][last]
+		mm.set_instance_transform(s, mm.get_instance_transform(last))
+		mm.set_instance_color(s, mm.get_instance_color(last))
+		slot_tile[t][s] = moved
+		inst[moved] = s
+	mm.visible_instance_count = last

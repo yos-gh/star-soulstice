@@ -158,7 +158,6 @@ func tick(dt: float) -> void:
 				game.sfx.play("exp_m")
 				game.shake(0.4)
 			center.z += dt * 1.2
-			hull.tint = Color(1, 1, 1, 1).lerp(Color(0.4, 0.3, 0.3, 1), clampf(dying_t / 3.0, 0.0, 1.0))
 			if dying_t > 3.2:
 				game.fx.explode(center, 9.0, Vector3.ZERO, Models.PLUM)
 				for k in 5:
@@ -184,7 +183,7 @@ func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
 	var o := closed_time + 0.4
 	if open_want:
 		if _fire_once("shotgun1", o + 0.2):
-			game.bullets.fan(eye.position, game.bullets.aim(eye.position), 5, 14.0, 9.0, Bullets.ORB, self)
+			game.bullets.fan(eye.position, game.bullets.aim(eye.position), 5, 14.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 		if _fire_once("ring", o + 1.2):
 			game.bullets.ring(eye.position, 14, 4.8, Bullets.ORB, self, 0.0, 3, game.bullets.aim(eye.position))
 		if phase == 2 and _fire_once("heavy", o + 0.8):

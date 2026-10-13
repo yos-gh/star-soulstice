@@ -6,17 +6,17 @@ extends Node3D
 ## asteroids. Perspective gives the parallax for free.
 
 const LAYOUTS := [
-	# w, h, style (0 rock, 1 station), pattern, turrets
-	[16, 10, 0, 0, 1],
-	[22, 12, 0, 1, 2],
-	[18, 10, 1, 2, 2],
-	[12, 8, 0, 0, 0],
-	[26, 14, 1, 0, 3],
-	[20, 16, 0, 3, 2],
-	[14, 8, 1, 1, 1],
-	[24, 10, 0, 2, 2],
-	[10, 10, 0, 0, 1],
-	[20, 12, 1, 3, 2],
+	# w, h (cells of Island.CELL), style (0 rock, 1 station), pattern, turrets
+	[8, 5, 0, 0, 1],
+	[11, 6, 0, 1, 2],
+	[9, 5, 1, 2, 2],
+	[6, 4, 0, 0, 0],
+	[13, 7, 1, 0, 3],
+	[10, 8, 0, 3, 2],
+	[7, 4, 1, 1, 1],
+	[12, 5, 0, 2, 2],
+	[5, 5, 0, 0, 1],
+	[10, 6, 1, 3, 2],
 ]
 
 var game: Game
@@ -60,13 +60,18 @@ func _make_layout(seed: int, w: int, h: int, style: int, pattern: int, turret_co
 	var r := RandomNumberGenerator.new()
 	r.seed = seed
 	var maxd := 6
+	# the rock is shaped at 1-unit voxel resolution (vw x vh); tiles sit on
+	# cells of CELL x CELL voxels
+	var k := int(Island.CELL)
+	var vw := w * k
+	var vh := h * k
 	var mask := PackedFloat32Array()  # normalized "edge distance" e (<1 inside), or 9 outside
-	mask.resize(w * h)
+	mask.resize(vw * vh)
 	var phase := r.randf() * TAU
-	for j in h:
-		for i in w:
-			var dx := (i + 0.5 - w * 0.5) / (w * 0.5)
-			var dz := (j + 0.5 - h * 0.5) / (h * 0.5)
+	for j in vh:
+		for i in vw:
+			var dx := (i + 0.5 - vw * 0.5) / (vw * 0.5)
+			var dz := (j + 0.5 - vh * 0.5) / (vh * 0.5)
 			var e := 9.0
 			if style == 0:
 				var a := atan2(dz, dx)
@@ -81,14 +86,14 @@ func _make_layout(seed: int, w: int, h: int, style: int, pattern: int, turret_co
 					# notches along the long sides
 					if absf(dz) > 0.75 and int(i / 3) % 3 == 1:
 						e = 9.0
-			mask[j * w + i] = e
-	var v := Vox.new(w, maxd, h)
+			mask[j * vw + i] = e
+	var v := Vox.new(vw, maxd, vh)
 	var top_c := Color(0.25, 0.24, 0.29) if style == 0 else Color(0.27, 0.3, 0.36)
 	var side_c := Color(0.19, 0.18, 0.23) if style == 0 else Color(0.2, 0.22, 0.27)
 	var deep_c := Color(0.12, 0.11, 0.15) if style == 0 else Color(0.13, 0.14, 0.18)
-	for j in h:
-		for i in w:
-			var e := mask[j * w + i]
+	for j in vh:
+		for i in vw:
+			var e := mask[j * vw + i]
 			if e >= 1.0:
 				continue
 			var d := 1 + int((1.0 - e) * 4.0) + r.randi_range(0, 1)
@@ -108,52 +113,60 @@ func _make_layout(seed: int, w: int, h: int, style: int, pattern: int, turret_co
 				if style == 1 and y == maxd - 2 and e > 0.85 and (i + j) % 3 == 0:
 					c = Color(0.3, 0.75, 0.9)
 					glow = true
-				v.put(i - w / 2, y, j - h / 2, c, glow)
+				v.put(i - vw / 2, y, j - vh / 2, c, glow)
 	var mesh := v.mesh(1.0, Vector3(0, maxd, 0))
-	# tiles
+	# tiles: a cell is paved only if all its voxels are well inside
 	var types := PackedInt32Array()
 	types.resize(w * h)
 	var hidden := PackedByteArray()
 	hidden.resize(w * h)
+	var cell_e := PackedFloat32Array()
+	cell_e.resize(w * h)
+	for j in h:
+		for i in w:
+			var e := 0.0
+			for q in k * k:
+				e = maxf(e, mask[(j * k + q / k) * vw + i * k + q % k])
+			cell_e[j * w + i] = e
 	for j in h:
 		for i in w:
 			var idx := j * w + i
-			var e := mask[idx]
+			var e := cell_e[idx]
 			types[idx] = -1
 			if e >= 0.97:
 				continue
 			var t := 0
 			match pattern:
 				0:
-					t = 2 if e < 0.35 else (1 if e < 0.65 else 0)
+					t = 2 if e < 0.4 else (1 if e < 0.7 else 0)
 				1:
-					t = 1 if j % 3 == 0 else 0
-					if absi(i - w / 2) <= 1 and e < 0.7:
+					t = 1 if j % 2 == 0 else 0
+					if i == w / 2 and e < 0.7:
 						t = 2
 				2:
-					t = 0 if (i / 2 + j / 2) % 2 == 0 else 1
+					t = 0 if (i + j) % 2 == 0 else 1
 					if r.randf() < 0.1:
 						t = 2
 				_:
 					t = 1 if r.randf() < 0.25 else 0
-					if r.randf() < 0.05:
+					if r.randf() < 0.06:
 						t = 2
 			if r.randf() < (0.06 if pattern != 3 else 0.14):
 				continue
 			types[idx] = t
-			var star_p := 0.08 if t == 2 else 0.025
+			var star_p := 0.06 if t == 2 else 0.02
 			hidden[idx] = 1 if r.randf() < star_p else 0
 	# turret cells: spread along x through the inner area
 	var tcells: Array[Vector2i] = []
-	for k in turret_count:
+	for n in turret_count:
 		for attempt in 30:
-			var i := int(w * (k + 0.5) / turret_count) + r.randi_range(-2, 2)
-			var j := r.randi_range(2, h - 3)
+			var i := int(w * (n + 0.5) / turret_count) + r.randi_range(-1, 1)
+			var j := r.randi_range(1, h - 2)
 			i = clampi(i, 1, w - 2)
-			if mask[j * w + i] < 0.75:
+			if cell_e[j * w + i] < 0.8:
 				var ok := true
 				for c in tcells:
-					if absi(c.x - i) + absi(c.y - j) < 4:
+					if absi(c.x - i) + absi(c.y - j) < 3:
 						ok = false
 				if ok:
 					tcells.append(Vector2i(i, j))
@@ -241,7 +254,6 @@ func _build_backdrop() -> void:
 	for i in 5:
 		var m := MeshInstance3D.new()
 		m.mesh = Vox.get_mesh("rock_a" if i % 2 == 0 else "rock_b")
-		m.set_instance_shader_parameter("tint", Color(0.5, 0.5, 0.62, 1))
 		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		m.position = Vector3(decor_rect.position.x + randf() * decor_rect.size.x, dy - randf() * 14.0, decor_rect.position.y + decor_rect.size.y * i / 5.0)
 		m.rotation = Vector3(randf() * TAU, randf() * TAU, 0)
@@ -282,7 +294,7 @@ func tick(dt: float, speed: float) -> void:
 	while i < islands.size():
 		var isl := islands[i]
 		isl.position.z += speed * dt
-		if isl.position.z - isl.h * 0.5 > game.ground_bottom + 1.0:
+		if isl.position.z - isl.h * Island.CELL * 0.5 > game.ground_bottom + 1.0:
 			for c in isl.get_children():
 				if c is Enemy:
 					game.remove_enemy(c as Enemy)
@@ -308,13 +320,13 @@ func _spawn_island() -> void:
 	var hw := game.ground_hw
 	var w: int = lay["w"]
 	var h: int = lay["h"]
-	var x := rng.randf_range(-hw + w * 0.3, hw - w * 0.3)
-	isl.position = Vector3(x, Game.GROUND_Y, game.ground_top - h * 0.5 - 1.0)
+	var x := rng.randf_range(-hw + w * Island.CELL * 0.3, hw - w * Island.CELL * 0.3)
+	isl.position = Vector3(x, Game.GROUND_Y, game.ground_top - h * Island.CELL * 0.5 - 1.0)
 	islands.append(isl)
 	if turrets:
 		for c: Vector2i in lay["turrets"]:
 			game.spawn_enemy("turret", {"island": isl, "cell": c})
-	next_in = h + rng.randf_range(2.0, 9.0)
+	next_in = h * Island.CELL + rng.randf_range(2.0, 9.0)
 
 
 # ------------------------------------------------------------ hits
@@ -323,7 +335,7 @@ func _spawn_island() -> void:
 func hit(p: Vector3, dmg: float) -> bool:
 	if islands.is_empty():
 		return false
-	var g := game.from_plane(p, Game.GROUND_Y + 0.25)
+	var g := game.from_plane(p, Game.GROUND_Y + 0.4)
 	for isl in islands:
 		var idx := isl.tile_at(g)
 		if idx >= 0:
@@ -335,7 +347,7 @@ func hit(p: Vector3, dmg: float) -> bool:
 ## Spear: damages tiles inside the aura circle and the lance rectangle.
 func spear(pp: Vector3, r: float, hw: float, length: float, dmg: float) -> void:
 	for isl in islands:
-		if absf(isl.position.z - pp.z) > isl.h * 0.5 + length + 4.0:
+		if absf(isl.position.z - pp.z) > isl.h * Island.CELL * 0.5 + length + 4.0:
 			continue
 		for idx in isl.w * isl.h:
 			if isl.types[idx] < 0:

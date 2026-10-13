@@ -7,8 +7,8 @@ extends Node3D
 const MAX := 400
 const BASE_DMG := 1.0
 const HOMING_DMG := 16.0
-const HOMING_SPEED := 30.0
-const TRAIL := 16
+const HOMING_SPEED := 50.0
+const TRAIL := 12
 
 var game: Game
 var pos := PackedVector3Array()
@@ -88,7 +88,7 @@ func launch_homing(p: Vector3, count: int) -> void:
 	for i in count:
 		var spread := 0.0 if count == 1 else lerpf(-1.0, 1.0, float(i) / (count - 1))
 		var ang := PI / 2.0 + spread * deg_to_rad(75.0)
-		var v := Vector3(cos(ang), 0, sin(ang)) * 12.0
+		var v := Vector3(cos(ang), 0, sin(ang)) * 18.0
 		var tgt: Object = null
 		if not targets.is_empty():
 			tgt = targets[i % targets.size()]
@@ -128,11 +128,11 @@ func tick(dt: float) -> void:
 			h["target"] = tgt
 		var v: Vector3 = h["vel"]
 		var hp: Vector3 = h["pos"]
-		var spd := minf(HOMING_SPEED, 12.0 + h["t"] * 40.0)
+		var spd := minf(HOMING_SPEED, 18.0 + h["t"] * 110.0)
 		if is_instance_valid(tgt):
 			var to: Vector3 = (tgt as Enemy).hit_pos - hp
 			to.y = 0.0
-			var turn := clampf(4.0 + h["t"] * 10.0, 0.0, 22.0)
+			var turn := clampf(6.0 + h["t"] * 60.0, 0.0, 40.0)
 			var want := to.normalized() * spd
 			v = v.lerp(want, clampf(turn * dt, 0.0, 1.0))
 			if v.length() > 0.001:
@@ -194,8 +194,8 @@ func draw() -> void:
 			var side := Vector3(-d.z, 0, d.x).normalized()
 			var ta := float(j) / (cnt - 1)
 			var tb := float(j + 1) / (cnt - 1)
-			var wa := 0.5 * ta
-			var wb := 0.5 * tb
+			var wa := 0.2 * ta
+			var wb := 0.2 * tb
 			var ca := Color(0.3, 0.8, 1.0, ta * fa)
 			var cb := Color(0.6, 0.95, 1.0, tb * fa)
 			var y := Vector3(0, 0.5, 0)
@@ -210,17 +210,21 @@ func draw() -> void:
 			_v(cb, Vector2(tb, 1), p3)
 			_v(cb, Vector2(tb, 0), p2)
 		if not h["done"]:
-			# bright head
+			# sharp diamond head pointing along the flight
 			var hp: Vector3 = h["pos"]
-			var s := 0.55
+			var hv: Vector3 = h["vel"]
+			var dir := hv.normalized() if hv.length_squared() > 0.0001 else Vector3(0, 0, -1)
+			var sd := Vector3(-dir.z, 0, dir.x) * 0.16
 			var y := Vector3(0, 0.55, 0)
-			var c := Color(0.85, 1.0, 1.0, 1.0)
-			_v(c, Vector2(0, 0), hp + Vector3(-s, 0, -s) + y)
-			_v(c, Vector2(0, 1), hp + Vector3(s, 0, -s) + y)
-			_v(c, Vector2(1, 0), hp + Vector3(-s, 0, s) + y)
-			_v(c, Vector2(0, 1), hp + Vector3(s, 0, -s) + y)
-			_v(c, Vector2(1, 1), hp + Vector3(s, 0, s) + y)
-			_v(c, Vector2(1, 0), hp + Vector3(-s, 0, s) + y)
+			var c := Color(0.9, 1.0, 1.0, 1.0)
+			var tip := hp + dir * 0.7 + y
+			var tail := hp - dir * 0.45 + y
+			_v(c, Vector2(1, 0.5), tip)
+			_v(c, Vector2(0.5, 0), hp - sd + y)
+			_v(c, Vector2(0.5, 1), hp + sd + y)
+			_v(c, Vector2(0, 0.5), tail)
+			_v(c, Vector2(0.5, 1), hp + sd + y)
+			_v(c, Vector2(0.5, 0), hp - sd + y)
 	ribbon_mesh.surface_end()
 
 

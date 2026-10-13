@@ -35,6 +35,7 @@ func _ready() -> void:
 		var mi := MultiMeshInstance3D.new()
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
 		mm.mesh = Vox.get_mesh(name)
 		mm.instance_count = MAX if name == "energy" else 32
 		mm.visible_instance_count = 0
@@ -129,13 +130,14 @@ func draw() -> void:
 		var b: Basis
 		match k:
 			ENERGY:
-				s = 0.8 + minf(val[i], 8.0) * 0.12
+				s = 0.75 + minf(val[i], 8.0) * 0.06
 				b = Basis(Vector3.UP, t * 4.0 + i).scaled(Vector3.ONE * s)
 			POWER:
 				b = Basis(Vector3.UP, sin(t * 2.0) * 0.4).scaled(Vector3.ONE * (1.0 + 0.08 * sin(t * 8.0)))
 			_:
 				b = Basis(Vector3.UP, t * 2.0).scaled(Vector3.ONE * 1.1)
 		mm.set_instance_transform(c, Transform3D(b, pos[i] + Vector3(0, 0.6, 0)))
+		mm.set_instance_color(c, Color(1, 1, 1))
 		counts[k] = c + 1
 	for k in 3:
 		mms[k].multimesh.visible_instance_count = counts[k]

@@ -8,6 +8,6 @@ void fragment() {
 	float r = length(d);
 	float body = pow(max(1.0 - r, 0.0), 1.4);
 	float core = smoothstep(0.5, 0.0, r);
-	vec3 c = pow(COLOR.rgb, vec3(2.2));
+	vec3 c = pow(max(COLOR.rgb, vec3(0.0)), vec3(2.2));
 	ALBEDO = (c * body * 2.6 + vec3(core) * 1.4) * COLOR.a;
 }

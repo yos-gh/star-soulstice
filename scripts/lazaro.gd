@@ -5,9 +5,10 @@ extends Node3D
 ## was. While closed after a slam its core is exposed for a while.
 ## The pieces take reduced damage; all damage goes to one shared pool.
 
-const HP := 300.0
-const PIECE_MUL := 0.3
+const HP := 240.0
+const PIECE_MUL := 0.55
 const ORBIT_R := 7.5
+const PINCH_TIME := 1.5  # slow enough to slip out, or to shoot a piece down
 const LIFE := 50.0
 
 var game: Game
@@ -60,7 +61,7 @@ func on_hit(e: Enemy, dmg: float) -> float:
 		return 0.0
 	hp -= dmg if e == core else dmg * PIECE_MUL
 	for q in pieces:
-		q.flash = maxf(q.flash, 0.6 if e == core else 0.35)
+		q.flash = maxf(q.flash, 0.3 if e == core else 0.2)
 	core.flash = 1.0 if e == core else core.flash
 	if hp <= 0.0:
 		_defeat()
@@ -96,48 +97,50 @@ func tick(dt: float) -> void:
 			if st > 2.6:
 				_begin_split()
 		"split":
-			var f := clampf(st / 0.9, 0.0, 1.0)
+			var f := clampf(st / 1.3, 0.0, 1.0)
 			f = 1.0 - (1.0 - f) * (1.0 - f)
 			orbit_c = orbit_c.lerp(game.player.position, clampf(2.0 * dt, 0.0, 1.0))
-			orbit_a += dt * 1.0
+			orbit_a += dt * 0.5
 			for k in 4:
 				var target := _orbit_pos(k, ORBIT_R)
 				pieces[k].position = pinch_from[k].lerp(target, f)
 			core.visible = false
-			if st > 0.9:
+			if st > 1.3:
 				state = "orbit"
 				st = 0.0
 				fire_k = 0
 		"orbit":
-			orbit_c = orbit_c.lerp(game.player.position, clampf(1.4 * dt, 0.0, 1.0))
-			orbit_a += dt * 1.25
-			var r := lerpf(ORBIT_R, 6.3, clampf(st / 2.6, 0.0, 1.0))
+			orbit_c = orbit_c.lerp(game.player.position, clampf(0.8 * dt, 0.0, 1.0))
+			orbit_a += dt * 0.6
+			var r := lerpf(ORBIT_R, 6.3, clampf(st / 3.2, 0.0, 1.0))
 			for k in 4:
 				pieces[k].position = _orbit_pos(k, r)
 				pieces[k].rotation.y += dt * 2.0
-			if st > 0.5 + fire_k * 0.5 and fire_k < 4:
+			if st > 0.6 + fire_k * 0.6 and fire_k < 4:
 				var q := pieces[fire_k]
 				if game.player.alive:
 					game.bullets.fan(q.position, game.bullets.aim(q.position), 3, 18.0, 6.5, Bullets.SHELL, self)
 				fire_k += 1
-			var warn_on := st > 2.1
+			var warn_on := st > 2.2
 			for q in pieces:
-				q.tint = Color(1.6, 0.6, 0.6, 1) if (warn_on and int(st * 16.0) % 2 == 0) else Color(1, 1, 1, 1)
-			if st > 2.6:
+				q.tint = Color(0.55, 0.06, 0.04) if (warn_on and int(st * 16.0) % 2 == 0) else Color(0, 0, 0)
+			if st > 3.2:
 				state = "pinch"
 				st = 0.0
 				center = orbit_c
 				for k in 4:
 					pinch_from[k] = pieces[k].position
-					pieces[k].tint = Color(1, 1, 1, 1)
+					pieces[k].tint = Color(0, 0, 0)
 				game.sfx.play("slam")
+				# a closing ring shows where the jaws will meet
+				game.fx.sprite(center + Vector3(0, 0.3, 0), Vector3.ZERO, 14.0, 2.5, PINCH_TIME, Color(1.0, 0.35, 0.3), 2.0)
 		"pinch":
-			var f := clampf(st / 0.5, 0.0, 1.0)
-			f = f * f
+			var f := clampf(st / PINCH_TIME, 0.0, 1.0)
+			f = f * f * (3.0 - 2.0 * f)
 			for k in 4:
 				pieces[k].position = pinch_from[k].lerp(center + _quad(k), f)
 				pieces[k].rotation.y = lerp_angle(pieces[k].rotation.y, -k * PI / 2.0, clampf(10.0 * dt, 0.0, 1.0))
-			if st > 0.5:
+			if st > PINCH_TIME:
 				for k in 4:
 					pieces[k].rotation.y = -k * PI / 2.0
 				state = "merged"
@@ -156,7 +159,7 @@ func tick(dt: float) -> void:
 				game.bullets.ring(center, 10, 5.0, Bullets.ORB, self, randf() * TAU)
 			if st > 1.4 and fire_k < 11:
 				fire_k = 11
-				game.bullets.fan(center, game.bullets.aim(center), 3, 12.0, 8.5, Bullets.ORB, self)
+				game.bullets.fan(center, game.bullets.aim(center), 3, 12.0, 8.5, Bullets.ORB, self, Bullets.NEEDLE)
 			_place_merged()
 			if st > 2.8:
 				state = "rise"

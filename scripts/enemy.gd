@@ -42,7 +42,10 @@ var step := 0
 var fired := false
 var model: MeshInstance3D
 var head: MeshInstance3D
-var tint := Color(1, 1, 1, 1)
+var tint := Color(0, 0, 0)  # extra overlay colour (warnings), added to the hit flash
+var overlay_key := -1
+
+static var _overlays := {}
 
 
 func setup(g: Game, k: String, params: Dictionary) -> void:
@@ -140,10 +143,24 @@ func tick(dt: float) -> void:
 func _shade() -> void:
 	if model == null:
 		return
-	model.set_instance_shader_parameter("flash", flash)
-	model.set_instance_shader_parameter("tint", tint)
+	# quantised so a handful of shared overlay materials cover every case
+	var c := Color(1.0, 0.85, 0.7) * (flash * 0.85) + tint
+	var q := Vector3i(int(c.r * 8.0 + 0.5), int(c.g * 8.0 + 0.5), int(c.b * 8.0 + 0.5))
+	var key := (q.x * 64 + q.y) * 64 + q.z
+	if key == overlay_key:
+		return
+	overlay_key = key
+	var mat: Material = null
+	if key != 0:
+		if not _overlays.has(key):
+			var m := ShaderMaterial.new()
+			m.shader = preload("res://shaders/flash.gdshader")
+			m.set_shader_parameter("col", Color(q.x / 8.0, q.y / 8.0, q.z / 8.0))
+			_overlays[key] = m
+		mat = _overlays[key]
+	model.material_overlay = mat
 	if head != null:
-		head.set_instance_shader_parameter("flash", flash)
+		head.material_overlay = mat
 
 
 # ------------------------------------------------------------ behaviours
@@ -161,7 +178,7 @@ func _dart(dt: float) -> void:
 	model.rotation.z = lerpf(model.rotation.z, clampf(float(p.get("turn", 0.0)) * 0.25, -0.8, 0.8) if (t > tt and t < tt + float(p.get("turn_dur", 1.0))) else 0.0, 6.0 * dt)
 	if not fired and t >= float(p.get("fire_at", 0.7)) and game.can_fire(position):
 		fired = true
-		game.bullets.fire(position, game.bullets.aim(position), 7.5, Bullets.SHELL, self)
+		game.bullets.fire(position, game.bullets.aim(position), 8.0, Bullets.SHELL, self, Bullets.NEEDLE)
 
 
 ## params: c (Vector3), r, a0, w (rad/s), loops
@@ -209,7 +226,7 @@ func _turret(dt: float) -> void:
 	if fire_t <= 0.0:
 		if game.on_field(hp_, -1.0) and d.length() > 4.5 and game.state == Game.State.PLAY:
 			if step < 3:
-				game.bullets.fire(hp_, atan2(d.z, d.x), 7.0, Bullets.SHELL, self)
+				game.bullets.fire(hp_, atan2(d.z, d.x), 7.5, Bullets.SHELL, self, Bullets.NEEDLE)
 				step += 1
 				fire_t = 0.14
 				return
@@ -237,7 +254,7 @@ func _bulwark(dt: float) -> void:
 					game.bullets.fan(position + Vector3(0, 0, 1.2), down + deg_to_rad(5.5), 10, 99.0, 5.5, Bullets.SHELL, self)
 					fire_t = 1.2
 				2:
-					game.bullets.fan(position + Vector3(0, 0, 1.5), game.bullets.aim(position), 5, 14.0, 9.0, Bullets.ORB, self)
+					game.bullets.fan(position + Vector3(0, 0, 1.5), game.bullets.aim(position), 5, 14.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 					fire_t = 0.45
 				3:
 					game.bullets.fan(position + Vector3(0, 0, 1.5), game.bullets.aim(position), 4, 10.0, 10.0, Bullets.ORB, self)

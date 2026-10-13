@@ -22,7 +22,7 @@ void fragment() {
 	vec2 d = UV - 0.5;
 	float r = length(d) * 2.0;
 	float age = cust.x;
-	vec3 c = pow(COLOR.rgb, vec3(2.2));
+	vec3 c = pow(max(COLOR.rgb, vec3(0.0)), vec3(2.2));
 	vec3 col;
 	if (cust.y > 2.5) {
 		float q = max(abs(d.x), abs(d.y)) * 2.0;

@@ -107,6 +107,7 @@ var log_status := false
 var bot_frame := 0
 var bot_goal := Vector3.ZERO
 var frames := 0
+var hide_layers := PackedStringArray()  # debug: --hide=sprites,debris,lights,bullets,shots,items,units,terrain
 
 
 func _ready() -> void:
@@ -141,6 +142,8 @@ func _parse_args() -> void:
 			log_status = true
 		elif a == "--mute":
 			AudioServer.set_bus_mute(0, true)
+		elif a.begins_with("--hide="):
+			hide_layers = a.get_slice("=", 1).split(",")
 
 
 func _setup_world() -> void:
@@ -191,8 +194,8 @@ func _setup_world() -> void:
 	camera.far = 400.0
 	var attrs := CameraAttributesPractical.new()
 	attrs.dof_blur_far_enabled = true
-	attrs.dof_blur_far_distance = CAM_DIST + 9.0
-	attrs.dof_blur_far_transition = 22.0
+	attrs.dof_blur_far_distance = CAM_DIST + 22.0  # islands and units stay sharp
+	attrs.dof_blur_far_transition = 18.0
 	attrs.dof_blur_amount = 0.09
 	camera.attributes = attrs
 	add_child(camera)
@@ -601,7 +604,7 @@ func _collide(dt: float) -> void:
 			if sh.x != INF:
 				used = true
 				if sh.y > 0.5:
-					fx.spark(Vector3(sh.x, 0.4, sh.z), Color(1.0, 0.6, 0.25), 3, 0.35)
+					fx.spark(Vector3(sh.x, 0.4, sh.z), Color(0.45, 0.8, 1.0), 3, 0.35)
 					add_score(10, true)
 			else:
 				var e := _enemy_at(p, 0.25)
@@ -792,9 +795,9 @@ func on_tile_broken(at: Vector3, world: Vector3, t: int, star: bool) -> void:
 	add_score(Island.TILE_SCORE[t], true)
 	items.burst_energy(at, Island.TILE_ENERGY[t], 3.0)
 	var c: Color = [Color(0.35, 0.7, 0.7), Color(0.55, 0.5, 0.9), Color(0.7, 0.72, 0.85)][t]
-	for k in 2 + t * 2:
-		fx._debris(world + Vector3(randf_range(-0.3, 0.3), 0.3, randf_range(-0.3, 0.3)), Vector3(randf_range(-3, 3), randf_range(2, 4), randf_range(-3, 3)), 0.14, c)
-	fx.sprite(world + Vector3(0, 0.5, 0), Vector3.ZERO, 0.6, 1.6, 0.25, c.lightened(0.3), 0.0)
+	for k in 4 + t * 2:
+		fx._debris(world + Vector3(randf_range(-0.7, 0.7), 0.4, randf_range(-0.7, 0.7)), Vector3(randf_range(-3, 3), randf_range(2, 4), randf_range(-3, 3)), 0.18, c)
+	fx.sprite(world + Vector3(0, 0.5, 0), Vector3.ZERO, 1.0, 2.6, 0.25, c.lightened(0.3), 0.0)
 	sfx.play("tile_break")
 	if star:
 		items.spawn(at, Items.STAR, 1.0, Vector3(0, 0, -2.0))
@@ -853,6 +856,32 @@ func _update_camera(dt: float) -> void:
 
 
 func _draw_all() -> void:
+	if not hide_layers.is_empty():
+		fx.sprites.visible = not hide_layers.has("sprites")
+		fx.debris.visible = not hide_layers.has("debris")
+		for l in fx.lights:
+			if hide_layers.has("lights"):
+				l.visible = false
+		bullets.visible = not hide_layers.has("bullets")
+		shots.visible = not hide_layers.has("shots")
+		items.visible = not hide_layers.has("items")
+		units.visible = not hide_layers.has("units")
+		for e: Array in fx.labels:
+			(e[0] as Label3D).visible = not hide_layers.has("labels")
+		(camera.attributes as CameraAttributesPractical).dof_blur_far_enabled = not hide_layers.has("dof")
+		env.glow_enabled = not hide_layers.has("glow")
+		sun.shadow_enabled = not hide_layers.has("shadow")
+		player.visible = player.alive and not hide_layers.has("player")
+		for isl in terrain.islands:
+			isl.visible = not hide_layers.has("islands")
+			for c in isl.get_children():
+				if c is MultiMeshInstance3D:
+					(c as Node3D).visible = not hide_layers.has("tiles")
+				elif c is MeshInstance3D:
+					(c as Node3D).visible = not hide_layers.has("rock")
+			for c in isl.get_children():
+				if c is Enemy:
+					(c as Enemy).visible = not hide_layers.has("turrets")
 	shots.draw()
 	bullets.draw()
 	items.draw()
@@ -925,7 +954,7 @@ func _bot() -> Array:
 	var near := bullets.count_near(pp, 3.0)
 	var side := false
 	if player.spear_cd <= 0.0:
-		if near >= 4 or (best != null and best.radius >= 1.4 and absf(best.hit_pos.x - pp.x) < 2.5 and best.hit_pos.z > pp.z - 7.0) or player.energy >= 60.0:
+		if near >= 4 or (best != null and best.radius >= 1.4 and absf(best.hit_pos.x - pp.x) < 2.5 and best.hit_pos.z > pp.z - Player.SPEAR_LEN) or player.energy >= 60.0:
 			side = true
 	return [m2, tap, hold, side]
 

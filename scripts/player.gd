@@ -28,7 +28,7 @@ const AUTO_RATE := [9.0, 12.0, 12.0]
 const SPEED := [8.5, 11.0, 11.0]
 const SPEAR_CD := 4.0
 const SPEAR_TIME := 0.42
-const SPEAR_LEN := 7.5
+const SPEAR_LEN := 12.5
 const SPEAR_HW := 1.5
 const SPEAR_R := 3.6
 const SPEAR_DPS := 140.0
@@ -199,10 +199,10 @@ func _volley() -> void:
 			game.shots.fire(p + Vector3(0, 0, 0.8), back, m)
 		_:
 			game.shots.fire(p + Vector3(0, 0, -0.8), fwd, m)
-			game.shots.fire(p + Vector3(-0.4, 0, -0.6), fwd.rotated(Vector3.UP, deg_to_rad(9.0)), m)
-			game.shots.fire(p + Vector3(0.4, 0, -0.6), fwd.rotated(Vector3.UP, deg_to_rad(-9.0)), m)
-			game.shots.fire(p + Vector3(-0.25, 0, 0.8), back.rotated(Vector3.UP, deg_to_rad(-14.0)), m)
-			game.shots.fire(p + Vector3(0.25, 0, 0.8), back.rotated(Vector3.UP, deg_to_rad(14.0)), m)
+			game.shots.fire(p + Vector3(-0.4, 0, -0.6), fwd.rotated(Vector3.UP, deg_to_rad(18.0)), m)
+			game.shots.fire(p + Vector3(0.4, 0, -0.6), fwd.rotated(Vector3.UP, deg_to_rad(-18.0)), m)
+			game.shots.fire(p + Vector3(-0.25, 0, 0.8), back.rotated(Vector3.UP, deg_to_rad(-30.0)), m)
+			game.shots.fire(p + Vector3(0.25, 0, 0.8), back.rotated(Vector3.UP, deg_to_rad(30.0)), m)
 	game.sfx.play("shot")
 
 
