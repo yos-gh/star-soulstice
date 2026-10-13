@@ -1,0 +1,230 @@
+class_name Shots
+extends Node3D
+## Player main shots (packed arrays, one MultiMesh of flat glow bolts whose
+## size and colour follow the Concentration multiplier) and homing lasers
+## (steered missiles drawn as additive ribbons).
+
+const MAX := 400
+const BASE_DMG := 1.0
+const HOMING_DMG := 16.0
+const HOMING_SPEED := 30.0
+const TRAIL := 16
+
+var game: Game
+var pos := PackedVector3Array()
+var vel := PackedVector3Array()
+var dmg := PackedFloat32Array()
+var mul := PackedFloat32Array()
+var n := 0
+var bolts: MultiMeshInstance3D
+
+## {pos, vel, target (Object), life, trail (PackedVector3Array), done, fade}
+var homing: Array = []
+var ribbons: MeshInstance3D
+var ribbon_mesh: ImmediateMesh
+
+
+func _ready() -> void:
+	pos.resize(MAX)
+	vel.resize(MAX)
+	dmg.resize(MAX)
+	mul.resize(MAX)
+	bolts = MultiMeshInstance3D.new()
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	var q := PlaneMesh.new()
+	q.size = Vector2(1, 1)
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://shaders/bolt.gdshader")
+	mat.render_priority = 1
+	q.material = mat
+	mm.mesh = q
+	mm.instance_count = MAX
+	mm.visible_instance_count = 0
+	bolts.multimesh = mm
+	bolts.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	bolts.custom_aabb = AABB(Vector3(-60, -10, -60), Vector3(120, 20, 120))
+	add_child(bolts)
+	ribbon_mesh = ImmediateMesh.new()
+	ribbons = MeshInstance3D.new()
+	ribbons.mesh = ribbon_mesh
+	var rm := ShaderMaterial.new()
+	rm.shader = load("res://shaders/beam.gdshader")
+	rm.render_priority = 2
+	ribbons.material_override = rm
+	ribbons.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ribbons.custom_aabb = bolts.custom_aabb
+	add_child(ribbons)
+
+
+func fire(p: Vector3, dir: Vector3, m: float) -> void:
+	if n >= MAX:
+		return
+	pos[n] = Vector3(p.x, 0.0, p.z)
+	vel[n] = dir * Player.SHOT_SPEED
+	dmg[n] = BASE_DMG * m
+	mul[n] = m
+	n += 1
+
+
+func remove(i: int) -> void:
+	n -= 1
+	pos[i] = pos[n]
+	vel[i] = vel[n]
+	dmg[i] = dmg[n]
+	mul[i] = mul[n]
+
+
+func clear() -> void:
+	n = 0
+	homing.clear()
+
+
+## Launches `count` homing lasers from the ship's rear, fanned out, each
+## with its own target (nearest first, cycling when there are fewer).
+func launch_homing(p: Vector3, count: int) -> void:
+	var targets := game.homing_targets(p)
+	for i in count:
+		var spread := 0.0 if count == 1 else lerpf(-1.0, 1.0, float(i) / (count - 1))
+		var ang := PI / 2.0 + spread * deg_to_rad(75.0)
+		var v := Vector3(cos(ang), 0, sin(ang)) * 12.0
+		var tgt: Object = null
+		if not targets.is_empty():
+			tgt = targets[i % targets.size()]
+		var trail := PackedVector3Array()
+		trail.push_back(p)
+		homing.append({"pos": p + Vector3(0, 0, 0.6), "vel": v, "target": tgt, "life": 2.6, "trail": trail, "done": false, "fade": 0.25, "t": 0.0})
+
+
+func tick(dt: float) -> void:
+	var i := 0
+	while i < n:
+		var p := pos[i] + vel[i] * dt
+		pos[i] = p
+		if not game.on_field(p, 1.0):
+			remove(i)
+			continue
+		i += 1
+	var k := 0
+	while k < homing.size():
+		var h: Dictionary = homing[k]
+		var trail: PackedVector3Array = h["trail"]
+		if h["done"]:
+			h["fade"] -= dt
+			if trail.size() > 1:
+				trail.remove_at(0)
+			h["trail"] = trail
+			if h["fade"] <= 0.0:
+				homing.remove_at(k)
+				continue
+			k += 1
+			continue
+		h["t"] += dt
+		h["life"] -= dt
+		var tgt = h["target"]
+		if not is_instance_valid(tgt) or (tgt as Enemy).dead or not game.enemies.has(tgt):
+			tgt = game.nearest_target(h["pos"])
+			h["target"] = tgt
+		var v: Vector3 = h["vel"]
+		var hp: Vector3 = h["pos"]
+		var spd := minf(HOMING_SPEED, 12.0 + h["t"] * 40.0)
+		if is_instance_valid(tgt):
+			var to: Vector3 = (tgt as Enemy).hit_pos - hp
+			to.y = 0.0
+			var turn := clampf(4.0 + h["t"] * 10.0, 0.0, 22.0)
+			var want := to.normalized() * spd
+			v = v.lerp(want, clampf(turn * dt, 0.0, 1.0))
+			if v.length() > 0.001:
+				v = v.normalized() * spd
+		else:
+			v = v.lerp(Vector3(0, 0, -spd), 3.0 * dt)
+		hp += v * dt
+		h["vel"] = v
+		h["pos"] = hp
+		trail.push_back(hp)
+		if trail.size() > TRAIL:
+			trail.remove_at(0)
+		h["trail"] = trail
+		if h["life"] <= 0.0 or not game.on_field(hp, 3.0):
+			h["done"] = true
+		k += 1
+
+
+## Called by Game when a homing laser reaches its target.
+func homing_hit(h: Dictionary) -> void:
+	h["done"] = true
+
+
+func draw() -> void:
+	var mm := bolts.multimesh
+	mm.visible_instance_count = n
+	for i in n:
+		var m := mul[i]
+		var f := (m - 1.0) / (Player.CONC_MAX_MUL - 1.0)
+		var w := 0.32 + 0.3 * f
+		var l := 1.3 + 0.5 * f
+		var dir := vel[i].normalized()
+		var b := Basis(Vector3(-dir.z, 0, dir.x) * w, Vector3.UP, dir * l)
+		mm.set_instance_transform(i, Transform3D(b, pos[i] + Vector3(0, 0.4, 0)))
+		mm.set_instance_color(i, Color(0.45, 0.8, 1.0).lerp(Color(1.0, 0.7, 0.25), f))
+	ribbon_mesh.clear_surfaces()
+	var any := false
+	for h: Dictionary in homing:
+		var tr: PackedVector3Array = h["trail"]
+		if tr.size() >= 2:
+			any = true
+			break
+	if not any:
+		return
+	ribbon_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	for h: Dictionary in homing:
+		var tr: PackedVector3Array = h["trail"]
+		var cnt := tr.size()
+		if cnt < 2:
+			continue
+		var fa: float = clampf(h["fade"] / 0.25, 0.0, 1.0) if h["done"] else 1.0
+		for j in cnt - 1:
+			var a := tr[j]
+			var b := tr[j + 1]
+			var d := b - a
+			d.y = 0.0
+			if d.length_squared() < 0.000001:
+				continue
+			var side := Vector3(-d.z, 0, d.x).normalized()
+			var ta := float(j) / (cnt - 1)
+			var tb := float(j + 1) / (cnt - 1)
+			var wa := 0.5 * ta
+			var wb := 0.5 * tb
+			var ca := Color(0.3, 0.8, 1.0, ta * fa)
+			var cb := Color(0.6, 0.95, 1.0, tb * fa)
+			var y := Vector3(0, 0.5, 0)
+			var p0 := a - side * wa + y
+			var p1 := a + side * wa + y
+			var p2 := b - side * wb + y
+			var p3 := b + side * wb + y
+			_v(ca, Vector2(ta, 0), p0)
+			_v(ca, Vector2(ta, 1), p1)
+			_v(cb, Vector2(tb, 0), p2)
+			_v(ca, Vector2(ta, 1), p1)
+			_v(cb, Vector2(tb, 1), p3)
+			_v(cb, Vector2(tb, 0), p2)
+		if not h["done"]:
+			# bright head
+			var hp: Vector3 = h["pos"]
+			var s := 0.55
+			var y := Vector3(0, 0.55, 0)
+			var c := Color(0.85, 1.0, 1.0, 1.0)
+			_v(c, Vector2(0, 0), hp + Vector3(-s, 0, -s) + y)
+			_v(c, Vector2(0, 1), hp + Vector3(s, 0, -s) + y)
+			_v(c, Vector2(1, 0), hp + Vector3(-s, 0, s) + y)
+			_v(c, Vector2(0, 1), hp + Vector3(s, 0, -s) + y)
+			_v(c, Vector2(1, 1), hp + Vector3(s, 0, s) + y)
+			_v(c, Vector2(1, 0), hp + Vector3(-s, 0, s) + y)
+	ribbon_mesh.surface_end()
+
+
+func _v(c: Color, uv: Vector2, p: Vector3) -> void:
+	ribbon_mesh.surface_set_color(c)
+	ribbon_mesh.surface_set_uv(uv)
+	ribbon_mesh.surface_add_vertex(p)
