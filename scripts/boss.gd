@@ -110,6 +110,12 @@ func _place() -> void:
 	shutter_r.position = center + Vector3(gap, 1.25, 0)
 
 
+func _warn_at(key: String, at: float, dur: float, kind: int) -> void:
+	if cycle_t >= at - dur and not fired.has("w_" + key):
+		fired["w_" + key] = true
+		game.warn(eye, dur, kind, eye.radius)
+
+
 func _fire_once(key: String, at: float) -> bool:
 	if cycle_t >= at and not fired.has(key):
 		fired[key] = true
@@ -187,15 +193,22 @@ func tick(dt: float) -> void:
 func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
 	cycle_t += dt
 	open_want = cycle_t > closed_time and cycle_t < closed_time + open_time
-	var o := closed_time + 0.4
+	var c := closed_time
 	if open_want:
-		if _fire_once("shotgun1", o + 0.2):
+		# each energy volley is telegraphed on the eye (heavy orbs in red)
+		var w := Enemy.WINDUP_SHOT
+		_warn_at("shotgun1", c + 0.6, w, Game.Warn.SHOT)
+		if _fire_once("shotgun1", c + 0.6):
 			game.bullets.fan(eye.position, game.bullets.aim(eye.position), 5, 14.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
-		if _fire_once("ring", o + 1.2):
+		if phase == 2:
+			_warn_at("heavy", c + 1.4, 0.7, Game.Warn.MOVE)
+			if _fire_once("heavy", c + 1.4):
+				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 3, 30.0, 4.6, Bullets.HEAVY, self)
+		_warn_at("ring", c + 2.0, w, Game.Warn.SHOT)
+		if _fire_once("ring", c + 2.0):
 			game.bullets.ring(eye.position, 14, 4.8, Bullets.ORB, self, 0.0, 3, game.bullets.aim(eye.position))
-		if phase == 2 and _fire_once("heavy", o + 0.8):
-			game.bullets.fan(eye.position, game.bullets.aim(eye.position), 3, 30.0, 4.6, Bullets.HEAVY, self)
-		if _fire_once("shotgun2", o + 2.1):
+		_warn_at("shotgun2", c + 2.7, w, Game.Warn.SHOT)
+		if _fire_once("shotgun2", c + 2.7):
 			game.bullets.fan(eye.position, game.bullets.aim(eye.position), 5, 16.0, 9.5, Bullets.ORB, self)
 	if cycle_t > closed_time + open_time + 0.3:
 		cycle_t = 0.0

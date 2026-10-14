@@ -44,6 +44,12 @@ var fired := false
 var model: MeshInstance3D
 var head: MeshInstance3D
 var tint := Color(0, 0, 0)  # extra overlay colour (warnings), added to the hit flash
+var warn_t := 0.0  # telegraph: seconds until the warned attack
+var warn_dur := 0.0
+var warn_col := Color(0, 0, 0)
+
+const WINDUP_SHOT := 0.5  # telegraph time before unbreakable shots
+const WINDUP_MOVE := 0.6  # before charges
 var overlay_key := -1
 
 static var _overlays := {}
@@ -128,6 +134,7 @@ func face(v: Vector3) -> void:
 func tick(dt: float) -> void:
 	t += dt
 	flash = maxf(0.0, flash - dt * 7.0)
+	warn_t = maxf(0.0, warn_t - dt)
 	match kind:
 		"dart":
 			_dart(dt)
@@ -162,6 +169,11 @@ func _shade() -> void:
 		return
 	# quantised so a handful of shared overlay materials cover every case
 	var c := Color(1.0, 0.85, 0.7) * (flash * 0.85) + tint
+	if warn_t > 0.0:
+		# telegraph: a warm pulse that quickens as the attack nears
+		var f := 1.0 - warn_t / maxf(warn_dur, 0.01)
+		var pulse := 0.5 + 0.5 * sin(warn_t * lerpf(18.0, 40.0, f))
+		c += warn_col * (0.25 + 0.5 * f) * pulse
 	var q := Vector3i(int(c.r * 8.0 + 0.5), int(c.g * 8.0 + 0.5), int(c.b * 8.0 + 0.5))
 	var key := (q.x * 64 + q.y) * 64 + q.z
 	if key == overlay_key:
@@ -212,24 +224,41 @@ func _swirl(dt: float) -> void:
 		position += vel * dt
 	model.rotation.y += dt * 5.0
 	model.rotation.z = sin(t * 3.0) * 0.2
-	if not fired and t >= dur * 0.45 and game.can_fire(position):
+	if not fired and t >= dur * 0.45 - WINDUP_SHOT and game.can_fire(position):
 		fired = true
-		game.bullets.fire(position, game.bullets.aim(position), 6.5, Bullets.ORB, self)
+		game.warn_then(self, WINDUP_SHOT, Game.Warn.SHOT, func() -> void:
+			game.bullets.fire(position, game.bullets.aim(position), 6.5, Bullets.ORB, self))
 
 
 func _rammer(dt: float) -> void:
-	if t < 0.9:
-		vel = Vector3(0, 0, 7.0)
-	elif t < 2.4:
-		var to := game.player.position - position
-		var spd := minf(17.0, vel.length() + 18.0 * dt)
-		if game.player.alive and to.length() > 0.5:
-			var want := to.normalized() * spd
-			vel = vel.lerp(want, clampf(2.2 * dt, 0.0, 1.0)).normalized() * spd
+	# dive in, stop and wind up (facing the player), then charge
+	if t < 0.8:
+		vel = Vector3(0, 0, 9.0)
+		face(vel)
+	elif t < 0.8 + WINDUP_MOVE:
+		if not fired:
+			fired = true
+			game.warn(self, WINDUP_MOVE, Game.Warn.MOVE, radius, "player")
+		vel = vel.move_toward(Vector3.ZERO, 24.0 * dt)
+		var look := game.player.position - position
+		rotation.y = lerp_angle(rotation.y, atan2(-look.x, -look.z), 8.0 * dt)
+		model.rotation.z += dt * 30.0 * (t - 0.8) / WINDUP_MOVE
+	elif t < 0.8 + WINDUP_MOVE + 1.4:
+		if step == 0:
+			step = 1
+			var to := game.player.position - position
+			vel = (to.normalized() if to.length() > 0.5 else Vector3(0, 0, 1)) * 8.0
+		# fast, with only a little steering: dodgeable once it commits
+		var spd := minf(21.0, vel.length() + 30.0 * dt)
+		var to2 := game.player.position - position
+		if game.player.alive and to2.length() > 0.5:
+			vel = vel.lerp(to2.normalized() * spd, clampf(0.8 * dt, 0.0, 1.0)).normalized() * spd
 		else:
 			vel = vel.normalized() * spd
+		face(vel)
+	else:
+		face(vel)
 	position += vel * dt
-	face(vel)
 	model.rotation.z += dt * 9.0
 
 
@@ -263,7 +292,7 @@ func _bulwark(dt: float) -> void:
 		fire_t -= dt
 		if fire_t <= 0.0 and game.can_fire(position):
 			var down := PI / 2.0
-			match step % 4:
+			match step % 5:
 				0:
 					game.bullets.fan(position + Vector3(0, 0, 1.2), down, 11, 110.0, 5.0, Bullets.SHELL, self)
 					fire_t = 0.4
@@ -271,9 +300,13 @@ func _bulwark(dt: float) -> void:
 					game.bullets.fan(position + Vector3(0, 0, 1.2), down + deg_to_rad(5.5), 10, 99.0, 5.5, Bullets.SHELL, self)
 					fire_t = 1.2
 				2:
+					# announce the energy shotguns
+					game.warn(self, WINDUP_SHOT + 0.15, Game.Warn.SHOT, radius)
+					fire_t = WINDUP_SHOT + 0.15
+				3:
 					game.bullets.fan(position + Vector3(0, 0, 1.5), game.bullets.aim(position), 5, 14.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 					fire_t = 0.45
-				3:
+				4:
 					game.bullets.fan(position + Vector3(0, 0, 1.5), game.bullets.aim(position), 4, 10.0, 10.0, Bullets.ORB, self)
 					fire_t = 2.6  # quiet gap: come in with the Spear
 			step += 1

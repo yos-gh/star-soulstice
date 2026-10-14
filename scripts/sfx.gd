@@ -5,8 +5,8 @@ extends Node
 ## with a per-sound minimum gap so rapid fire never piles up.
 
 const RATE := 22050
-const MIN_GAP := {"shot": 0.06, "hit": 0.045, "deflect": 0.08, "tile": 0.04, "tile_break": 0.04, "energy": 0.035, "exp_s": 0.05, "exp_m": 0.08}
-const LEVEL := {"shot": -16.0, "hit": -15.0, "deflect": -17.0, "tile": -20.0, "tile_break": -15.0, "energy": -18.0, "exp_s": -8.0, "exp_m": -6.0, "exp_l": -3.0}
+const MIN_GAP := {"warn": 0.12, "shot": 0.06, "hit": 0.045, "deflect": 0.08, "tile": 0.04, "tile_break": 0.04, "energy": 0.035, "exp_s": 0.05, "exp_m": 0.08}
+const LEVEL := {"warn": -15.0, "shot": -16.0, "hit": -15.0, "deflect": -17.0, "tile": -20.0, "tile_break": -15.0, "energy": -18.0, "exp_s": -8.0, "exp_m": -6.0, "exp_l": -3.0}
 
 var streams := {}
 var players: Array[AudioStreamPlayer] = []
@@ -61,6 +61,7 @@ func _build() -> void:
 	streams["slam"] = _wav(_tone(600.0, 120.0, 0.4, "square", 0.35))
 	streams["start"] = _wav(_seq([[392.0, 392.0], [523.0, 523.0], [659.0, 659.0], [784.0, 784.0]], 0.09, "square", 0.35))
 	streams["clear"] = _wav(_seq([[523.0, 523.0], [659.0, 659.0], [784.0, 784.0], [1047.0, 1047.0], [784.0, 784.0], [1047.0, 1047.0]], 0.12, "square", 0.35))
+	streams["warn"] = _wav(_tone(700.0, 1500.0, 0.09, "square", 0.3))
 	streams["cursor"] = _wav(_tone(1200.0, 1200.0, 0.04, "square", 0.3))
 
 

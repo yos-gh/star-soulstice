@@ -9,7 +9,9 @@ extends Node3D
 enum { ENERGY, POWER, STAR }
 
 const MAX := 700
-const MAGNET := [3.4, 2.8, 2.8]
+const MAGNET := [6.8, 6.8, 6.8]  # pickup pull radius (everything, power-ups included)
+const CUBE := 0.42  # energy cube edge
+const BEAM := 0.05  # its wire thickness
 const DRIFT := [2.4, 1.5, 1.8]
 
 var game: Game
@@ -36,7 +38,7 @@ func _ready() -> void:
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.use_colors = true
-		mm.mesh = Vox.get_mesh(name)
+		mm.mesh = _wire_cube() if name == "energy" else Vox.get_mesh(name)
 		mm.instance_count = MAX if name == "energy" else 32
 		mm.visible_instance_count = 0
 		mi.multimesh = mm
@@ -130,8 +132,9 @@ func draw() -> void:
 		var b: Basis
 		match k:
 			ENERGY:
-				s = 0.75 + minf(val[i], 8.0) * 0.06
-				b = Basis(Vector3.UP, t * 4.0 + i).scaled(Vector3.ONE * s)
+				# still (no spin); bigger chunks are a little larger
+				s = 0.85 + minf(val[i], 8.0) * 0.05
+				b = Basis.from_scale(Vector3.ONE * s)
 			POWER:
 				b = Basis(Vector3.UP, sin(t * 2.0) * 0.4).scaled(Vector3.ONE * (1.0 + 0.08 * sin(t * 8.0)))
 			_:
@@ -142,3 +145,30 @@ func draw() -> void:
 		counts[k] = c + 1
 	for k in 3:
 		mms[k].multimesh.visible_instance_count = counts[k]
+
+
+## Energy: a simple see-through yellow wireframe cube (12 thin beams).
+func _wire_cube() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var h := CUBE * 0.5
+	var beam := BoxMesh.new()
+	for axis in 3:
+		for a in [-h, h]:
+			for b in [-h, h]:
+				var size := Vector3.ONE * BEAM
+				size[axis] = CUBE + BEAM
+				beam.size = size
+				var p := Vector3.ZERO
+				p[(axis + 1) % 3] = a
+				p[(axis + 2) % 3] = b
+				st.append_from(beam, 0, Transform3D(Basis.IDENTITY, p))
+	var m := st.commit()
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(1.0, 0.86, 0.2, 0.7)
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.disable_receive_shadows = true
+	m.surface_set_material(0, mat)
+	return m

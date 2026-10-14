@@ -39,6 +39,7 @@ func _draw() -> void:
 		_title(sz)
 		_notice(sz)
 		return
+	_warnings()
 	# top bar
 	draw_rect(Rect2(0, 0, sz.x, 40), Color(0, 0, 0, 0.35))
 	_text(Vector2(16, 28), "SCORE", 14, DIM)
@@ -194,3 +195,49 @@ func _title(sz: Vector2) -> void:
 func _notice(sz: Vector2) -> void:
 	if Controls.notice_t > 0.0:
 		_text(Vector2(0, sz.y - 60), Controls.notice, 14, Color(1, 1, 1, clampf(Controls.notice_t, 0.0, 1.0)), HORIZONTAL_ALIGNMENT_CENTER, sz.x)
+
+
+## Telegraphs (see Game.warn): 「 」 brackets that close in on the attacker
+## and blink just before the attack, plus a dashed line for charges.
+func _warnings() -> void:
+	var g := game
+	for w: Dictionary in g.warnings:
+		var nd = w["node"]
+		if not is_instance_valid(nd):
+			continue
+		var at: Vector3 = (nd as Enemy).hit_pos if nd is Enemy else (nd as Node3D).global_position
+		var sp := g.camera.unproject_position(at)
+		var rpx := g.camera.unproject_position(at + Vector3(float(w["r"]), 0, 0)).x - sp.x
+		var t: float = w["t"]
+		var f := 1.0 - t / maxf(float(w["dur"]), 0.01)
+		var c: Color = Game.WARN_COL[w["kind"]]
+		if t < 0.16 and int(t * 30.0) % 2 == 0:
+			c = Color(1, 1, 1)
+		var s := rpx * lerpf(2.3, 1.2, f) + 8.0
+		var l := maxf(8.0, s * 0.55)
+		var tl := sp + Vector2(-s, -s)
+		var br := sp + Vector2(s, s)
+		var bracket_tl := PackedVector2Array([tl + Vector2(0, l), tl, tl + Vector2(l, 0)])
+		var bracket_br := PackedVector2Array([br - Vector2(0, l), br, br - Vector2(l, 0)])
+		for pts in [bracket_tl, bracket_br]:
+			draw_polyline(pts, Color(0, 0, 0, 0.6), 5.0)
+			draw_polyline(pts, c, 2.5)
+		# charge path
+		var to = w["to"]
+		var target := Vector2.INF
+		if to is String and to == "player" and g.player.alive:
+			target = g.camera.unproject_position(g.player.position)
+		elif to is Vector3:
+			target = g.camera.unproject_position(to)
+		if target != Vector2.INF:
+			var d := target - sp
+			var len := minf(d.length(), 420.0)
+			if len > s:
+				var dir := d / d.length()
+				var k := s
+				var phase := fmod(g.time * 60.0, 18.0)
+				while k + 10.0 < len:
+					var a := sp + dir * (k + phase)
+					var b := sp + dir * minf(k + phase + 10.0, len)
+					draw_line(a, b, Color(c.r, c.g, c.b, 0.75), 2.0)
+					k += 18.0

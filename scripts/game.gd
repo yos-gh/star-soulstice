@@ -20,6 +20,8 @@ extends Node3D
 ##   --mute            no sound
 
 enum State { TITLE, PLAY, CLEAR, GAME_OVER }
+enum Warn { SHOT, MOVE }
+const WARN_COL := [Color(1.0, 0.55, 0.15), Color(1.0, 0.2, 0.2)]
 
 const DT := 1.0 / 60.0
 const GROUND_Y := -3.0
@@ -75,6 +77,8 @@ var sfx: Sfx
 var hud: Hud
 var stage: Stage
 var enemies: Array[Enemy] = []
+var warnings: Array = []  # {node, t, dur, kind, r, to} (see warn)
+var delayed: Array = []  # {node, t, fn} (see warn_then)
 var lazaro: Lazaro
 var boss: Boss
 
@@ -359,6 +363,8 @@ func _clear_field() -> void:
 	items.clear()
 	items.vacuum = false
 	fx.clear()
+	warnings.clear()
+	delayed.clear()
 	msg_t = 0.0
 
 
@@ -523,6 +529,7 @@ func _tick_play(dt: float) -> void:
 		lazaro.tick(dt)
 	if boss != null:
 		boss.tick(dt)
+	_tick_warnings(dt)
 	bullets.tick(dt)
 	shots.tick(dt)
 	items.tick(dt)
@@ -1021,7 +1028,7 @@ func _build_gallery() -> void:
 			m.set_meta("spin", true)
 			units.add_child(m)
 	if gallery == 1:
-		row.call(["ship0", "ship1", "ship2", "power", "star", "energy"], -9.0, 4.5)
+		row.call(["ship0", "ship1", "ship2", "power", "star"], -9.0, 4.5)
 		row.call(["dart", "swirl", "rammer", "container", "turret_base", "turret_head"], -3.0, 4.5)
 		row.call(["bulwark", "boss_pod", "rock_l", "rock_s", "tile0", "tile1", "tile2"], 4.0, 4.6)
 		for k in 4:
@@ -1055,3 +1062,56 @@ func _gallery_tick(dt: float) -> void:
 	for c in units.get_children():
 		if c.has_meta("spin"):
 			(c as Node3D).rotation.y += dt * 0.4
+
+
+# ------------------------------------------------------------ telegraphs
+
+## Every dangerous attack is announced before it happens (unbreakable
+## shots, charges, the mid-boss's and boss's big moves):
+##   - 「 」 brackets close in on the attacker (drawn by the HUD): orange
+##     for energy shots, red for charges and big moves; they blink just
+##     before the attack
+##   - the attacker pulses with a warm overlay that quickens
+##   - a charge also shows a dashed line toward its target
+##   - a short rising tone
+## Breakable shells are never announced: they are the low-threat fodder.
+func warn(node: Node3D, dur: float, kind: int, radius := 1.0, to: Variant = null) -> void:
+	warnings.append({"node": node, "t": dur, "dur": dur, "kind": kind, "r": radius, "to": to})
+	if node is Enemy:
+		var e := node as Enemy
+		e.warn_t = dur
+		e.warn_dur = dur
+		e.warn_col = WARN_COL[kind]
+	sfx.play("warn")
+
+
+## Announces an attack by `e`, then runs `fn` after `dur` unless `e` died.
+func warn_then(e: Enemy, dur: float, kind: int, fn: Callable, to: Variant = null) -> void:
+	warn(e, dur, kind, e.radius, to)
+	delayed.append({"node": e, "t": dur, "fn": fn})
+
+
+func _tick_warnings(dt: float) -> void:
+	var i := 0
+	while i < warnings.size():
+		var w: Dictionary = warnings[i]
+		w["t"] -= dt
+		var nd = w["node"]
+		if w["t"] <= 0.0 or not is_instance_valid(nd) or (nd is Enemy and (nd as Enemy).dead):
+			warnings.remove_at(i)
+			continue
+		i += 1
+	i = 0
+	while i < delayed.size():
+		var d: Dictionary = delayed[i]
+		d["t"] -= dt
+		var nd = d["node"]
+		if not is_instance_valid(nd) or (nd is Enemy and (nd as Enemy).dead):
+			delayed.remove_at(i)
+			continue
+		if d["t"] <= 0.0:
+			delayed.remove_at(i)
+			if state == State.PLAY:
+				(d["fn"] as Callable).call()
+			continue
+		i += 1
