@@ -12,7 +12,7 @@ extends RefCounted
 ## arrival"). Turrets come with the islands and containers on their own
 ## timer; neither counts toward clearing a wave. After the last wave: boss.
 
-const GAP := 0.7
+const GAP := 0.3
 const CONTAINER_EVERY := 12.0
 const ROCK_EVERY := 1.3
 const AREA_NAMES := {"debris": ["AREA 1", "DEBRIS BELT"], "hull": ["AREA 2", "OUTER HULL"], "core": ["AREA 3", "CORE BLOCK"]}
@@ -62,7 +62,7 @@ func tick(dt: float) -> void:
 					var s: Array = pending.pop_front()
 					_spawn(s[1], s[2])
 			var w: Dictionary = waves[wi] if wi >= 0 and wi < waves.size() else {}
-			var cleared := pending.is_empty() and _alive() == 0
+			var cleared := pending.is_empty() and _nearly_clear()
 			var timeout := not w.is_empty() and wave_t >= float(w["timeout"])
 			if wi < 0 or cleared or timeout:
 				gap_t -= dt
@@ -85,6 +85,22 @@ func tick(dt: float) -> void:
 			if warn_t <= 0.0:
 				phase = "boss"
 				game.spawn_boss()
+
+
+## Early arrival is generous: in a wave of 5+ the last small fighter may
+## still be alive.
+func _nearly_clear() -> bool:
+	var alive: Array = []
+	for m in members:
+		if not is_instance_valid(m):
+			continue
+		if m is Enemy and not (m as Enemy).dead and game.enemies.has(m):
+			alive.append(m)
+		elif m is Lazaro and not (m as Lazaro).finished:
+			return false
+	if alive.is_empty():
+		return true
+	return alive.size() == 1 and members.size() >= 5 and (alive[0] as Enemy).kind != "bulwark"
 
 
 func _alive() -> int:
@@ -160,7 +176,7 @@ func _top() -> float:
 func col(at: float, xn: float, count: int, interval: float, dir: int) -> Array:
 	var out := []
 	for i in count:
-		out.append([at + i * interval, "dart", {"x": xn * _hw(), "vx": 0.0, "vz": 13.0, "turn_t": 0.75, "turn": -dir * 3.3, "turn_dur": 0.95, "fire_at": 0.45}])
+		out.append([at + i * interval, "dart", {"x": xn * _hw(), "vx": 0.0, "vz": 16.0, "turn_t": 0.6, "turn": -dir * 3.3, "turn_dur": 0.95, "fire_at": 0.45}])
 	return out
 
 
@@ -196,11 +212,11 @@ func rammers(at: float, xs: Array, interval: float) -> Array:
 	return out
 
 
-func bulwark(at: float, xn: float, stay := 15.0) -> Array:
+func bulwark(at: float, xn: float, stay := 11.0) -> Array:
 	return [[at, "bulwark", {"x": xn * _hw(), "z": _top() - 3.0, "stay": stay}]]
 
 
-func _w(area_name: String, spawns: Array, timeout := 9.0, mid := false) -> void:
+func _w(area_name: String, spawns: Array, timeout := 7.0, mid := false) -> void:
 	waves.append({"spawns": spawns, "timeout": timeout, "mid": mid, "area": area_name})
 
 
@@ -208,20 +224,20 @@ func _build() -> void:
 	# AREA 1: debris belt (asteroids drift through on their own timer)
 	_w("debris", col(0.5, -0.45, 6, 0.2, 1))
 	_w("debris", col(0.0, 0.45, 6, 0.2, -1) + rammers(1.6, [-0.3], 0.2))
-	_w("debris", swirls(0.0, -1, 5, 0.25) + swirls(1.2, 1, 5, 0.25), 10.0)
+	_w("debris", swirls(0.0, -1, 5, 0.25) + swirls(1.2, 1, 5, 0.25), 8.0)
 	_w("debris", vform(0.0, 0.0) + rammers(1.2, [-0.5, 0.5], 0.4) + vform(2.2, -0.4))
 	# AREA 2: outer hull
-	_w("hull", bulwark(0.0, 0.0) + col(2.0, -0.8, 4, 0.2, 1) + col(4.0, 0.8, 4, 0.2, -1), 17.0)
+	_w("hull", bulwark(0.0, 0.0) + col(2.0, -0.8, 4, 0.2, 1) + col(4.0, 0.8, 4, 0.2, -1), 12.0)
 	_w("hull", sweep(0.0, -1, 6, 0.22) + sweep(1.0, 1, 6, 0.22))
 	_w("hull", vform(0.0, -0.5) + vform(0.8, 0.5) + vform(1.6, 0.0))
-	_w("hull", bulwark(0.0, -0.5) + bulwark(1.5, 0.5), 18.0)
-	_w("hull", swirls(0.0, -1, 5, 0.22) + rammers(1.0, [-0.4, 0.4], 0.3) + swirls(1.5, 1, 5, 0.22), 10.0)
+	_w("hull", bulwark(0.0, -0.5) + bulwark(1.5, 0.5), 12.0)
+	_w("hull", swirls(0.0, -1, 5, 0.22) + rammers(1.0, [-0.4, 0.4], 0.3) + swirls(1.5, 1, 5, 0.22), 8.0)
 	# open space between the hull and the core: Lazaro
 	mid_index = waves.size()
 	_w("open", [[0.0, "lazaro", {}]], 60.0, true)
 	# AREA 3: core block
 	_w("core", col(0.0, -0.6, 5, 0.18, 1) + col(0.6, 0.6, 5, 0.18, -1) + col(1.2, -0.2, 5, 0.18, 1) + col(1.8, 0.2, 5, 0.18, -1))
-	_w("core", bulwark(0.0, 0.0) + rammers(2.0, [-0.6, 0.6], 0.2) + rammers(4.0, [0.0], 0.2), 17.0)
+	_w("core", bulwark(0.0, 0.0) + rammers(2.0, [-0.6, 0.6], 0.2) + rammers(4.0, [0.0], 0.2), 12.0)
 	_w("core", vform(0.0, -0.6) + vform(0.5, 0.6) + vform(1.2, 0.0) + vform(2.0, -0.3) + vform(2.5, 0.3))
-	_w("core", bulwark(0.0, -0.55) + bulwark(1.0, 0.55) + swirls(3.0, -1, 4, 0.25) + swirls(3.5, 1, 4, 0.25), 18.0)
-	_w("core", sweep(0.0, -1, 8, 0.18) + sweep(0.4, 1, 8, 0.18) + col(1.5, 0.0, 6, 0.2, 1), 10.0)
+	_w("core", bulwark(0.0, -0.55) + bulwark(1.0, 0.55) + swirls(3.0, -1, 4, 0.25) + swirls(3.5, 1, 4, 0.25), 12.0)
+	_w("core", sweep(0.0, -1, 8, 0.18) + sweep(0.4, 1, 8, 0.18) + col(1.5, 0.0, 6, 0.2, 1), 8.0)

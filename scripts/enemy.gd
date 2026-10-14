@@ -56,22 +56,22 @@ func setup(g: Game, k: String, params: Dictionary) -> void:
 	var mesh_name := k
 	match k:
 		"dart":
-			hp = 2.0
+			hp = 1.0
 			radius = 0.75
 			score = 100
 			energy_drop = 2.0
 		"swirl":
-			hp = 4.0
+			hp = 2.0
 			radius = 0.9
 			score = 200
 			energy_drop = 3.0
 		"rammer":
-			hp = 6.0
+			hp = 3.0
 			radius = 0.85
 			score = 300
 			energy_drop = 3.0
 		"container":
-			hp = 24.0
+			hp = 14.0
 			radius = 1.1
 			score = 1000
 			energy_drop = 4.0
@@ -80,7 +80,7 @@ func setup(g: Game, k: String, params: Dictionary) -> void:
 			drops_power = true
 			blast = 1.6
 		"turret":
-			hp = 9.0
+			hp = 5.0
 			radius = 0.8
 			score = 400
 			energy_drop = 4.0
@@ -91,7 +91,7 @@ func setup(g: Game, k: String, params: Dictionary) -> void:
 			fire_t = 1.0 + randf() * 1.5
 		"rock":
 			var big: bool = p.get("big", false)
-			hp = 14.0 if big else 5.0
+			hp = 8.0 if big else 3.0
 			radius = 1.6 if big else 0.9
 			score = 500 if big else 150
 			energy_drop = 8.0 if big else 3.0
@@ -99,7 +99,7 @@ func setup(g: Game, k: String, params: Dictionary) -> void:
 			counts = false
 			mesh_name = "rock_l" if big else "rock_s"
 		"bulwark":
-			hp = 220.0
+			hp = 120.0
 			radius = 2.1
 			score = 3000
 			energy_drop = 14.0
@@ -254,9 +254,9 @@ func _turret(dt: float) -> void:
 ## params: x, stay
 func _bulwark(dt: float) -> void:
 	var hold_z := game.field_top + 5.0
-	var stay: float = p.get("stay", 15.0)
+	var stay: float = p.get("stay", 11.0)
 	if position.z < hold_z and t < stay:
-		position.z = move_toward(position.z, hold_z, 3.2 * dt)
+		position.z = move_toward(position.z, hold_z, 7.0 * dt)
 		fire_t = 0.8
 	elif t < stay:
 		position.x = float(p["x"]) + sin(t * 0.6) * 1.6

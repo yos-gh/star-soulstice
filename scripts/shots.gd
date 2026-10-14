@@ -9,6 +9,7 @@ const BASE_DMG := 1.0
 const HOMING_DMG := 16.0
 const HOMING_SPEED := 50.0
 const TRAIL := 12
+const BLOOM := 0.32  # seconds the lasers float outward before homing
 
 var game: Game
 var pos := PackedVector3Array()
@@ -87,14 +88,16 @@ func launch_homing(p: Vector3, count: int) -> void:
 	var targets := game.homing_targets(p)
 	for i in count:
 		var spread := 0.0 if count == 1 else lerpf(-1.0, 1.0, float(i) / (count - 1))
-		var ang := PI / 2.0 + spread * deg_to_rad(75.0)
-		var v := Vector3(cos(ang), 0, sin(ang)) * 18.0
+		# fan out behind and to the sides; they float for a moment before
+		# turning on their targets
+		var ang := PI / 2.0 + spread * deg_to_rad(115.0) + randf_range(-0.12, 0.12)
+		var v := Vector3(cos(ang), 0, sin(ang)) * randf_range(13.0, 16.0)
 		var tgt: Object = null
 		if not targets.is_empty():
 			tgt = targets[i % targets.size()]
 		var trail := PackedVector3Array()
 		trail.push_back(p)
-		homing.append({"pos": p + Vector3(0, 0, 0.6), "vel": v, "target": tgt, "life": 2.6, "trail": trail, "done": false, "fade": 0.25, "t": 0.0})
+		homing.append({"pos": p + Vector3(0, 0, 0.6), "vel": v, "target": tgt, "life": 3.0, "trail": trail, "done": false, "fade": 0.25, "t": 0.0})
 
 
 func tick(dt: float) -> void:
@@ -128,11 +131,25 @@ func tick(dt: float) -> void:
 			h["target"] = tgt
 		var v: Vector3 = h["vel"]
 		var hp: Vector3 = h["pos"]
-		var spd := minf(HOMING_SPEED, 18.0 + h["t"] * 110.0)
+		var ht: float = h["t"]
+		if ht < BLOOM:
+			# bloom: drift outward and slow down, no steering yet
+			v *= 1.0 - 4.0 * dt
+			hp += v * dt
+			h["vel"] = v
+			h["pos"] = hp
+			trail.push_back(hp)
+			if trail.size() > TRAIL:
+				trail.remove_at(0)
+			h["trail"] = trail
+			k += 1
+			continue
+		var ta := ht - BLOOM
+		var spd := minf(HOMING_SPEED, maxf(v.length(), 4.0) + ta * 90.0)
 		if is_instance_valid(tgt):
 			var to: Vector3 = (tgt as Enemy).hit_pos - hp
 			to.y = 0.0
-			var turn := clampf(6.0 + h["t"] * 60.0, 0.0, 40.0)
+			var turn := clampf(2.0 + ta * 45.0, 0.0, 40.0)
 			var want := to.normalized() * spd
 			v = v.lerp(want, clampf(turn * dt, 0.0, 1.0))
 			if v.length() > 0.001:

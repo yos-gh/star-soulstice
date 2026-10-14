@@ -23,8 +23,8 @@ enum State { TITLE, PLAY, CLEAR, GAME_OVER }
 
 const DT := 1.0 / 60.0
 const GROUND_Y := -3.0
-const SCROLL := 4.0
-const BOSS_SCROLL := 2.5
+const SCROLL := 7.0
+const BOSS_SCROLL := 4.5
 const CAM_PITCH := 66.0
 const CAM_DIST := 34.0
 const CAM_FOV := 40.0
@@ -33,7 +33,7 @@ const START_LIVES := 3
 const EXTENDS := [200000, 600000, 1200000]
 ## Time bonus: BONUS_RATE points for every second the stage took under
 ## BONUS_T. Tuned so a quick clear earns about as much as the destruction.
-const BONUS_T := 300.0
+const BONUS_T := 260.0
 const BONUS_RATE := 1300
 
 var state := State.TITLE
@@ -744,6 +744,8 @@ func _spear(dt: float) -> void:
 
 func on_spear(n: int) -> void:
 	spears += 1
+	if log_status:
+		print("SPEAR t=%.1f homing=%d" % [play_t, n])
 	sfx.play("spear")
 	fx.shockwave(player.position + Vector3(0, 0.5, 0), Player.SPEAR_R, Color(0.4, 0.85, 1.0))
 	if n > 0:

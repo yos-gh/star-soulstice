@@ -7,7 +7,7 @@ extends Node3D
 ## cell (i, j) centre in local space: ((i - w/2 + .5) * CELL, 0, (j - h/2 + .5) * CELL).
 
 const CELL := 2.0
-const TILE_HP := [1.0, 2.0, 4.0]
+const TILE_HP := [1.0, 1.0, 2.0]
 const TILE_ENERGY := [2.0, 5.0, 10.0]
 const TILE_SCORE := [50, 150, 400]
 const TILE_TOP := [0.0, 0.125, 0.25]  # above the deck (tiles sit in sockets)
