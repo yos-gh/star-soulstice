@@ -10,7 +10,7 @@ const CELL := 2.0
 const TILE_HP := [1.0, 2.0, 4.0]
 const TILE_ENERGY := [2.0, 5.0, 10.0]
 const TILE_SCORE := [50, 150, 400]
-const TILE_TOP := [0.0, 0.125, 0.375]  # above the deck (tiles sit in sockets)
+const TILE_TOP := [0.0, 0.125, 0.25]  # above the deck (tiles sit in sockets)
 
 var game: Game
 var w := 0
@@ -59,7 +59,7 @@ func setup(g: Game, lay: Dictionary) -> void:
 		var t := types[idx]
 		if t >= 0:
 			var c := cell_center(idx % w, idx / w)
-			mms[t].set_instance_transform(inst[idx], Transform3D(Basis.IDENTITY, c + Vector3(0, -IslandGen.R, 0)))
+			mms[t].set_instance_transform(inst[idx], Transform3D(Basis.IDENTITY, c + Vector3(0, -IslandGen.R * 0.5, 0)))
 			mms[t].set_instance_color(inst[idx], Color(1, 1, 1))
 
 

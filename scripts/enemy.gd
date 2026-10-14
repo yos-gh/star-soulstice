@@ -12,6 +12,7 @@ extends Node3D
 ##   turret     ground gun on an island: aimed shell bursts
 ##   bulwark    mid-size: slow, tough; shell walls + an energy shotgun, with
 ##              quiet gaps so you can close in with the Spear
+##   rock       drifting asteroid chunk (debris belt): soaks shots, rams
 ##   part       a piece of Lazaro / the boss (moved by its controller)
 
 var game: Game
@@ -88,6 +89,15 @@ func setup(g: Game, k: String, params: Dictionary) -> void:
 			ram = false
 			mesh_name = "turret_base"
 			fire_t = 1.0 + randf() * 1.5
+		"rock":
+			var big: bool = p.get("big", false)
+			hp = 14.0 if big else 5.0
+			radius = 1.6 if big else 0.9
+			score = 500 if big else 150
+			energy_drop = 8.0 if big else 3.0
+			blast = 1.8 if big else 1.0
+			counts = false
+			mesh_name = "rock_l" if big else "rock_s"
 		"bulwark":
 			hp = 220.0
 			radius = 2.1
@@ -132,6 +142,13 @@ func tick(dt: float) -> void:
 			model.rotation.x = sin(t * 1.7) * 0.25
 		"turret":
 			_turret(dt)
+		"rock":
+			if t <= dt * 1.5:
+				vel = Vector3(p.get("vx", 0.0), 0, p.get("vz", 3.0))
+				model.rotation = Vector3(randf() * TAU, randf() * TAU, 0)
+			position += vel * dt
+			model.rotation.x += dt * float(p.get("spin", 0.7))
+			model.rotation.y += dt * 0.3
 		"bulwark":
 			_bulwark(dt)
 	hit_pos = game.to_plane(global_position + Vector3(0, 0.45, 0)) if ground else position

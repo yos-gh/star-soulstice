@@ -1,56 +1,42 @@
 class_name Models
 extends RefCounted
-## Every voxel model in the game, built in code. Units are drawn as
-## pixel-art sprites seen from above (Vox.paint / paint_sym) at one common
-## voxel size (PX), then given height and a few 3D details, so the whole
-## cast reads like hi-res pixel art. Model space: x right, y up, -z forward.
-##
-## Palette: the player is polished white/cobalt, enemies gunmetal with
-## crimson armour and red emissive eyes, items glow. Colour alpha is the
-## surface finish (1 matte .. 0 polished metal, see shaders/vox.gdshader).
-
-const PX := 0.11
+## Every voxel model in the game, built in code. Art direction: Star
+## Soldier-style space opera. Model space: x right, y up, -z forward.
+##   player   white hull, red stripes, blue canopy and fins (after Caesar)
+##   enemies  polished gold and bronze armour over gunmetal, red eyes
+##   ground   teal-grey fortress steel (see IslandGen)
+## Ships are built from stacked, bevelled plates so the baked AO and the
+## sun pick out panel edges; glow voxels mark engines, sensors and lights.
 
 # player
-const HULL := Color(0.88, 0.9, 0.94, 0.45)
-const HULL_M := Color(0.66, 0.7, 0.77, 0.5)
-const HULL_D := Color(0.4, 0.43, 0.5, 0.55)
-const COBALT := Color(0.18, 0.38, 0.86, 0.4)
-const COBALT_D := Color(0.1, 0.2, 0.48, 0.55)
-const INK := Color(0.09, 0.1, 0.13, 0.8)
-const CANOPY := Color(0.3, 0.8, 1.0)
-const THRUST := Color(1.0, 0.62, 0.28)
-const RED := Color(0.86, 0.15, 0.13, 0.5)
-const LIGHT := Color(0.45, 0.95, 1.0)
+const WHITE := Color(0.9, 0.91, 0.94)
+const LGREY := Color(0.64, 0.67, 0.72)
+const DGREY := Color(0.27, 0.29, 0.33)
+const RED := Color(0.86, 0.13, 0.12)
+const BLUE := Color(0.14, 0.32, 0.82)
+const NAVY := Color(0.08, 0.12, 0.28)
+const CANOPY := Color(0.3, 0.78, 1.0)
+const THRUST := Color(1.0, 0.6, 0.25)
+const CYAN := Color(0.4, 0.95, 1.0)
 # enemies
-const GUN := Color(0.43, 0.44, 0.49, 0.45)
-const GUN_M := Color(0.33, 0.34, 0.39, 0.45)
-const GUN_D := Color(0.19, 0.19, 0.23, 0.6)
-const CRIM := Color(0.68, 0.1, 0.14, 0.45)
-const CRIM_L := Color(0.86, 0.22, 0.24, 0.45)
-const CRIM_D := Color(0.36, 0.05, 0.09, 0.6)
-const EYE := Color(1.0, 0.16, 0.26)
-const AMBER := Color(1.0, 0.6, 0.16)
-const HAZARD := Color(0.86, 0.68, 0.14, 0.7)
-const VIOLET := Color(0.62, 0.3, 1.0)
-# misc (kept for callers)
-const WHITE := HULL
+const GOLD := Color(0.72, 0.56, 0.27)
+const GOLD_L := Color(0.84, 0.72, 0.46)
+const BRONZE := Color(0.46, 0.33, 0.17)
+const BROWN := Color(0.28, 0.19, 0.11)
+const GUN := Color(0.33, 0.34, 0.38)
+const GUN_D := Color(0.16, 0.16, 0.19)
+const CRIM := Color(0.66, 0.1, 0.1)
+const EYE := Color(1.0, 0.2, 0.14)
+const AMBER := Color(1.0, 0.6, 0.18)
+const MAGENTA := Color(1.0, 0.3, 0.6)
+# kept for callers
 const STEEL := GUN
 const CRIMSON := CRIM
-const PLUM := GUN_M
+const PLUM := BRONZE
 const GREEN := Color(0.35, 1.0, 0.5)
 const YELLOW := Color(1.0, 0.85, 0.3)
 
-const P_PAL := {
-	"W": [HULL, 2], "w": [HULL, 1], "M": [HULL_M, 2], "m": [HULL_M, 1], "D": [HULL_D, 2], "d": [HULL_D, 1],
-	"B": [COBALT, 2], "b": [COBALT_D, 1], "K": [INK, 2], "k": [INK, 1], "R": [RED, 2], "r": [RED, 1],
-	"E": [THRUST, 1, true], "C": [CANOPY, 1, true], "L": [LIGHT, 1, true], "S": [HULL_M, 1], "F": [COBALT, 3],
-}
-const E_PAL := {
-	"G": [GUN, 2], "g": [GUN_M, 1], "H": [GUN_M, 2], "d": [GUN_D, 1], "D": [GUN_D, 2],
-	"C": [CRIM, 2], "c": [CRIM_D, 1], "X": [CRIM_L, 2], "K": [INK, 2], "k": [INK, 1],
-	"E": [EYE, 1, true], "A": [AMBER, 1, true], "Y": [HAZARD, 1], "T": [GUN, 3], "t": [GUN_M, 3],
-}
+const U := 0.09  # voxel size of small units
 
 
 static func build(name: String) -> ArrayMesh:
@@ -87,6 +73,10 @@ static func build(name: String) -> ArrayMesh:
 			return _boss_eye()
 		"boss_shutter":
 			return _boss_shutter()
+		"rock_s":
+			return _rock(5, 0.16, 7)
+		"rock_l":
+			return _rock(9, 0.18, 13)
 		"energy":
 			return _energy()
 		"power":
@@ -99,274 +89,227 @@ static func build(name: String) -> ArrayMesh:
 			return _tile(1)
 		"tile2":
 			return _tile(2)
-		"rock_a":
-			return _rock(11, 1.0)
-		"rock_b":
-			return _rock(23, 1.4)
+		"deep_girder":
+			return _deep_girder()
+		"deep_block":
+			return _deep_block()
 	push_error("unknown model " + name)
 	return ArrayMesh.new()
 
 
 # ------------------------------------------------------------ player
 
-## The three forms (Star Soldier style): Form I a slim delta, Form II adds
-## cannon pods and a tail gun, Form III spreads long wings with wingtip
-## emitters and twin fins.
+## Three forms: I compact delta; II adds wing cannons and a tail gun;
+## III spreads long wings with emitters, canards and bigger fins.
 static func _ship(lvl: int) -> ArrayMesh:
-	var v := Vox.new(30, 6, 26)
-	v.paint_sym([
-		"........W",
-		".......mW",
-		".......WW",
-		"......mWW",
-		"......WWW",
-		"......BWW",
-		".....mBWW",
-		".....mBWW",
-		"....bbBWW",
-		"...bbbBWW",
-		"..bbbbBWW",
-		".bbbbbBWW",
-		"RbbbbbBWW",
-		"RbbbbBBKW",
-		"r..kKKBKW",
-		"....kKDKW",
-		"......E.k",
-	], P_PAL, 0)
-	# canopy and spine
-	v.paint_sym([
-		".........",
-		".........",
-		".........",
-		"........C",
-		".......CC",
-		".......CC",
-		"........C",
-		"........S",
-		"........S",
-		"........S",
-		"........S",
-		"........S",
-		"........S",
-		".......FS",
-		".......F.",
-		".........",
-		".........",
-	], P_PAL, 2)
+	var v := Vox.new(28, 8, 32)
+	# fuselage: a pointed white body, grey belly, red nose band
+	v.fill_sym(0, 1, -15, 0, 2, -13, WHITE)
+	v.fill_sym(0, 1, -12, 1, 3, 10, WHITE)
+	v.fill_sym(1, 1, -12, 1, 2, -11, WHITE)
+	v.fill_sym(0, 0, -11, 1, 0, 9, LGREY)
+	v.fill_sym(0, 3, -12, 0, 3, -11, RED)
+	v.fill_sym(1, 3, -10, 1, 3, -9, RED)
+	# canopy with a dark frame, spine behind it
+	v.fill_sym(0, 4, -8, 0, 4, -4, CANOPY, true)
+	v.fill_sym(1, 4, -8, 1, 4, -4, NAVY)
+	v.fill_sym(0, 4, -3, 0, 4, 7, WHITE)
+	v.fill_sym(0, 5, -1, 0, 5, 4, LGREY)
+	# intakes and side bodies
+	v.fill_sym(2, 1, -6, 3, 2, 9, LGREY)
+	v.fill_sym(2, 1, -7, 3, 1, -7, DGREY)
+	v.fill_sym(2, 3, -3, 2, 3, 8, WHITE)
+	# delta wings: white with a blue trailing band and red tips
+	var span := 9
+	for k in range(4, span + 1):
+		v.fill_sym(k, 1, -3 + (k - 4), k, 1, 8, WHITE)
+	v.fill_sym(4, 1, 7, span, 1, 8, BLUE)
+	v.fill_sym(4, 2, 1, 6, 2, 6, LGREY)
+	v.fill_sym(span, 1, 2, span, 2, 8, RED)
+	# tail fins
+	v.fill_sym(2, 3, 5, 2, 6, 10, BLUE)
+	v.fill_sym(2, 6, 8, 2, 6, 10, RED)
+	# engines
+	v.fill_sym(0, 1, 11, 2, 3, 12, DGREY)
+	v.fill_sym(0, 2, 13, 1, 2, 13, THRUST, true)
+	v.fill_sym(2, 1, 13, 2, 1, 13, THRUST, true)
 	if lvl >= 1:
-		# cannon pods, intakes and a tail gun
-		v.fill_sym(4, 0, -4, 4, 1, 4, HULL_D)
-		v.fill_sym(4, 2, -3, 4, 2, 3, HULL_M)
-		v.fill_sym(4, 1, -5, 4, 1, -5, LIGHT, true)
-		v.fill_sym(5, 0, -1, 5, 1, 3, COBALT)
-		v.fill(0, 0, 8, 0, 1, 9, HULL_D)
-		v.fill(0, 1, 10, 0, 1, 10, LIGHT, true)
+		# wing cannons and a tail gun
+		v.fill_sym(6, 0, -9, 7, 1, 5, LGREY)
+		v.fill_sym(6, 2, -6, 7, 2, 3, WHITE)
+		v.fill_sym(6, 1, -10, 7, 1, -10, CYAN, true)
+		v.fill_sym(6, 2, 4, 7, 2, 5, RED)
+		v.fill_sym(0, 6, 5, 0, 6, 12, DGREY)
+		v.fill_sym(0, 6, 13, 0, 6, 13, CYAN, true)
 	if lvl >= 2:
-		# long swept wings, wingtip emitters, canards, twin fins
-		v.paint_sym([
-			"..............",
-			"..............",
-			"..............",
-			"..............",
-			"..........BB..",
-			"..........bB..",
-			"..............",
-			"..............",
-			"..............",
-			"......bbb.....",
-			".....bbbbb....",
-			"...bbbbbbb....",
-			"..BbbbbbBb....",
-			".LBbbbbBb.....",
-			"DDRRbbb.......",
-			"Dd............",
-			"..............",
-		], P_PAL, 0)
-		v.fill_sym(3, 2, 2, 3, 4, 5, COBALT)
-		v.fill_sym(3, 4, 5, 3, 4, 5, RED)
-	return v.mesh(PX, Vector3(0.5, 1.5, 0.5))
+		# long wings with emitters, canards, bigger fins
+		for k in range(span + 1, 14):
+			v.fill_sym(k, 1, -1 + (k - span) * 2, k, 1, 8, WHITE if k < 13 else RED)
+		v.fill_sym(span + 1, 1, 7, 13, 1, 8, BLUE)
+		v.fill_sym(13, 1, 0, 13, 2, 2, CYAN, true)
+		v.fill_sym(3, 2, -13, 5, 2, -11, WHITE)
+		v.fill_sym(5, 2, -13, 5, 2, -13, RED)
+		v.fill_sym(3, 3, 3, 3, 7, 10, BLUE)
+		v.fill_sym(3, 7, 7, 3, 7, 10, RED)
+	return v.mesh(U, Vector3(0, 2.0, 0))
 
 
 # ------------------------------------------------------------ enemies
 
+## Fighter: forward-swept gold wings, red sensor eye.
 static func _dart() -> ArrayMesh:
-	var v := Vox.new(16, 5, 16)
-	v.paint_sym([
-		"......X",
-		"......C",
-		".....cC",
-		".....gC",
-		"....gGE",
-		"...dgGE",
-		"..ddgGG",
-		".dcdgGG",
-		"dCcdgGG",
-		"dcd.gHG",
-		"dd...KG",
-		".....kA",
-	], E_PAL, 0)
-	v.fill(0, 2, -1, 0, 2, 2, GUN_M)
-	return v.mesh(PX, Vector3(0.5, 1.0, 0.5))
+	var v := Vox.new(18, 6, 20)
+	v.fill_sym(0, 1, -9, 0, 3, 6, GOLD)
+	v.fill_sym(1, 1, -6, 1, 2, 6, BRONZE)
+	v.fill_sym(0, 0, -7, 1, 0, 5, GUN_D)
+	v.fill_sym(0, 4, -5, 0, 4, -2, EYE, true)
+	v.fill_sym(0, 4, -1, 0, 4, 4, GOLD_L)
+	for k in range(2, 8):
+		var c := GOLD if k < 6 else BRONZE
+		v.fill_sym(k, 1, -k + 1, k, 1, -k + 5, c)
+	v.fill_sym(2, 2, -1, 4, 2, 2, BRONZE)
+	v.fill_sym(7, 1, -7, 7, 2, -6, CRIM)
+	v.fill_sym(0, 1, 7, 1, 2, 7, GUN)
+	v.fill_sym(0, 2, 8, 0, 2, 8, AMBER, true)
+	return v.mesh(U, Vector3(0, 2.0, 0))
 
 
-## Saucer drone: armoured rim, a ring of red lights, crimson dome and eye.
+## Ring drone: a spinning gold-and-bronze wheel with a red core.
 static func _swirl() -> ArrayMesh:
-	var v := Vox.new(18, 6, 18)
-	for z in range(-8, 9):
-		for x in range(-8, 9):
-			var r := Vector2(x, z).length()
-			if r > 8.3:
+	var v := Vox.new(22, 6, 22)
+	for z in range(-11, 11):
+		for x in range(-11, 11):
+			var p := Vector2(x + 0.5, z + 0.5)
+			var r := p.length()
+			if r > 10.5:
 				continue
-			var a := atan2(z, x)
-			if r > 7.2:
-				v.fill(x, 0, z, x, 0, z, GUN_D)
-			elif r > 5.6:
-				var lamp := absf(wrapf(a * 8.0 / TAU, -0.5, 0.5)) < 0.2 and r > 6.3 and r < 7.0
-				v.fill(x, 0, z, x, 1, z, GUN if not lamp else EYE, lamp)
-			elif r > 4.6:
-				v.fill(x, 0, z, x, 1, z, GUN_D)
-			elif r > 2.2:
-				v.fill(x, 0, z, x, 2, z, CRIM if int(round(a * 6.0 / TAU)) % 2 == 0 else CRIM_D)
+			var a := atan2(p.y, p.x)
+			var seg := int(floor((a + PI) / TAU * 8.0)) % 2 == 0
+			if r > 7.5:
+				v.fill(x, 1, z, x, 2, z, GOLD if seg else BRONZE)
+				if r > 9.5:
+					v.put(x, 1, z, GUN_D)
+			elif r > 5.0:
+				v.put(x, 1, z, GUN)
+				if absf(wrapf(a * 4.0 / TAU, -0.5, 0.5)) < 0.12:
+					v.fill(x, 1, z, x, 2, z, GOLD_L)
+			elif r > 3.0:
+				v.fill(x, 0, z, x, 3, z, GUN_D)
 			else:
-				v.fill(x, 0, z, x, 3, z, CRIM_L)
-	v.fill(-1, 4, -1, 1, 4, 1, EYE, true)
-	return v.mesh(PX, Vector3(0.5, 2.0, 0.5))
+				v.fill(x, 0, z, x, 3, z, BRONZE)
+				v.put(x, 4, z, EYE if r < 2.0 else CRIM, r < 2.0)
+	return v.mesh(U, Vector3(0, 2.0, 0))
 
 
-## Ram pod: a drill-nosed armoured wedge.
+## Star mine: four long spikes and four short ones around a red core.
 static func _rammer() -> ArrayMesh:
-	var v := Vox.new(16, 6, 18)
-	v.paint_sym([
-		"......d",
-		"......D",
-		".....dG",
-		".....GG",
-		"....HGG",
-		"...CCGE",
-		"..CXCGE",
-		".CXccGG",
-		"CXcc.GG",
-		"Ccc..GG",
-		"dc...HG",
-		"d...kKK",
-		".....AK",
-	], E_PAL, 0)
-	v.paint_sym([
-		".......",
-		".......",
-		".......",
-		".......",
-		"......G",
-		"......k",
-		"......k",
-		"......G",
-		"......G",
-		"......g",
-		".......",
-		".......",
-		".......",
-	], E_PAL, 2)
-	return v.mesh(PX, Vector3(0.5, 1.5, 0.5))
+	var v := Vox.new(22, 6, 22)
+	for k in 4:
+		var d := Vector2i(1, 0) if k == 0 else (Vector2i(-1, 0) if k == 1 else (Vector2i(0, 1) if k == 2 else Vector2i(0, -1)))
+		for s in range(3, 11):
+			var w := 1 if s > 7 else 2
+			for t in range(-w + 1, w):
+				var x := d.x * s + d.y * t
+				var z := d.y * s + d.x * t
+				v.fill(x, 2, z, x, 3 if s < 9 else 2, z, GOLD if s < 9 else GOLD_L)
+	for k in 4:
+		var dx := 1 if k % 2 == 0 else -1
+		var dz := 1 if k < 2 else -1
+		for s in range(2, 6):
+			v.fill(dx * s, 2, dz * s, dx * s, 2, dz * s, BRONZE)
+	v.blob(0, 3, 0, 3.2, 2.6, 3.2, GUN)
+	v.blob(0, 4, 0, 1.8, 1.4, 1.8, EYE, true)
+	return v.mesh(U, Vector3(0, 3.0, 0))
 
 
-## Cargo pod: chamfered armour box with hazard bands and amber beacons.
+## Cargo capsule: armoured gunmetal pod with gold bands and beacons.
 static func _container() -> ArrayMesh:
-	var v := Vox.new(16, 10, 16)
-	for z in range(-7, 7):
-		for x in range(-7, 7):
+	var v := Vox.new(20, 10, 14)
+	for z in range(-6, 6):
+		for x in range(-9, 9):
 			var ax := absf(x + 0.5)
 			var az := absf(z + 0.5)
-			if ax + az > 11.0:
+			if ax / 9.0 + az / 6.0 > 1.25 or az > 5.5:
 				continue
-			var edge := ax > 5.5 or az > 5.5 or ax + az > 9.5
-			var top := 7 if not edge else 6
+			var top := 6 if az < 3.5 else 5
+			if ax > 7.5:
+				top -= 1
 			for y in range(0, top + 1):
-				var c := GUN_M
-				if edge and (y == 2 or y == 4):
-					c = HAZARD if int(ax + az) % 2 == 0 else INK
-				elif not edge and y == top:
-					c = GUN if (int(ax) + int(az)) % 4 != 0 else GUN_D
-				elif edge and y == top:
+				var c := GUN
+				if int(ax) == 3 or int(ax) == 6:
+					c = GOLD
+				if y == top and c == GUN:
+					c = GUN.lightened(0.12)
+				if y == 0:
 					c = GUN_D
 				v.put(x, y, z, c)
-	for s: Vector2i in [Vector2i(-4, -4), Vector2i(3, -4), Vector2i(-4, 3), Vector2i(3, 3)]:
-		v.put(s.x, 8, s.y, AMBER, true)
-	v.fill(-1, 8, -1, 0, 8, 0, HAZARD)
-	return v.mesh(PX * 1.2, Vector3(0, 4.0, 0))
+	for s: Vector2i in [Vector2i(-8, 0), Vector2i(7, 0), Vector2i(-1, -5), Vector2i(0, 4)]:
+		v.put(s.x, 5, s.y, AMBER, true)
+	v.fill(-1, 7, -2, 0, 7, 1, AMBER, true)
+	return v.mesh(U * 1.3, Vector3(0, 3.5, 0))
 
 
 static func _turret_base() -> ArrayMesh:
-	var v := Vox.new(16, 3, 16)
-	for z in range(-8, 8):
-		for x in range(-8, 8):
-			var r := Vector2(x + 0.5, z + 0.5).length()
-			if r < 7.6:
+	var v := Vox.new(18, 3, 18)
+	for z in range(-9, 9):
+		for x in range(-9, 9):
+			var p := Vector2(x + 0.5, z + 0.5)
+			var hexd := maxf(absf(p.x) * 0.866 + absf(p.y) * 0.5, absf(p.y))
+			if hexd < 8.4:
 				v.put(x, 0, z, GUN_D)
-			if r < 6.4:
-				v.put(x, 1, z, GUN_M if r > 5.2 else (GUN_D if absf(r - 3.6) < 0.6 else GUN_M.lightened(0.05)))
-			if r > 6.5 and r < 7.6 and (x + z) % 3 == 0:
-				v.put(x, 1, z, HAZARD)
-	return v.mesh(PX)
+			if hexd < 7.0:
+				v.put(x, 1, z, GUN if hexd > 5.5 else BRONZE)
+			if hexd > 7.0 and hexd < 8.4 and (x + z) % 4 == 0:
+				v.put(x, 1, z, AMBER, true)
+	return v.mesh(U)
 
 
-## Twin-barrelled gun head (turns as a separate mesh).
+## Domed gun head with twin barrels (turns as a separate mesh).
 static func _turret_head() -> ArrayMesh:
-	var v := Vox.new(12, 5, 18)
-	v.paint_sym([
-		".....",
-		".....",
-		".....",
-		".....",
-		"...dG",
-		"..CXC",
-		".CCXE",
-		".CCCC",
-		".cCCC",
-		"..ccc",
-	], E_PAL, 0, 2)
-	v.fill_sym(1, 1, -7, 1, 1, -1, GUN)
-	v.fill_sym(1, 1, -8, 1, 1, -8, AMBER, true)
-	return v.mesh(PX, Vector3(0.5, 0, 0.5))
+	var v := Vox.new(14, 6, 22)
+	v.blob(0, 1, 2, 4.4, 2.6, 4.4, GOLD)
+	v.blob(0, 2, 2, 3.0, 2.4, 3.0, BRONZE)
+	v.fill_sym(1, 2, -9, 1, 2, -1, GUN)
+	v.fill_sym(1, 2, -10, 1, 2, -10, AMBER, true)
+	v.fill_sym(1, 1, -4, 2, 3, -2, GUN_D)
+	v.fill(-1, 4, 0, 0, 4, 1, EYE, true)
+	return v.mesh(U, Vector3(0, 0, 0))
 
 
-## Mid-size gunship (faces down-screen): armoured hull, wing gun decks,
-## a glowing reactor slot and gun rows along the front.
+## Heavy cruiser (faces down-screen, +z): a hammerhead with gun ports,
+## gold armour, a red reactor slit and engine nacelles at the back.
 static func _bulwark() -> ArrayMesh:
-	var v := Vox.new(48, 8, 32)
-	# central hull: tall armour with a reactor slot
-	v.fill_sym(0, 0, -12, 4, 4, 11, GUN_M)
-	v.fill_sym(0, 5, -9, 3, 5, 8, GUN)
-	v.fill_sym(0, 5, -6, 0, 5, 5, EYE, true)
-	v.fill_sym(1, 5, -6, 1, 5, 5, INK)
-	v.fill_sym(2, 6, -7, 3, 6, -2, CRIM)
-	v.fill_sym(2, 6, 1, 3, 6, 6, CRIM)
-	v.fill_sym(0, 0, 12, 2, 3, 13, GUN_D)
-	v.fill_sym(0, 2, 14, 1, 2, 14, EYE, true)
-	# inner wings with armour plates
-	for k in range(5, 13):
-		v.fill_sym(k, 0, -9 + (k - 5), k, 2, 9, GUN_M)
-	v.fill_sym(5, 3, -4, 11, 3, 7, CRIM)
-	v.fill_sym(6, 3, -2, 10, 3, 5, CRIM_D)
-	v.fill_sym(5, 3, 8, 11, 3, 8, INK)
-	# outer gun decks
-	v.fill_sym(13, 0, -2, 20, 2, 10, GUN)
-	v.fill_sym(14, 3, 0, 19, 3, 8, GUN_M)
-	v.fill_sym(21, 0, 1, 22, 1, 9, GUN_D)
-	v.fill_sym(22, 2, 2, 22, 2, 2, AMBER, true)
-	# gun rows along the front edge
-	for x in [6, 9, 12, 15, 18]:
-		v.fill_sym(x, 1, 10, x, 1, 13, GUN_D)
-		v.fill_sym(x, 1, 14, x, 1, 14, EYE, true)
-	# engine bank at the back
-	v.fill_sym(1, 1, -13, 3, 2, -13, AMBER, true)
-	v.fill_sym(7, 1, -8, 8, 1, -8, AMBER, true)
-	v.fill_sym(15, 1, -3, 18, 1, -3, AMBER, true)
-	return v.mesh(PX * 1.15, Vector3(0.5, 3.0, 0.5))
+	var v := Vox.new(50, 9, 34)
+	# spine hull
+	v.fill_sym(0, 1, -15, 3, 4, 9, GUN)
+	v.fill_sym(0, 5, -12, 2, 5, 6, GOLD)
+	v.fill_sym(0, 6, -9, 1, 6, 3, GOLD_L)
+	v.fill_sym(0, 5, -4, 0, 6, 1, EYE, true)
+	v.fill_sym(0, 0, -13, 3, 0, 8, GUN_D)
+	# hammer head
+	v.fill_sym(0, 1, 9, 14, 4, 14, GUN)
+	v.fill_sym(0, 5, 10, 12, 5, 13, GOLD)
+	v.fill_sym(13, 5, 10, 14, 5, 13, BRONZE)
+	for x in [2, 5, 8, 11, 14]:
+		v.fill_sym(x, 2, 15, x, 3, 16, GUN_D)
+		v.fill_sym(x, 2, 16, x, 2, 16, EYE, true)
+	v.fill_sym(0, 0, 10, 13, 0, 14, GUN_D)
+	# swept wings and nacelles
+	for k in range(4, 18):
+		v.fill_sym(k, 1, -6 + (k - 4) / 2, k, 2, 6 - (k - 4) / 3, GUN if k % 4 != 0 else GUN_D)
+	v.fill_sym(5, 3, -3, 14, 3, 3, BRONZE)
+	v.fill_sym(6, 4, -1, 12, 4, 2, GOLD)
+	v.fill_sym(18, 1, -10, 21, 4, 4, GUN)
+	v.fill_sym(18, 5, -8, 21, 5, 2, GOLD)
+	v.fill_sym(19, 2, 5, 20, 3, 5, EYE, true)
+	v.fill_sym(18, 2, -11, 21, 3, -11, AMBER, true)
+	v.fill_sym(1, 2, -16, 3, 3, -16, AMBER, true)
+	return v.mesh(U * 1.2, Vector3(0, 3.0, 0))
 
 
-## One quarter of Lazaro's shell: the +x/+z quadrant of a hollow sphere
-## in armour plates with glowing seams, re-centred on its own centroid so
-## the pieces can fly apart.
+## One quarter of Lazaro's shell: the +x/+z quadrant of a hollow sphere of
+## gold armour plates with dark seams and a red equator, re-centred on its
+## own centroid so the pieces can fly apart.
 static func _lazaro_piece() -> ArrayMesh:
 	var v := Vox.new(26, 16, 26)
 	var r := 10.5
@@ -375,15 +318,15 @@ static func _lazaro_piece() -> ArrayMesh:
 			for x in range(0, 12):
 				var p := Vector3(x + 0.5, y + 0.5, z + 0.5)
 				var d := p.length()
-				if d > r or d < r - 3.2:
+				if d > r or d < r - 3.0:
 					continue
+				var lat := asin(clampf(p.y / d, -1.0, 1.0)) / 0.55
+				var lon := atan2(p.z, p.x) / 0.5
+				var seam := absf(lat - round(lat)) < 0.1 or absf(lon - round(lon)) < 0.1
 				var c := GUN_D
 				var glow := false
-				var lat := asin(clampf(p.y / d, -1.0, 1.0)) / 0.62
-				var lon := atan2(p.z, p.x) / 0.52
-				var seam := absf(lat - round(lat)) < 0.09 or absf(lon - round(lon)) < 0.1
-				if d > r - 1.3:
-					c = INK if seam else (CRIM if int(floor(lat) + floor(lon)) % 3 != 0 else CRIM_L)
+				if d > r - 1.2:
+					c = BROWN if seam else (GOLD if int(floor(lat) + floor(lon)) % 2 == 0 else BRONZE)
 				if y == -1 or y == 0:
 					c = EYE
 					glow = true
@@ -407,11 +350,11 @@ static func _lazaro_core() -> ArrayMesh:
 
 # ------------------------------------------------------------ boss
 
-## STAR CORTEX hull: an octagonal fortress (faces down-screen) with plated
-## armour, gun decks on the flanks and a channel in front of the eye, so
-## shots fired from below can reach it.
+## STAR CORTEX hull (Star Brain homage): an octagonal gold-and-gunmetal
+## fortress (faces down-screen) with stepped armour rings, flank gun decks
+## and a channel in front of the brain, so shots from below reach it.
 static func _boss_hull() -> ArrayMesh:
-	var v := Vox.new(120, 11, 88)
+	var v := Vox.new(120, 12, 88)
 	for z in range(-44, 44):
 		for x in range(-60, 60):
 			var ax := absf(x + 0.5)
@@ -419,78 +362,75 @@ static func _boss_hull() -> ArrayMesh:
 			var oct := maxf(maxf(ax / 57.0, az / 42.0), (ax + az) / 76.0)
 			if oct > 1.0 or oct < 0.36:
 				continue
-			# front channel to the eye
 			if ax < 11.0 and z > 0:
 				continue
 			var h := 4
+			var top := GUN
 			if oct < 0.5:
-				h = 8
+				h = 9
+				top = GOLD
 			elif oct < 0.66:
 				h = 7
+				top = GUN.lightened(0.1)
 			elif oct < 0.84:
 				h = 6
+				top = BRONZE
 			if oct > 0.94:
 				h = 3
-			var top := GUN_M
-			var plate := (int(ax) / 9 + int(az) / 7) % 2 == 0
-			if not plate:
-				top = GUN_M.lightened(0.07)
-			if int(ax) % 9 == 0 or int(az) % 7 == 0:
 				top = GUN_D
-			if oct < 0.42:
-				top = CRIM_D
-			elif oct > 0.94:
-				top = GUN_D
-			elif absf(oct - 0.66) < 0.012 or absf(oct - 0.84) < 0.012:
-				top = INK
+			if absf(oct - 0.5) < 0.012 or absf(oct - 0.66) < 0.012 or absf(oct - 0.84) < 0.012:
+				top = BROWN
+			if (int(ax) % 10 == 0 or int(az) % 8 == 0) and oct >= 0.5 and oct < 0.94:
+				top = top.darkened(0.25)
 			for y in h:
-				v.put(x, y, z, top if y == h - 1 else (GUN_M if y > 1 else GUN_D))
-	# channel edges, gun decks, rim lights, spine
+				v.put(x, y, z, top if y == h - 1 else (GUN if y > 1 else GUN_D))
 	for z in range(1, 34):
 		if z % 4 == 0:
 			v.put(-12, 5, z, EYE, true)
 			v.put(11, 5, z, EYE, true)
 	for s in [-1, 1]:
 		v.fill(s * 30, 7, -10, s * 44, 8, 8, GUN)
-		v.fill(s * 31, 9, -8, s * 43, 9, 6, CRIM)
+		v.fill(s * 31, 9, -8, s * 43, 9, 6, GOLD)
 		for z in [-6, -1, 4]:
-			v.fill(s * 34, 9, z, s * 40, 9, z, INK)
-		v.fill(s * 45, 6, -3, s * 50, 6, 2, GUN_D)
-		v.fill(s * 50, 6, -3, s * 50, 6, 2, AMBER, true)
+			v.fill(s * 34, 9, z, s * 40, 9, z, BROWN)
+		v.fill(s * 45, 6, -3, s * 52, 6, 2, GUN_D)
+		v.fill(s * 52, 6, -3, s * 52, 6, 2, AMBER, true)
 	for a in 24:
 		var ang := a * TAU / 24.0
 		var x := int(round(cos(ang) * 23.0))
 		var z := int(round(sin(ang) * 17.0))
 		if absf(x) < 12 and z > 0:
 			continue
-		v.put(x, 8, z, EYE, true)
-	v.fill(-3, 7, -43, 2, 9, -30, GUN)
-	v.fill(-1, 9, -43, 0, 9, -36, AMBER, true)
-	return v.mesh(PX, Vector3(0.5, 6.0, 0.5))
+		v.put(x, 9, z, EYE, true)
+	v.fill(-3, 9, -43, 2, 10, -30, GUN)
+	v.fill(-1, 11, -43, 0, 11, -36, AMBER, true)
+	return v.mesh(U * 1.2, Vector3(0.5, 6.0, 0.5))
 
 
 static func _boss_pod() -> ArrayMesh:
-	var v := Vox.new(26, 8, 30)
-	for z in range(-12, 13):
-		for x in range(-12, 13):
+	var v := Vox.new(28, 9, 32)
+	for z in range(-13, 14):
+		for x in range(-13, 14):
 			var r := Vector2(x, z).length()
-			if r > 12.4:
+			if r > 13.4:
 				continue
-			var h := 2 if r > 10.5 else (4 if r > 7.0 else 5)
+			var h := 2 if r > 11.5 else (5 if r > 7.0 else 6)
 			for y in h:
-				var c := GUN_M
+				var c := GUN
 				if y == h - 1:
-					c = GUN if r > 10.5 else (CRIM if r > 7.0 else GUN)
-					if absf(r - 8.8) < 0.6:
-						c = INK
+					c = GUN_D if r > 11.5 else (GOLD if r > 7.0 else BRONZE)
+					if absf(r - 9.2) < 0.6:
+						c = BROWN
 				v.put(x, y, z, c)
-	v.fill_sym(1, 3, 6, 2, 4, 13, GUN_D)
-	v.fill_sym(1, 4, 14, 2, 4, 14, EYE, true)
-	v.fill(-2, 5, -2, 2, 6, 2, GUN_D)
-	v.fill(-1, 7, -1, 1, 7, 1, EYE, true)
-	return v.mesh(PX, Vector3(0.5, 3.0, 0.5))
+	v.fill_sym(1, 3, 6, 2, 4, 15, GUN_D)
+	v.fill_sym(1, 4, 15, 2, 4, 15, EYE, true)
+	v.fill(-2, 6, -2, 2, 7, 2, GUN_D)
+	v.fill(-1, 8, -1, 1, 8, 1, EYE, true)
+	return v.mesh(U * 1.2, Vector3(0.5, 3.0, 0.5))
 
 
+## The brain: a ridged pink dome (grooves from a noise field) around a red
+## iris.
 static func _boss_eye() -> ArrayMesh:
 	var v := Vox.new(36, 14, 36)
 	for z in range(-17, 18):
@@ -499,22 +439,25 @@ static func _boss_eye() -> ArrayMesh:
 			if r > 17.0:
 				continue
 			var h := int(round(sqrt(maxf(0.0, 17.5 * 17.5 - r * r)) * 0.55))
+			var groove := absf(sin(x * 0.55 + sin(z * 0.4) * 1.8)) < 0.22 and r > 8.0
 			for y in h:
-				var c := Color(0.82, 0.8, 0.78, 0.4)
+				var c := Color(0.86, 0.6, 0.66)
 				var glow := false
 				if y == h - 1:
-					if r < 4.0:
-						c = Color(0.05, 0.0, 0.03)
-					elif r < 9.0:
-						c = Color(1.0, 0.22, 0.5) if int(r * 1.5) % 2 == 0 else Color(0.85, 0.1, 0.35)
+					if r < 3.5:
+						c = Color(0.06, 0.0, 0.02)
+					elif r < 7.0:
+						c = EYE if int(r * 1.5) % 2 == 0 else MAGENTA
 						glow = true
-					elif r < 10.5:
-						c = INK
+					elif r < 8.0:
+						c = Color(0.25, 0.05, 0.08)
+					elif groove:
+						c = Color(0.5, 0.22, 0.3)
 				v.put(x, y, z, c, glow)
-	return v.mesh(PX, Vector3(0.5, 5.0, 0.5))
+	return v.mesh(U * 1.2, Vector3(0.5, 5.0, 0.5))
 
 
-## One half of the eye's armoured shutter (the left half; mirrored by scale).
+## One half of the brain's armoured shutter (the left half; mirrored).
 static func _boss_shutter() -> ArrayMesh:
 	var v := Vox.new(40, 4, 40)
 	for z in range(-19, 20):
@@ -522,7 +465,7 @@ static func _boss_shutter() -> ArrayMesh:
 			var d := Vector2(x + 0.5, z).length()
 			if d >= 19.5:
 				continue
-			var c := GUN if (z + 20) % 6 > 1 else GUN_M
+			var c := GOLD if (z + 20) % 6 > 1 else BRONZE
 			var glow := false
 			if x == -1:
 				c = AMBER
@@ -531,8 +474,21 @@ static func _boss_shutter() -> ArrayMesh:
 				c = GUN_D
 			v.put(x, 0, z, c, glow)
 			if d < 15.0 and x < -2:
-				v.put(x, 1, z, CRIM_D if (z + 20) % 6 > 1 else INK)
-	return v.mesh(PX, Vector3(0, 0, 0.5))
+				v.put(x, 1, z, GUN if (z + 20) % 6 > 1 else BROWN)
+	return v.mesh(U * 1.2, Vector3(0, 0, 0.5))
+
+
+## Drifting asteroid chunk (debris belt), lumpy and dark.
+static func _rock(seed: int, unit: float, size: int) -> ArrayMesh:
+	var v := Vox.new(size * 2 + 2, size * 2, size * 2 + 2)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	v.blob(0, size, 0, size * 0.8, size * 0.6, size * 0.75, Color(0.33, 0.3, 0.27))
+	for i in 6:
+		v.blob(rng.randi_range(-size / 2, size / 2), size + rng.randi_range(-size / 3, size / 3), rng.randi_range(-size / 2, size / 2), size * rng.randf_range(0.3, 0.5), size * rng.randf_range(0.3, 0.45), size * rng.randf_range(0.3, 0.5), Color(0.4, 0.36, 0.31) if i % 2 == 0 else Color(0.26, 0.24, 0.22))
+	for i in 4:
+		v.put(rng.randi_range(-size / 2, size / 2), size + size / 2, rng.randi_range(-size / 2, size / 2), Color(0.5, 0.35, 0.95), true)
+	return v.mesh(unit, Vector3(0, size, 0))
 
 
 # ------------------------------------------------------------ items
@@ -541,7 +497,7 @@ static func _energy() -> ArrayMesh:
 	var v := Vox.new(4, 6, 4)
 	v.jitter = 0.0
 	# a lit crystal with a dim self-lit band: readable, but no bloom
-	var body := Color(0.34, 0.66, 0.5, 0.3)
+	var body := Color(0.34, 0.66, 0.5)
 	var band := Color(0.3, 0.72, 0.46)
 	v.fill(-1, 1, -1, 0, 4, 0, body)
 	v.fill(-2, 2, -1, 1, 3, 0, band, true)
@@ -551,30 +507,18 @@ static func _energy() -> ArrayMesh:
 	return v.mesh(0.09, Vector3(0, 3.0, 0), true)
 
 
-## Power capsule: cobalt shell, glowing core band and a "P" on top.
+## Power capsule: blue shell with white caps, a glowing band and a "P".
 static func _power() -> ArrayMesh:
-	var v := Vox.new(16, 6, 10)
-	v.paint([
-		"...DDDDDDDD...",
-		"..DBBBBBBBBD..",
-		".DBBBBBBBBBBD.",
-		"DLLLLLLLLLLLLD",
-		"DLLLLLLLLLLLLD",
-		".DBBBBBBBBBBD.",
-		"..DBBBBBBBBD..",
-		"...DDDDDDDD...",
-	], {"D": [HULL_D, 2], "B": [COBALT, 3], "L": [LIGHT, 2, true]}, 0)
-	v.paint([
-		"..............",
-		".....WWW......",
-		".....W..W.....",
-		".....WWW......",
-		".....W........",
-		".....W........",
-		"..............",
-		"..............",
-	], {"W": [HULL, 1]}, 3)
-	return v.mesh(0.13, Vector3(0, 2.0, 0.5))
+	var v := Vox.new(16, 7, 10)
+	v.blob(0, 3, 0, 6.5, 2.6, 3.2, BLUE)
+	v.fill(-7, 2, -1, -6, 4, 0, WHITE)
+	v.fill(5, 2, -1, 6, 4, 0, WHITE)
+	v.fill(-5, 3, -3, 4, 3, 2, CYAN, true)
+	v.fill(-1, 5, -2, -1, 6, 2, WHITE)
+	v.fill(0, 6, -2, 1, 6, -2, WHITE)
+	v.fill(0, 6, 0, 1, 6, 0, WHITE)
+	v.put(1, 6, -1, WHITE)
+	return v.mesh(0.12, Vector3(0, 3.0, 0))
 
 
 static func _star() -> ArrayMesh:
@@ -593,15 +537,14 @@ static func _star() -> ArrayMesh:
 
 # ------------------------------------------------------------ ground
 
-## Destructible armour tile (one Island cell, 16 x 16 voxels) seated in a
-## deck socket. Shaded like pixel art: light top-left bevel, dark
-## bottom-right bevel. 0 thin hatch (green LED), 1 plated hatch (amber),
-## 2 heavy armour (red LED).
+## Destructible armour hatch (one Island cell, 16 x 16 voxels).
+## 0 teal service hatch (green LED), 1 steel-blue cross hatch (amber LED),
+## 2 heavy blast door (red LED).
 static func _tile(kind: int) -> ArrayMesh:
 	var v := Vox.new(16, 5, 16)
-	var base: Color = [Color(0.25, 0.3, 0.33, 0.8), Color(0.33, 0.28, 0.21, 0.75), Color(0.2, 0.2, 0.23, 0.6)][kind]
-	var hi := base.lightened(0.2)
-	var lo := base.darkened(0.42)
+	var base: Color = [Color(0.3, 0.46, 0.48), Color(0.34, 0.38, 0.5), Color(0.3, 0.31, 0.35)][kind]
+	var hi := base.lightened(0.22)
+	var lo := base.darkened(0.45)
 	var led: Color = [Color(0.3, 1.0, 0.5), AMBER, EYE][kind]
 	var h := 2 + kind
 	v.fill(-8, 0, -8, 7, h - 2, 7, lo)
@@ -631,12 +574,37 @@ static func _tile(kind: int) -> ArrayMesh:
 	return v.mesh(0.125)
 
 
-## Background asteroid chunk (drawn far below, blurred).
-static func _rock(seed: int, s: float) -> ArrayMesh:
-	var v := Vox.new(16, 12, 16)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
-	v.blob(0, 6, 0, 6.5 * s / 1.4, 5.0, 6.0, Color(0.17, 0.16, 0.18))
-	for i in 7:
-		v.blob(rng.randi_range(-5, 5), rng.randi_range(3, 9), rng.randi_range(-5, 5), rng.randf_range(1.5, 3.0), rng.randf_range(1.5, 2.5), rng.randf_range(1.5, 3.0), Color(0.21, 0.2, 0.22))
-	return v.mesh(0.8, Vector3(0, 6, 0))
+## Far-below truss girder: two chords with diagonal braces (unit 1.0).
+static func _deep_girder() -> ArrayMesh:
+	var v := Vox.new(90, 6, 8)
+	var c := Color(0.1, 0.12, 0.14)
+	for x in range(-45, 45):
+		v.fill(x, 0, -3, x, 1, -3, c)
+		v.fill(x, 0, 3, x, 1, 3, c)
+		v.put(x, 4, 0, c)
+		var t := posmod(x, 8)
+		var zz := -3 + int(t * 6 / 8)
+		v.put(x, 1 + t / 3, zz, c.darkened(0.2))
+		if t == 0:
+			v.fill(x, 0, -3, x, 4, 3, c.darkened(0.1))
+			v.put(x, 5, 0, Color(0.3, 0.08, 0.07))
+	return v.mesh(1.0, Vector3(0, 3, 0))
+
+
+## Far-below hull block with window lights (unit 1.0).
+static func _deep_block() -> ArrayMesh:
+	var v := Vox.new(40, 8, 24)
+	var c := Color(0.1, 0.12, 0.14)
+	for z in range(-12, 12):
+		for x in range(-20, 20):
+			var ax := absf(x + 0.5)
+			var az := absf(z + 0.5)
+			if ax + az > 26.0:
+				continue
+			var h := 4 if ax > 14 or az > 8 else 6
+			for y in h:
+				var col := c if y == h - 1 else c.darkened(0.3)
+				if y == h - 2 and (ax > 13.5 and ax < 14.5 or az > 7.5 and az < 8.5) and (x + z) % 3 == 0:
+					v.put(x, y + 1, z, Color(0.3, 0.25, 0.16))
+				v.put(x, y, z, col)
+	return v.mesh(1.0, Vector3(0, 4, 0))

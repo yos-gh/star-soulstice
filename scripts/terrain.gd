@@ -1,44 +1,52 @@
 class_name Terrain
 extends Node3D
-## Everything below the play plane: floating islands with tiles and turrets
-## (built from a fixed set of layouts made at start-up), plus the deep-space
-## backdrop: a dim nebula, a distant gas giant and three star layers.
-## Perspective gives the parallax for free.
+## Everything below the play plane: the sections of the orbital fortress
+## the stage flies over (built from a fixed set of layouts at start-up, one
+## list per area of the stage), a deep layer of colossal girders and hull
+## blocks far below (blurred by depth of field), and the space backdrop:
+## nebula, a ringed planet and three star layers. Perspective gives the
+## parallax for free.
 
-const LAYOUTS := [
-	# w, h (cells of Island.CELL), style (0 rock, 1 station), pattern, turrets
-	[8, 5, 0, 0, 1],
-	[11, 6, 0, 1, 2],
-	[9, 5, 1, 2, 2],
-	[6, 4, 0, 0, 0],
-	[13, 7, 1, 0, 3],
-	[10, 8, 0, 3, 2],
-	[7, 4, 1, 1, 1],
-	[12, 5, 0, 2, 2],
-	[5, 5, 0, 0, 1],
-	[10, 6, 1, 3, 2],
-]
+## kind, w, h (cells of Island.CELL), turrets
+const AREAS := {
+	"debris": [["fragment", 6, 4, 0], ["asteroid", 6, 5, 1], ["fragment", 8, 5, 1], ["asteroid", 9, 6, 1], ["fragment", 4, 4, 0]],
+	"hull": [["hull", 15, 6, 2], ["trench", 16, 7, 2], ["hull", 13, 8, 3], ["solar", 14, 5, 0], ["trench", 14, 9, 3]],
+	"open": [["solar", 12, 5, 0], ["fragment", 6, 4, 0], ["solar", 16, 4, 0]],
+	"core": [["hull", 16, 7, 3], ["reactor", 10, 10, 3], ["trench", 17, 8, 3], ["hull", 14, 9, 3], ["reactor", 8, 8, 2]],
+	"boss": [["solar", 15, 5, 0], ["fragment", 7, 5, 0], ["solar", 12, 4, 0]],
+}
+## distance (units) between sections per area: [min, max]
+const GAPS := {"debris": [3.0, 10.0], "hull": [0.5, 3.0], "open": [8.0, 16.0], "core": [0.0, 2.0], "boss": [10.0, 18.0]}
 
 var game: Game
-var layouts: Array[Dictionary] = []
+var layouts := {}  # area -> Array[Dictionary]
 var islands: Array[Island] = []
 var spawning := false
 var turrets := true
+var area := "debris"
 var next_in := 0.0
 var rng := RandomNumberGenerator.new()
 var scroll_total := 0.0
 var last_layout := -1
+var gallery_i := 0
 
 var nebula_mat: ShaderMaterial
-var planet: MeshInstance3D
+var planet: Node3D
 var star_layers: Array = []  # {mm: MultiMesh, pos: PackedVector3Array, rect: Rect2}
+var deep: Array[MeshInstance3D] = []
+var deep_rect := Rect2()
+const DEEP_Y := -55.0
 
 
 func prepare() -> void:
 	rng.seed = 7
-	for i in LAYOUTS.size():
-		var l: Array = LAYOUTS[i]
-		layouts.append(IslandGen.make(100 + i * 17, l[0], l[1], l[2], l[3], l[4]))
+	var s := 100
+	for a: String in AREAS:
+		var list: Array[Dictionary] = []
+		for l: Array in AREAS[a]:
+			list.append(IslandGen.make(s, l[0], l[1], l[2], l[3]))
+			s += 17
+		layouts[a] = list
 	_build_backdrop()
 
 
@@ -48,8 +56,14 @@ func reset(spawn: bool) -> void:
 	islands.clear()
 	spawning = spawn
 	turrets = spawn
+	area = "debris" if spawn else "hull"
 	next_in = 4.0
 	rng.seed = 7
+
+
+func set_area(a: String) -> void:
+	if layouts.has(a):
+		area = a
 
 
 # ------------------------------------------------------------ backdrop
@@ -68,8 +82,9 @@ func _build_backdrop() -> void:
 	neb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	neb.position = Vector3(0, ny, game.screen_to_y(Vector2(480, 360), ny).z)
 	add_child(neb)
-	# planet
-	planet = MeshInstance3D.new()
+	# ringed planet
+	planet = Node3D.new()
+	var body := MeshInstance3D.new()
 	var sp := SphereMesh.new()
 	sp.radius = 30.0
 	sp.height = 60.0
@@ -78,16 +93,26 @@ func _build_backdrop() -> void:
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://shaders/planet.gdshader")
 	sp.material = mat
-	planet.mesh = sp
-	planet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	planet.position = Vector3(-62, -150, game.screen_to_y(Vector2(480, 260), -150).z)
-	planet.rotation = Vector3(0.35, 0.0, 0.2)
+	body.mesh = sp
+	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	planet.add_child(body)
+	var ring := MeshInstance3D.new()
+	var rp := PlaneMesh.new()
+	rp.size = Vector2(150, 150)
+	var rmat := ShaderMaterial.new()
+	rmat.shader = load("res://shaders/ring.gdshader")
+	rp.material = rmat
+	ring.mesh = rp
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	planet.add_child(ring)
+	planet.position = Vector3(-70, -150, game.screen_to_y(Vector2(480, 220), -150).z)
+	planet.rotation = Vector3(0.45, 0.3, 0.25)
 	add_child(planet)
 	# stars
 	var amat := ShaderMaterial.new()
 	amat.shader = load("res://shaders/additive.gdshader")
 	amat.render_priority = -5
-	for layer in [[-18.0, 70, 0.14], [-45.0, 180, 0.22], [-110.0, 420, 0.38]]:
+	for layer in [[-18.0, 70, 0.16], [-45.0, 180, 0.26], [-110.0, 420, 0.42]]:
 		var y: float = layer[0]
 		var count: int = layer[1]
 		var size: float = layer[2]
@@ -108,7 +133,7 @@ func _build_backdrop() -> void:
 			pos.push_back(p)
 			var s := size * (randf_range(0.6, 1.2) if randf() < 0.92 else 2.2)
 			mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(s, s, s)), p))
-			var tint := Color(0.75, 0.82, 1.0) if randf() < 0.7 else Color(1.0, 0.8, 0.7)
+			var tint := Color(0.75, 0.85, 1.0) if randf() < 0.7 else Color(1.0, 0.85, 0.7)
 			mm.set_instance_color(i, tint * randf_range(0.4, 1.0))
 			mm.set_instance_custom_data(i, Color(0, 0, randf(), 0))
 		var mi := MultiMeshInstance3D.new()
@@ -117,6 +142,17 @@ func _build_backdrop() -> void:
 		mi.custom_aabb = AABB(Vector3(rect.position.x - 5, y - 5, rect.position.y - 5), Vector3(rect.size.x + 10, 10, rect.size.y + 10))
 		add_child(mi)
 		star_layers.append({"mm": mm, "pos": pos, "rect": rect, "size": size})
+	# colossal structure far below: girders and hull blocks
+	var a2 := game.screen_to_y(Vector2(-100, -160), DEEP_Y)
+	var b2 := game.screen_to_y(Vector2(1060, 880), DEEP_Y)
+	deep_rect = Rect2(a2.x, a2.z, b2.x - a2.x, b2.z - a2.z)
+	for i in 4:
+		var m := MeshInstance3D.new()
+		m.mesh = Vox.get_mesh("deep_girder" if i % 2 == 0 else "deep_block")
+		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		m.position = Vector3(deep_rect.position.x + deep_rect.size.x * (0.25 + 0.5 * (i % 2)), DEEP_Y - (i % 2) * 8.0, deep_rect.position.y + deep_rect.size.y * i / 4.0)
+		add_child(m)
+		deep.append(m)
 
 
 # ------------------------------------------------------------ tick
@@ -141,6 +177,10 @@ func tick(dt: float, speed: float) -> void:
 			var s := size * (0.8 + 0.4 * fmod(i * 0.618, 1.0))
 			mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(s, s, s)), p))
 		L["pos"] = pos
+	for m in deep:
+		m.position.z += speed * dt
+		if m.position.z > deep_rect.end.y + 20.0:
+			m.position.z -= deep_rect.size.y + 40.0
 	# islands
 	var i := 0
 	while i < islands.size():
@@ -161,26 +201,38 @@ func tick(dt: float, speed: float) -> void:
 
 
 func _spawn_island() -> void:
-	var li := rng.randi_range(0, layouts.size() - 1)
-	if li == last_layout:
-		li = (li + 3) % layouts.size()
+	var list: Array[Dictionary] = layouts[area]
+	var li := rng.randi_range(0, list.size() - 1)
+	if list.size() > 1 and li == last_layout:
+		li = (li + 1) % list.size()
 	if game.gallery == 3:
-		li = (last_layout + 1) % layouts.size()
+		var all: Array[Dictionary] = []
+		for a: String in layouts:
+			all.append_array(layouts[a])
+		list = all
+		li = gallery_i % all.size()
+		gallery_i += 1
 	last_layout = li
-	var lay := layouts[li]
+	var lay := list[li]
 	var isl := Island.new()
 	add_child(isl)
 	isl.setup(game, lay)
 	var hw := game.ground_hw
 	var w: int = lay["w"]
 	var h: int = lay["h"]
-	var x := rng.randf_range(-hw + w * Island.CELL * 0.3, hw - w * Island.CELL * 0.3)
-	isl.position = Vector3(x, Game.GROUND_Y, game.ground_top - h * Island.CELL * 0.5 - 1.0)
+	var half := w * Island.CELL * 0.5
+	var x := 0.0
+	if half < hw:
+		x = rng.randf_range(-hw + half * 0.6, hw - half * 0.6)
+	else:
+		x = rng.randf_range(-2.0, 2.0)
+	isl.position = Vector3(x, Game.GROUND_Y, game.ground_top - h * Island.CELL * 0.5 - 2.0)
 	islands.append(isl)
 	if turrets:
 		for c: Vector2i in lay["turrets"]:
 			game.spawn_enemy("turret", {"island": isl, "cell": c})
-	next_in = h * Island.CELL + rng.randf_range(2.0, 9.0)
+	var gap: Array = GAPS[area]
+	next_in = h * Island.CELL + rng.randf_range(gap[0], gap[1]) + IslandGen.MARGIN * IslandGen.R * 2.0
 
 
 # ------------------------------------------------------------ hits

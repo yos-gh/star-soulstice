@@ -1,6 +1,12 @@
 class_name Stage
 extends RefCounted
-## Stage 1 script. Enemies come in waves (formations), not on a timer: the
+## Stage 1 script: three areas of an orbital fortress, then the boss.
+##   AREA 1 DEBRIS BELT  wreckage and asteroids around the fortress
+##   AREA 2 OUTER HULL   armoured decks, trenches and solar arrays
+##   (open space)        Lazaro
+##   AREA 3 CORE BLOCK   dense machinery and reactors
+##   STAR CORTEX         over the reactor field
+## Enemies come in waves (formations), not on a timer: the
 ## next wave starts as soon as the current one is wiped out (or leaves), or
 ## when its time runs out — so fast killing shortens the stage ("early
 ## arrival"). Turrets come with the islands and containers on their own
@@ -8,6 +14,8 @@ extends RefCounted
 
 const GAP := 0.7
 const CONTAINER_EVERY := 12.0
+const ROCK_EVERY := 1.3
+const AREA_NAMES := {"debris": ["AREA 1", "DEBRIS BELT"], "hull": ["AREA 2", "OUTER HULL"], "core": ["AREA 3", "CORE BLOCK"]}
 
 var game: Game
 var waves: Array = []  # {spawns: [[delay, kind, params]], timeout, mid}
@@ -20,6 +28,8 @@ var container_t := 6.0
 var phase := "waves"  # waves, warn, boss
 var warn_t := 0.0
 var mid_index := 0
+var area := ""
+var rock_t := 1.0
 
 
 func _init(g: Game) -> void:
@@ -58,6 +68,12 @@ func tick(dt: float) -> void:
 				gap_t -= dt
 				if gap_t <= 0.0:
 					_next_wave()
+			if area == "debris":
+				rock_t -= dt
+				if rock_t <= 0.0:
+					rock_t = ROCK_EVERY * randf_range(0.6, 1.4)
+					var big := randf() < 0.25
+					game.spawn_enemy("rock", {"x": randf_range(-0.9, 0.9) * game.field_hw, "z": game.field_top - 2.5, "vx": randf_range(-1.2, 1.2), "vz": randf_range(2.5, 4.5) + Game.SCROLL * 0.3, "spin": randf_range(-1.2, 1.2), "big": big})
 			if not w.is_empty() and not w.get("mid", false):
 				container_t -= dt
 				if container_t <= 0.0:
@@ -94,6 +110,7 @@ func _next_wave() -> void:
 	if wi >= waves.size():
 		_begin_warn()
 		return
+	_set_area(waves[wi].get("area", "hull"))
 	pending = (waves[wi]["spawns"] as Array).duplicate()
 	pending.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 	if waves[wi].get("mid", false):
@@ -105,8 +122,19 @@ func _begin_warn() -> void:
 	warn_t = 5.5
 	# islands keep coming during the boss (tiles refill energy), minus turrets
 	game.terrain.turrets = false
+	_set_area("boss")
 	game.show_msg("WARNING", "A HUGE ENERGY SOURCE IS APPROACHING", 4.5, true)
 	game.sfx.play("warning")
+
+
+func _set_area(a: String) -> void:
+	if a == area:
+		return
+	area = a
+	game.terrain.set_area(a)
+	if AREA_NAMES.has(a):
+		var n: Array = AREA_NAMES[a]
+		game.show_msg(n[0], n[1], 2.5)
 
 
 func _spawn(kind: String, params: Dictionary) -> void:
@@ -172,25 +200,28 @@ func bulwark(at: float, xn: float, stay := 15.0) -> Array:
 	return [[at, "bulwark", {"x": xn * _hw(), "z": _top() - 3.0, "stay": stay}]]
 
 
-func _w(spawns: Array, timeout := 9.0, mid := false) -> void:
-	waves.append({"spawns": spawns, "timeout": timeout, "mid": mid})
+func _w(area_name: String, spawns: Array, timeout := 9.0, mid := false) -> void:
+	waves.append({"spawns": spawns, "timeout": timeout, "mid": mid, "area": area_name})
 
 
 func _build() -> void:
-	_w(col(0.0, -0.45, 6, 0.2, 1))
-	_w(col(0.0, 0.45, 6, 0.2, -1))
-	_w(vform(0.0, 0.0) + col(1.0, -0.75, 4, 0.2, 1) + col(1.0, 0.75, 4, 0.2, -1))
-	_w(swirls(0.0, -1, 5, 0.25) + swirls(1.2, 1, 5, 0.25), 10.0)
-	_w(rammers(0.0, [-0.5, 0.0, 0.5], 0.4) + vform(1.6, 0.0))
-	_w(bulwark(0.0, 0.0) + col(2.0, -0.8, 4, 0.2, 1) + col(4.0, 0.8, 4, 0.2, -1), 17.0)
-	_w(sweep(0.0, -1, 6, 0.22) + sweep(1.0, 1, 6, 0.22))
-	_w(vform(0.0, -0.5) + vform(0.8, 0.5) + vform(1.6, 0.0))
-	_w(bulwark(0.0, -0.5) + bulwark(1.5, 0.5), 18.0)
+	# AREA 1: debris belt (asteroids drift through on their own timer)
+	_w("debris", col(0.5, -0.45, 6, 0.2, 1))
+	_w("debris", col(0.0, 0.45, 6, 0.2, -1) + rammers(1.6, [-0.3], 0.2))
+	_w("debris", swirls(0.0, -1, 5, 0.25) + swirls(1.2, 1, 5, 0.25), 10.0)
+	_w("debris", vform(0.0, 0.0) + rammers(1.2, [-0.5, 0.5], 0.4) + vform(2.2, -0.4))
+	# AREA 2: outer hull
+	_w("hull", bulwark(0.0, 0.0) + col(2.0, -0.8, 4, 0.2, 1) + col(4.0, 0.8, 4, 0.2, -1), 17.0)
+	_w("hull", sweep(0.0, -1, 6, 0.22) + sweep(1.0, 1, 6, 0.22))
+	_w("hull", vform(0.0, -0.5) + vform(0.8, 0.5) + vform(1.6, 0.0))
+	_w("hull", bulwark(0.0, -0.5) + bulwark(1.5, 0.5), 18.0)
+	_w("hull", swirls(0.0, -1, 5, 0.22) + rammers(1.0, [-0.4, 0.4], 0.3) + swirls(1.5, 1, 5, 0.22), 10.0)
+	# open space between the hull and the core: Lazaro
 	mid_index = waves.size()
-	_w([[0.0, "lazaro", {}]], 60.0, true)
-	_w(col(0.0, -0.6, 5, 0.18, 1) + col(0.6, 0.6, 5, 0.18, -1) + col(1.2, -0.2, 5, 0.18, 1) + col(1.8, 0.2, 5, 0.18, -1))
-	_w(swirls(0.0, -1, 6, 0.22) + swirls(0.6, 1, 6, 0.22) + rammers(2.0, [-0.3, 0.3], 0.3), 10.0)
-	_w(bulwark(0.0, 0.0) + rammers(2.0, [-0.6, 0.6], 0.2) + rammers(4.0, [0.0], 0.2), 17.0)
-	_w(vform(0.0, -0.6) + vform(0.5, 0.6) + vform(1.2, 0.0) + vform(2.0, -0.3) + vform(2.5, 0.3))
-	_w(bulwark(0.0, -0.55) + bulwark(1.0, 0.55) + swirls(3.0, -1, 4, 0.25) + swirls(3.5, 1, 4, 0.25), 18.0)
-	_w(sweep(0.0, -1, 8, 0.18) + sweep(0.4, 1, 8, 0.18) + col(1.5, 0.0, 6, 0.2, 1), 10.0)
+	_w("open", [[0.0, "lazaro", {}]], 60.0, true)
+	# AREA 3: core block
+	_w("core", col(0.0, -0.6, 5, 0.18, 1) + col(0.6, 0.6, 5, 0.18, -1) + col(1.2, -0.2, 5, 0.18, 1) + col(1.8, 0.2, 5, 0.18, -1))
+	_w("core", bulwark(0.0, 0.0) + rammers(2.0, [-0.6, 0.6], 0.2) + rammers(4.0, [0.0], 0.2), 17.0)
+	_w("core", vform(0.0, -0.6) + vform(0.5, 0.6) + vform(1.2, 0.0) + vform(2.0, -0.3) + vform(2.5, 0.3))
+	_w("core", bulwark(0.0, -0.55) + bulwark(1.0, 0.55) + swirls(3.0, -1, 4, 0.25) + swirls(3.5, 1, 4, 0.25), 18.0)
+	_w("core", sweep(0.0, -1, 8, 0.18) + sweep(0.4, 1, 8, 0.18) + col(1.5, 0.0, 6, 0.2, 1), 10.0)
