@@ -28,7 +28,7 @@ const AUTO_RATE := [9.0, 12.0, 12.0]
 const SPEED := [17.0, 21.0, 21.0]
 const SPEAR_CD := 4.0
 const SPEAR_TIME := 0.42
-const SPEAR_LEN := 12.5
+const SPEAR_LEN := 17.0
 const SPEAR_HW := 1.5
 const SPEAR_R := 3.6
 const SPEAR_DPS := 140.0
@@ -191,11 +191,11 @@ func _volley() -> void:
 	var back := Vector3(0, 0, 1)
 	match level:
 		0:
-			game.shots.fire(p + Vector3(-0.32, 0, -0.7), fwd, m)
-			game.shots.fire(p + Vector3(0.32, 0, -0.7), fwd, m)
+			game.shots.fire(p + Vector3(-0.7, 0, -0.9), fwd, m)
+			game.shots.fire(p + Vector3(0.7, 0, -0.9), fwd, m)
 		1:
-			game.shots.fire(p + Vector3(-0.8, 0, -0.5), fwd, m)
-			game.shots.fire(p + Vector3(0.8, 0, -0.5), fwd, m)
+			game.shots.fire(p + Vector3(-1.15, 0, -0.7), fwd, m)
+			game.shots.fire(p + Vector3(1.15, 0, -0.7), fwd, m)
 			game.shots.fire(p + Vector3(0, 0, 0.8), back, m)
 		_:
 			game.shots.fire(p + Vector3(0, 0, -0.8), fwd, m)

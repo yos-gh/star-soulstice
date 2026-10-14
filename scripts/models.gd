@@ -99,58 +99,61 @@ static func build(name: String) -> ArrayMesh:
 
 # ------------------------------------------------------------ player
 
-## Three forms: I compact delta; II adds wing cannons and a tail gun;
-## III spreads long wings with emitters, canards and bigger fins.
+## After Star Soldier's Caesar: no delta wing. A slim central fuselage
+## flanked by two long booms that reach forward past the nose (the twin
+## shots leave from their tips), tied to the body by short struts.
+## Form I   the compact twin-boom fighter
+## Form II  transforms: the booms swing out on wider struts, side armour
+##          plates and a tail gun appear (rear fire)
+## Form III outrigger pods with emitters, canards and tall fins
 static func _ship(lvl: int) -> ArrayMesh:
-	var v := Vox.new(28, 8, 32)
-	# fuselage: a pointed white body, grey belly, red nose band
-	v.fill_sym(0, 1, -15, 0, 2, -13, WHITE)
-	v.fill_sym(0, 1, -12, 1, 3, 10, WHITE)
-	v.fill_sym(1, 1, -12, 1, 2, -11, WHITE)
-	v.fill_sym(0, 0, -11, 1, 0, 9, LGREY)
-	v.fill_sym(0, 3, -12, 0, 3, -11, RED)
-	v.fill_sym(1, 3, -10, 1, 3, -9, RED)
-	# canopy with a dark frame, spine behind it
-	v.fill_sym(0, 4, -8, 0, 4, -4, CANOPY, true)
-	v.fill_sym(1, 4, -8, 1, 4, -4, NAVY)
-	v.fill_sym(0, 4, -3, 0, 4, 7, WHITE)
-	v.fill_sym(0, 5, -1, 0, 5, 4, LGREY)
-	# intakes and side bodies
-	v.fill_sym(2, 1, -6, 3, 2, 9, LGREY)
-	v.fill_sym(2, 1, -7, 3, 1, -7, DGREY)
-	v.fill_sym(2, 3, -3, 2, 3, 8, WHITE)
-	# delta wings: white with a blue trailing band and red tips
-	var span := 9
-	for k in range(4, span + 1):
-		v.fill_sym(k, 1, -3 + (k - 4), k, 1, 8, WHITE)
-	v.fill_sym(4, 1, 7, span, 1, 8, BLUE)
-	v.fill_sym(4, 2, 1, 6, 2, 6, LGREY)
-	v.fill_sym(span, 1, 2, span, 2, 8, RED)
-	# tail fins
-	v.fill_sym(2, 3, 5, 2, 6, 10, BLUE)
-	v.fill_sym(2, 6, 8, 2, 6, 10, RED)
-	# engines
-	v.fill_sym(0, 1, 11, 2, 3, 12, DGREY)
-	v.fill_sym(0, 2, 13, 1, 2, 13, THRUST, true)
-	v.fill_sym(2, 1, 13, 2, 1, 13, THRUST, true)
+	var v := Vox.new(30, 8, 34)
+	var bx := 6 if lvl == 0 else 9  # boom x (inner column)
+	# fuselage
+	v.fill_sym(0, 1, -10, 0, 3, 12, WHITE)
+	v.fill_sym(1, 1, -7, 1, 2, 11, WHITE)
+	v.fill_sym(0, 1, -12, 0, 2, -11, WHITE)
+	v.fill_sym(0, 0, -9, 1, 0, 10, LGREY)
+	v.fill_sym(0, 4, -7, 0, 4, -3, CANOPY, true)
+	v.fill_sym(1, 3, -7, 1, 3, -3, NAVY)
+	v.fill_sym(0, 4, -2, 0, 4, 8, LGREY)
+	v.fill_sym(0, 3, -10, 0, 3, -9, RED)
+	# struts from body to booms
+	for x in range(2, bx):
+		v.fill_sym(x, 1, 1, x, 1, 5, BLUE if x % 2 == 0 else NAVY)
+	v.fill_sym(2, 2, 2, bx - 1, 2, 3, LGREY)
+	# twin booms reaching forward
+	v.fill_sym(bx, 1, -15, bx + 1, 2, 9, WHITE)
+	v.fill_sym(bx, 3, -10, bx + 1, 3, 6, LGREY)
+	v.fill_sym(bx, 1, -16, bx + 1, 1, -16, RED)
+	v.fill_sym(bx, 2, -16, bx, 2, -16, CYAN, true)
+	v.fill_sym(bx, 3, -13, bx + 1, 3, -11, RED)
+	v.fill_sym(bx, 0, -12, bx + 1, 0, 8, DGREY)
+	# engines at the rear of body and booms
+	v.fill_sym(0, 1, 13, 1, 2, 13, DGREY)
+	v.fill_sym(0, 2, 14, 0, 2, 14, THRUST, true)
+	v.fill_sym(bx, 1, 10, bx + 1, 2, 10, DGREY)
+	v.fill_sym(bx, 1, 11, bx + 1, 1, 11, THRUST, true)
+	# small tail stabilisers
+	v.fill_sym(1, 3, 9, 1, 5, 12, BLUE)
+	v.fill_sym(1, 5, 11, 1, 5, 12, RED)
 	if lvl >= 1:
-		# wing cannons and a tail gun
-		v.fill_sym(6, 0, -9, 7, 1, 5, LGREY)
-		v.fill_sym(6, 2, -6, 7, 2, 3, WHITE)
-		v.fill_sym(6, 1, -10, 7, 1, -10, CYAN, true)
-		v.fill_sym(6, 2, 4, 7, 2, 5, RED)
-		v.fill_sym(0, 6, 5, 0, 6, 12, DGREY)
-		v.fill_sym(0, 6, 13, 0, 6, 13, CYAN, true)
+		# side armour plates between body and booms, tail gun
+		v.fill_sym(2, 1, -5, bx - 1, 1, 0, BLUE)
+		v.fill_sym(3, 2, -4, bx - 2, 2, -1, WHITE)
+		v.fill_sym(0, 5, 6, 0, 5, 14, DGREY)
+		v.fill_sym(0, 5, 15, 0, 5, 15, CYAN, true)
+		v.fill_sym(bx + 2, 1, 2, bx + 2, 2, 8, BLUE)
 	if lvl >= 2:
-		# long wings with emitters, canards, bigger fins
-		for k in range(span + 1, 14):
-			v.fill_sym(k, 1, -1 + (k - span) * 2, k, 1, 8, WHITE if k < 13 else RED)
-		v.fill_sym(span + 1, 1, 7, 13, 1, 8, BLUE)
-		v.fill_sym(13, 1, 0, 13, 2, 2, CYAN, true)
-		v.fill_sym(3, 2, -13, 5, 2, -11, WHITE)
-		v.fill_sym(5, 2, -13, 5, 2, -13, RED)
-		v.fill_sym(3, 3, 3, 3, 7, 10, BLUE)
-		v.fill_sym(3, 7, 7, 3, 7, 10, RED)
+		# outrigger pods with emitters, canards, tall fins
+		v.fill_sym(bx + 3, 1, -6, bx + 4, 2, 6, WHITE)
+		v.fill_sym(bx + 3, 3, -4, bx + 4, 3, 4, BLUE)
+		v.fill_sym(bx + 3, 1, -7, bx + 4, 1, -7, CYAN, true)
+		v.fill_sym(bx + 2, 1, 0, bx + 2, 1, 4, NAVY)
+		v.fill_sym(2, 2, -10, 4, 2, -9, WHITE)
+		v.fill_sym(4, 2, -10, 4, 2, -10, RED)
+		v.fill_sym(bx, 4, 3, bx, 6, 8, BLUE)
+		v.fill_sym(bx, 6, 6, bx, 6, 8, RED)
 	return v.mesh(U, Vector3(0, 2.0, 0))
 
 

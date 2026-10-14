@@ -7,9 +7,9 @@ extends Node3D
 const MAX := 400
 const BASE_DMG := 1.0
 const HOMING_DMG := 16.0
-const HOMING_SPEED := 50.0
+const HOMING_SPEED := 75.0
 const TRAIL := 12
-const BLOOM := 0.32  # seconds the lasers float outward before homing
+const BLOOM := 0.1  # seconds the lasers float outward before homing
 
 var game: Game
 var pos := PackedVector3Array()
@@ -90,8 +90,8 @@ func launch_homing(p: Vector3, count: int) -> void:
 		var spread := 0.0 if count == 1 else lerpf(-1.0, 1.0, float(i) / (count - 1))
 		# fan out behind and to the sides; they float for a moment before
 		# turning on their targets
-		var ang := PI / 2.0 + spread * deg_to_rad(115.0) + randf_range(-0.12, 0.12)
-		var v := Vector3(cos(ang), 0, sin(ang)) * randf_range(13.0, 16.0)
+		var ang := PI / 2.0 + spread * deg_to_rad(85.0) + randf_range(-0.08, 0.08)
+		var v := Vector3(cos(ang), 0, sin(ang)) * randf_range(16.0, 19.0)
 		var tgt: Object = null
 		if not targets.is_empty():
 			tgt = targets[i % targets.size()]
@@ -134,7 +134,7 @@ func tick(dt: float) -> void:
 		var ht: float = h["t"]
 		if ht < BLOOM:
 			# bloom: drift outward and slow down, no steering yet
-			v *= 1.0 - 4.0 * dt
+			v *= 1.0 - 2.0 * dt
 			hp += v * dt
 			h["vel"] = v
 			h["pos"] = hp
@@ -145,11 +145,11 @@ func tick(dt: float) -> void:
 			k += 1
 			continue
 		var ta := ht - BLOOM
-		var spd := minf(HOMING_SPEED, maxf(v.length(), 4.0) + ta * 90.0)
+		var spd := minf(HOMING_SPEED, maxf(v.length(), 10.0) + ta * 220.0)
 		if is_instance_valid(tgt):
 			var to: Vector3 = (tgt as Enemy).hit_pos - hp
 			to.y = 0.0
-			var turn := clampf(2.0 + ta * 45.0, 0.0, 40.0)
+			var turn := clampf(8.0 + ta * 120.0, 0.0, 50.0)
 			var want := to.normalized() * spd
 			v = v.lerp(want, clampf(turn * dt, 0.0, 1.0))
 			if v.length() > 0.001:
