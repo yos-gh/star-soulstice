@@ -136,7 +136,8 @@ func draw() -> void:
 				b = Basis(Vector3.UP, sin(t * 2.0) * 0.4).scaled(Vector3.ONE * (1.0 + 0.08 * sin(t * 8.0)))
 			_:
 				b = Basis(Vector3.UP, t * 2.0).scaled(Vector3.ONE * 1.1)
-		mm.set_instance_transform(c, Transform3D(b, pos[i] + Vector3(0, 0.6, 0)))
+		# below ships, enemies and bullets
+		mm.set_instance_transform(c, Transform3D(b, game.from_plane(pos[i], -0.35)))
 		mm.set_instance_color(c, Color(1, 1, 1))
 		counts[k] = c + 1
 	for k in 3:

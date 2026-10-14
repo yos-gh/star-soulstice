@@ -236,6 +236,8 @@ func draw() -> void:
 		else:
 			var s: float = SIZE[k] * (pulse if k != SHELL else 1.0)
 			b = Basis.from_scale(Vector3(s, 1.0, s))
-		mm.set_instance_transform(i, Transform3D(b, pos[i] + Vector3(0, 0.6, 0)))
+		# drawn just above the ships, on the view ray through its plane point so
+		# what you see lines up with what hits
+		mm.set_instance_transform(i, Transform3D(b, game.from_plane(pos[i], 0.32)))
 		mm.set_instance_color(i, COLOR[k])
 		mm.set_instance_custom_data(i, Color(1.0 if k == SHELL else 0.0, aspect, 0.0, 0.0))

@@ -237,17 +237,17 @@ func _spawn_island() -> void:
 
 # ------------------------------------------------------------ hits
 
-## A main shot at plane point p: damages the tile under it. True if blocked.
-func hit(p: Vector3, dmg: float) -> bool:
+## A main shot at plane point p hits the tile under it: returns the damage
+## left to carry on with (0 = the shot is spent), or -1 if no tile is there.
+func hit(p: Vector3, dmg: float) -> float:
 	if islands.is_empty():
-		return false
+		return -1.0
 	var g := game.from_plane(p, Game.GROUND_Y + 0.4)
 	for isl in islands:
 		var idx := isl.tile_at(g)
 		if idx >= 0:
-			isl.damage(idx, dmg)
-			return true
-	return false
+			return isl.damage(idx, dmg)
+	return -1.0
 
 
 ## Spear: damages tiles inside the aura circle and the lance rectangle.

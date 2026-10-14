@@ -104,11 +104,11 @@ static func build(name: String) -> ArrayMesh:
 ## does not bulk up):
 ## Form I   crown: the pods sit tight against the core, three tips forward
 ##          (the core's nose the tallest), joined into one compact body
-## Form II  the pods slide outward on struts with armour plates between,
-##          a tail gun extends from the core (rear fire)
-## Form III flying wing: the core's nose draws back, the pods swing in at
-##          the rear and the gaps close with wing plating - a heart-shaped
-##          wing with two tips and a notch between them
+## Form II  the pods slide outward on short struts with armour plates
+##          between, a tail gun extends from the core (rear fire)
+## Form III five-way: each pod splits at its red band; the front halves
+##          move forward and out (front diagonal guns), the rear halves tuck
+##          in beside the core's tail (rear diagonal guns)
 const SHIP_PAL := {
 	"w": [WHITE, 2], "W": [WHITE, 3], "H": [WHITE, 4],
 	"g": [LGREY, 2], "G": [LGREY, 3],
@@ -118,6 +118,7 @@ const SHIP_PAL := {
 	"c": [WHITE, 4, false, CANOPY],
 	"L": [WHITE, 3, false, CYAN],
 	"E": [THRUST, 1, true],
+	"C": [CYAN, 1, true],
 }
 ## Top views, front row first.
 const SHIP_CORE := [
@@ -139,6 +140,7 @@ const SHIP_CORE := [
 	".dDBBDd.",
 	"..dEEd..",
 ]
+## A pod; Form III splits it after the red band (row POD_SPLIT).
 const SHIP_POD := [
 	"..LL..",
 	".wWWw.",
@@ -157,59 +159,71 @@ const SHIP_POD := [
 	".DDDD.",
 	"..EE..",
 ]
-## Pod placement per form: [left pod x, front z, inward slant per row].
-const POD_AT := [[-11, -7, 0.0], [-15, -8, 0.0], [-11, -10, 0.2]]
-const CORE_Z := [-9, -9, -4]
+const POD_SPLIT := 8
+## Form III rear half: the pod's tail with a rear gun in place of the engine.
+const SHIP_POD_TAIL := [
+	"wWGGWw",
+	"wWGGWw",
+	"wWWWWw",
+	"wWWWWw",
+	"dWbbWd",
+	"dDbbDd",
+	".DDDD.",
+	"..CC..",
+]
+## Pod placement per form: left pod x, front z.
+const POD_AT := [[-11, -7], [-13, -8], [-13, -12]]
+const TAIL_AT := [-10, -1]  # Form III rear halves
+const CORE_Z := -9
 
 
 static func _ship(lvl: int) -> ArrayMesh:
 	var v := Vox.new(32, 8, 32)
-	var pod: Array = POD_AT[lvl]
-	var px: int = pod[0]
-	var pz: int = pod[1]
-	var slant: float = pod[2]
-	_stamp(v, SHIP_POD, SHIP_PAL, px, pz, 1, slant, true)
+	var px: int = POD_AT[lvl][0]
+	var pz: int = POD_AT[lvl][1]
 	match lvl:
 		0:
+			_stamp(v, SHIP_POD, SHIP_PAL, px, pz, 1, true)
 			# pods joined to the core behind V notches, on one rear base
 			v.fill_sym(4, 1, -2, 4, 2, 7, LGREY)
 			v.fill_sym(4, 3, 0, 4, 3, 5, WHITE)
 			v.fill_sym(0, 1, 7, 10, 1, 7, DGREY)
 		1:
-			# struts and armour plates bridging core and pods
-			v.fill_sym(4, 1, -3, 8, 1, 2, BLUE)
-			v.fill_sym(5, 2, -2, 7, 2, 1, WHITE)
-			v.fill_sym(4, 1, 4, 8, 2, 5, DGREY)
-			v.fill_sym(4, 2, 4, 8, 2, 4, LGREY)
-			# tail gun
-			v.fill_sym(0, 4, 6, 0, 4, 11, DGREY)
-			v.fill_sym(0, 5, 7, 0, 5, 9, LGREY)
-			v.fill_sym(0, 4, 12, 0, 4, 12, CYAN, true)
+			_stamp(v, SHIP_POD, SHIP_PAL, px, pz, 1, true)
+			# short struts and armour plates bridging core and pods
+			v.fill_sym(4, 1, -3, 7, 1, 2, BLUE)
+			v.fill_sym(5, 2, -2, 6, 2, 1, WHITE)
+			v.fill_sym(4, 1, 4, 7, 2, 5, DGREY)
+			v.fill_sym(4, 2, 4, 7, 2, 4, LGREY)
+			_tail_gun(v)
 		2:
-			# wing plating unfolds from the pods' inner sides and closes the
-			# gap to the core, leaving a narrow notch where the nose was
-			for r in range(2, SHIP_POD.size() - 1):
-				var z := pz + r
-				var inner := px + int(floor(r * slant)) + 6
-				for x in range(inner, -1):
-					var top := BLUE if (z - CORE_Z[2]) % 5 == 2 else LGREY
-					v.fill_sym(-1 - x, 1, z, -1 - x, 1, z, WHITE)
-					v.fill_sym(-1 - x, 2, z, -1 - x, 2, z, top)
-	_stamp(v, SHIP_CORE, SHIP_PAL, -4, CORE_Z[lvl], 1, 0.0, false)
+			# front halves forward and out, rear halves beside the tail
+			_stamp(v, SHIP_POD.slice(0, POD_SPLIT), SHIP_PAL, px, pz, 1, true)
+			_stamp(v, SHIP_POD_TAIL, SHIP_PAL, TAIL_AT[0], TAIL_AT[1], 1, true)
+			# armour plates between the core and the front halves
+			v.fill_sym(4, 1, -9, 6, 2, -3, BLUE)
+			v.fill_sym(5, 3, -8, 5, 3, -4, NAVY)
+			# joints from the plates to the rear halves
+			v.fill_sym(5, 1, -2, 7, 1, -2, DGREY)
+	_stamp(v, SHIP_CORE, SHIP_PAL, -4, CORE_Z, 1, false)
 	# belly keel
-	v.fill_sym(0, 0, CORE_Z[lvl] + 3, 2, 0, CORE_Z[lvl] + 14, DGREY)
+	v.fill_sym(0, 0, CORE_Z + 3, 2, 0, CORE_Z + 14, DGREY)
 	return v.mesh(U, Vector3(0, 2.0, 0))
+
+
+static func _tail_gun(v: Vox) -> void:
+	v.fill_sym(0, 4, 6, 0, 4, 11, DGREY)
+	v.fill_sym(0, 5, 7, 0, 5, 9, LGREY)
+	v.fill_sym(0, 4, 12, 0, 4, 12, CYAN, true)
 
 
 ## Stamps a top-view part: each string is a row (first = front, -z), each
 ## character a column; spec = [colour, height, glow?, cap colour?] (the cap
-## replaces the top voxel and glows). Columns start at x0 and rows at z0;
-## `slant` shifts row r sideways by floor(r * slant). `mirror` also stamps
-## the mirror image (x -> -1 - x).
-static func _stamp(v: Vox, rows: Array, pal: Dictionary, x0: int, z0: int, y0: int, slant := 0.0, mirror := false) -> void:
+## replaces the top voxel and glows). Columns start at x0 and rows at z0.
+## `mirror` also stamps the mirror image (x -> -1 - x).
+static func _stamp(v: Vox, rows: Array, pal: Dictionary, x0: int, z0: int, y0: int, mirror := false) -> void:
 	for r in rows.size():
 		var s: String = rows[r]
-		var sx := x0 + int(floor(r * slant))
 		for c in s.length():
 			var ch := s[c]
 			if not pal.has(ch):
@@ -222,9 +236,9 @@ static func _stamp(v: Vox, rows: Array, pal: Dictionary, x0: int, z0: int, y0: i
 				if y == y0 + h - 1 and spec.size() > 3:
 					col = spec[3]
 					glow = true
-				v.put(sx + c, y, z0 + r, col, glow)
+				v.put(x0 + c, y, z0 + r, col, glow)
 				if mirror:
-					v.put(-1 - (sx + c), y, z0 + r, col, glow)
+					v.put(-1 - (x0 + c), y, z0 + r, col, glow)
 
 
 # ------------------------------------------------------------ enemies
@@ -611,14 +625,16 @@ static func _star() -> ArrayMesh:
 # ------------------------------------------------------------ ground
 
 ## Destructible armour hatch (one Island cell, 16 x 16 voxels).
-## 0 teal service hatch (green LED), 1 steel-blue cross hatch (amber LED),
-## 2 heavy blast door (red LED).
+## Ground material (recedes behind units). 0 teal service hatch (green
+## LED), 1 steel-blue cross hatch (lime LED),
+## 2 heavy blast door (violet LED).
 static func _tile(kind: int) -> ArrayMesh:
 	var v := Vox.new(16, 5, 16)
+	v.ground = true
 	var base: Color = [Color(0.3, 0.46, 0.48), Color(0.34, 0.38, 0.5), Color(0.3, 0.31, 0.35)][kind]
 	var hi := base.lightened(0.22)
 	var lo := base.darkened(0.45)
-	var led: Color = [Color(0.3, 1.0, 0.5), AMBER, EYE][kind]
+	var led: Color = [Color(0.3, 1.0, 0.5), Color(0.75, 1.0, 0.3), Color(0.7, 0.4, 1.0)][kind]
 	var h := 2 + kind
 	v.fill(-8, 0, -8, 7, h - 2, 7, lo)
 	v.fill(-7, h - 1, -7, 6, h - 1, 6, base)
@@ -650,6 +666,7 @@ static func _tile(kind: int) -> ArrayMesh:
 ## Far-below truss girder: two chords with diagonal braces (unit 1.0).
 static func _deep_girder() -> ArrayMesh:
 	var v := Vox.new(90, 6, 8)
+	v.ground = true
 	var c := Color(0.1, 0.12, 0.14)
 	for x in range(-45, 45):
 		v.fill(x, 0, -3, x, 1, -3, c)
@@ -667,6 +684,7 @@ static func _deep_girder() -> ArrayMesh:
 ## Far-below hull block with window lights (unit 1.0).
 static func _deep_block() -> ArrayMesh:
 	var v := Vox.new(40, 8, 24)
+	v.ground = true
 	var c := Color(0.1, 0.12, 0.14)
 	for z in range(-12, 12):
 		for x in range(-20, 20):

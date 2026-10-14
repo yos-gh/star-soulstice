@@ -15,7 +15,7 @@ extends Node3D
 ## nearby bullets, 4 s cooldown) launches homing lasers from the rear at the
 ## same time, one per 10 energy (max 8).
 
-const HIT_R := 0.32
+const HIT_R := 0.2  # centre of the core only
 const ENERGY_MAX := 80.0
 const ENERGY_PER_HOMING := 10.0
 const MAX_HOMING := 8
@@ -195,15 +195,15 @@ func _volley() -> void:
 			game.shots.fire(p + Vector3(-0.72, 0, -0.75), fwd, m)
 			game.shots.fire(p + Vector3(0.72, 0, -0.75), fwd, m)
 		1:
-			game.shots.fire(p + Vector3(-1.1, 0, -0.85), fwd, m)
-			game.shots.fire(p + Vector3(1.1, 0, -0.85), fwd, m)
+			game.shots.fire(p + Vector3(-0.95, 0, -0.8), fwd, m)
+			game.shots.fire(p + Vector3(0.95, 0, -0.8), fwd, m)
 			game.shots.fire(p + Vector3(0, 0, 1.15), back, m)
 		_:
-			game.shots.fire(p + Vector3(0, 0, -0.4), fwd, m)
-			game.shots.fire(p + Vector3(-0.72, 0, -0.9), fwd.rotated(Vector3.UP, deg_to_rad(32.0)), m)
-			game.shots.fire(p + Vector3(0.72, 0, -0.9), fwd.rotated(Vector3.UP, deg_to_rad(-32.0)), m)
-			game.shots.fire(p + Vector3(-0.5, 0, 0.55), back.rotated(Vector3.UP, deg_to_rad(-30.0)), m)
-			game.shots.fire(p + Vector3(0.5, 0, 0.55), back.rotated(Vector3.UP, deg_to_rad(30.0)), m)
+			game.shots.fire(p + Vector3(0, 0, -0.85), fwd, m)
+			game.shots.fire(p + Vector3(-0.95, 0, -1.1), fwd.rotated(Vector3.UP, deg_to_rad(32.0)), m)
+			game.shots.fire(p + Vector3(0.95, 0, -1.1), fwd.rotated(Vector3.UP, deg_to_rad(-32.0)), m)
+			game.shots.fire(p + Vector3(-0.68, 0, 0.65), back.rotated(Vector3.UP, deg_to_rad(-30.0)), m)
+			game.shots.fire(p + Vector3(0.68, 0, 0.65), back.rotated(Vector3.UP, deg_to_rad(30.0)), m)
 	game.sfx.play("shot")
 
 

@@ -8,7 +8,10 @@ const MAX := 400
 const BASE_DMG := 1.0
 const HOMING_DMG := 16.0
 const HOMING_SPEED := 30.0
-const TRAIL := 16
+## Time scale: the first implementation's path, flown K times faster
+## (speeds x K, turn rates x K, schedules compressed by K).
+const K := 2.0
+const TRAIL := 9
 const BLOOM := 0.0  # seconds the lasers float outward before homing (0 = off)
 
 var game: Game
@@ -91,13 +94,13 @@ func launch_homing(p: Vector3, count: int) -> void:
 		# fan out behind and to the sides; they float for a moment before
 		# turning on their targets
 		var ang := PI / 2.0 + spread * deg_to_rad(75.0)
-		var v := Vector3(cos(ang), 0, sin(ang)) * 12.0
+		var v := Vector3(cos(ang), 0, sin(ang)) * 12.0 * K
 		var tgt: Object = null
 		if not targets.is_empty():
 			tgt = targets[i % targets.size()]
 		var trail := PackedVector3Array()
 		trail.push_back(p)
-		homing.append({"pos": p + Vector3(0, 0, 0.6), "vel": v, "target": tgt, "life": 2.6, "trail": trail, "done": false, "fade": 0.25, "t": 0.0})
+		homing.append({"pos": p + Vector3(0, 0, 0.6), "vel": v, "target": tgt, "life": 2.6 / K, "trail": trail, "done": false, "fade": 0.25, "t": 0.0})
 
 
 func tick(dt: float) -> void:
@@ -145,17 +148,17 @@ func tick(dt: float) -> void:
 			k += 1
 			continue
 		var ta := ht - BLOOM
-		var spd := minf(HOMING_SPEED, 12.0 + ta * 40.0)
+		var spd := minf(HOMING_SPEED * K, (12.0 + ta * K * 40.0) * K)
 		if is_instance_valid(tgt):
 			var to: Vector3 = (tgt as Enemy).hit_pos - hp
 			to.y = 0.0
-			var turn := clampf(4.0 + ta * 10.0, 0.0, 22.0)
+			var turn := clampf(4.0 + ta * K * 10.0, 0.0, 22.0) * K
 			var want := to.normalized() * spd
 			v = v.lerp(want, clampf(turn * dt, 0.0, 1.0))
 			if v.length() > 0.001:
 				v = v.normalized() * spd
 		else:
-			v = v.lerp(Vector3(0, 0, -spd), 3.0 * dt)
+			v = v.lerp(Vector3(0, 0, -spd), 3.0 * K * dt)
 		hp += v * dt
 		h["vel"] = v
 		h["pos"] = hp

@@ -19,14 +19,14 @@ const D := 8
 
 const HULL_A := Color(0.21, 0.26, 0.29)
 const HULL_B := Color(0.18, 0.22, 0.25)
-const HULL_C := Color(0.27, 0.32, 0.35)
+const HULL_C := Color(0.24, 0.28, 0.31)
 const SEAM := Color(0.1, 0.12, 0.14)
 const SIDE := Color(0.16, 0.19, 0.22)
 const UNDER := Color(0.13, 0.15, 0.17)
-const TRIM := Color(0.78, 0.42, 0.12)
+const TRIM := Color(0.5, 0.46, 0.3)
 const TRIM_D := Color(0.22, 0.2, 0.18)
 const RIM := Color(0.23, 0.27, 0.3)
-const PIPE := Color(0.4, 0.43, 0.46)
+const PIPE := Color(0.29, 0.31, 0.34)
 const SOCKET := Color(0.1, 0.11, 0.12)
 const CHANNEL := Color(0.08, 0.1, 0.12)
 const CYAN := Color(0.3, 0.9, 1.0)
@@ -140,6 +140,7 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 	var vmask := _footprint(kind, w, h, W, H, cell_in)
 	var v := Vox.new(W, D + 4, H)
 	v.jitter = 0.04
+	v.ground = true
 	var info := {"kind": kind, "w": w, "h": h, "W": W, "H": H, "mid": mid, "vmask": vmask, "types": types, "tcells": tcells, "cell_e": cell_e, "r": r}
 	if kind == "asteroid":
 		_asteroid(v, info)
@@ -230,7 +231,7 @@ static func _structure(v: Vox, info: Dictionary) -> void:
 					var c := SIDE if y < surf else (TRIM if hazard else RIM)
 					var glow := false
 					if y == surf - 1 and ed == 0 and (vx * 3 + vz) % 5 == 0:
-						c = AMBER if (vx + vz) % 2 == 0 else CYAN
+						c = CONDUIT
 						glow = true
 					if y < top - 2:
 						c = UNDER
@@ -283,7 +284,7 @@ static func _structure(v: Vox, info: Dictionary) -> void:
 				if cx == -1 or cx == 8:
 					v.put(x, surf + 1, z, PIPE)
 					if vz % 6 == 0:
-						v.put(x, surf + 1, z, AMBER, true)
+						v.put(x, surf + 1, z, CONDUIT, true)
 			if channel or core:
 				continue
 			if types[idx] >= 0:
@@ -299,7 +300,7 @@ static func _structure(v: Vox, info: Dictionary) -> void:
 				if c2.x == mid:
 					v.put(x, surf + 1, z, PIPE if lx == 2 else SIDE)
 					if lx == 2 and vz % 5 == 0:
-						v.put(x, surf + 2, z, RED, true)
+						v.put(x, surf + 2, z, CONDUIT, true)
 				elif c2.y % 4 == 0 and lz == 2:
 					v.put(x, surf + 1, z, SIDE)
 			else:
@@ -327,13 +328,13 @@ static func _greeble(v: Vox, x: int, surf: int, z: int, lx: int, lz: int, kind: 
 			# antenna mast
 			if lx == 2 and lz == 2:
 				v.fill(x, surf + 1, z, x, surf + 3, z, SIDE)
-				v.put(x, surf + 4, z, RED, true)
+				v.put(x, surf + 4, z, SIDE)
 		5:
 			# hatch outline
 			if (lx == 1 or lx == 3) and lz >= 1 or (lz == 1 or lz == 3) and lx >= 1:
 				v.put(x, surf, z, SEAM)
 			elif lx == 2 and lz == 2:
-				v.put(x, surf, z, AMBER, true)
+				v.put(x, surf, z, SEAM)
 		_:
 			pass
 

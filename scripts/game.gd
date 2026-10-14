@@ -23,8 +23,8 @@ enum State { TITLE, PLAY, CLEAR, GAME_OVER }
 
 const DT := 1.0 / 60.0
 const GROUND_Y := -3.0
-const SCROLL := 7.0
-const BOSS_SCROLL := 4.5
+const SCROLL := 12.0
+const BOSS_SCROLL := 7.0
 const CAM_PITCH := 66.0
 const CAM_DIST := 34.0
 const CAM_FOV := 40.0
@@ -511,7 +511,7 @@ func _tick_play(dt: float) -> void:
 			else:
 				_game_over()
 	var want_scroll := BOSS_SCROLL if (stage != null and stage.phase != "waves") else SCROLL
-	scroll_speed = move_toward(scroll_speed, want_scroll, dt * 0.8)
+	scroll_speed = move_toward(scroll_speed, want_scroll, dt * 1.5)
 	terrain.tick(dt, scroll_speed)
 	for e: Enemy in enemies.duplicate():
 		if is_instance_valid(e) and not e.dead and e.controller == null:
@@ -610,9 +610,14 @@ func _collide(dt: float) -> void:
 		var p := shots.pos[i]
 		var dmg := shots.dmg[i]
 		var used := false
-		if terrain.hit(p, dmg):
-			used = true
-			fx.spark(p + Vector3(0, 0.3, 0), Color(0.6, 0.8, 1.0), 1, 0.25)
+		var left := terrain.hit(p, dmg)
+		if left >= 0.0:
+			# a broken soft tile lets a strong shot carry on
+			if left > 0.01:
+				shots.dmg[i] = left
+			else:
+				used = true
+				fx.spark(p + Vector3(0, 0.3, 0), Color(0.6, 0.8, 1.0), 1, 0.25)
 			sfx.play("tile")
 		else:
 			var sh := bullets.shoot_shell(p, 0.2, dmg)
@@ -653,6 +658,8 @@ func _collide(dt: float) -> void:
 	# player
 	if player.alive and player.entering <= 0.0 and player.invuln <= 0.0 and state == State.PLAY:
 		var hit := bullets.hit_test(player.position, Player.HIT_R)
+		if hit and log_status:
+			print("HIT by bullet t=%.1f" % play_t)
 		if not hit:
 			for e in enemies:
 				if e.dead or not e.ram or e.intangible or not e.visible:
@@ -662,6 +669,8 @@ func _collide(dt: float) -> void:
 				var r := e.radius * 0.8 + Player.HIT_R
 				if d.length_squared() < r * r:
 					hit = true
+					if log_status:
+						print("HIT by %s t=%.1f" % [e.kind, play_t])
 					break
 		if hit and not god:
 			_player_hit()

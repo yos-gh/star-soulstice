@@ -7,7 +7,7 @@ extends Node3D
 ## cell (i, j) centre in local space: ((i - w/2 + .5) * CELL, 0, (j - h/2 + .5) * CELL).
 
 const CELL := 2.0
-const TILE_HP := [1.0, 1.0, 2.0]
+const TILE_HP := [0.5, 1.0, 1.5]
 const TILE_ENERGY := [2.0, 5.0, 10.0]
 const TILE_SCORE := [50, 150, 400]
 const TILE_TOP := [0.0, 0.125, 0.25]  # above the deck (tiles sit in sockets)
@@ -59,7 +59,9 @@ func setup(g: Game, lay: Dictionary) -> void:
 		var t := types[idx]
 		if t >= 0:
 			var c := cell_center(idx % w, idx / w)
-			mms[t].set_instance_transform(inst[idx], Transform3D(Basis.IDENTITY, c + Vector3(0, -IslandGen.R * 0.5, 0)))
+			# slightly inset and raised so no face is coplanar with the deck
+			# (coplanar tops flickered)
+			mms[t].set_instance_transform(inst[idx], Transform3D(Basis.from_scale(Vector3(0.96, 1.0, 0.96)), c + Vector3(0, -IslandGen.R * 0.5 + 0.06, 0)))
 			mms[t].set_instance_color(inst[idx], Color(1, 1, 1))
 
 
@@ -84,16 +86,21 @@ func tile_plane_pos(idx: int) -> Vector3:
 	return game.to_plane(position + cell_center(idx % w, idx / w) + Vector3(0, TILE_TOP[t], 0))
 
 
-func damage(idx: int, dmg: float) -> void:
+## Damages tile idx; returns the damage left over after breaking it (a
+## strong shot punches through soft tiles).
+func damage(idx: int, dmg: float) -> float:
 	var t := types[idx]
 	if t < 0:
-		return
+		return dmg
+	var before := hp[idx]
 	hp[idx] -= dmg
 	if hp[idx] <= 0.0:
 		_destroy(idx)
+		return dmg - before
 	else:
 		var f: float = 0.5 + 0.5 * hp[idx] / TILE_HP[t]
 		mms[t].set_instance_color(inst[idx], Color(f * 1.25, f * 1.15, f * 1.1))
+	return 0.0
 
 
 func _destroy(idx: int) -> void:

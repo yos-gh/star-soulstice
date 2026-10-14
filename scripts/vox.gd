@@ -22,6 +22,8 @@ const DIRS := [
 static var hull_mat: ShaderMaterial
 static var glow_mat: ShaderMaterial
 static var glow_soft_mat: ShaderMaterial
+static var ground_mat: ShaderMaterial
+static var ground_glow_mat: ShaderMaterial
 static var _cache := {}
 
 var sx: int
@@ -35,6 +37,7 @@ var glows: Array[bool] = [false]
 var _ids := {}
 var jitter := 0.06
 var cull_bottom := false
+var ground := false  # use the receding ground materials
 
 
 func _init(w: int, h: int, d: int) -> void:
@@ -56,6 +59,16 @@ static func materials() -> void:
 	glow_soft_mat = ShaderMaterial.new()
 	glow_soft_mat.shader = glow_mat.shader
 	glow_soft_mat.set_shader_parameter("energy", 1.6)
+	ground_mat = ShaderMaterial.new()
+	ground_mat.shader = hull_mat.shader
+	ground_mat.set_shader_parameter("dim", 0.72)
+	ground_mat.set_shader_parameter("desat", 0.5)
+	ground_mat.set_shader_parameter("haze", Color(0.03, 0.045, 0.07))
+	ground_mat.set_shader_parameter("haze_amt", 0.22)
+	ground_mat.set_shader_parameter("specular", 0.1)
+	ground_glow_mat = ShaderMaterial.new()
+	ground_glow_mat.shader = glow_mat.shader
+	ground_glow_mat.set_shader_parameter("energy", 0.9)
 
 
 func _id(c: Color, glow: bool) -> int:
@@ -269,7 +282,7 @@ func mesh(unit: float, origin := Vector3.ZERO, soft_glow := false) -> ArrayMesh:
 		arr[Mesh.ARRAY_COLOR] = hc
 		arr[Mesh.ARRAY_INDEX] = hi
 		m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
-		m.surface_set_material(m.get_surface_count() - 1, hull_mat)
+		m.surface_set_material(m.get_surface_count() - 1, ground_mat if ground else hull_mat)
 	if not gv.is_empty():
 		var arr := []
 		arr.resize(Mesh.ARRAY_MAX)
@@ -278,7 +291,7 @@ func mesh(unit: float, origin := Vector3.ZERO, soft_glow := false) -> ArrayMesh:
 		arr[Mesh.ARRAY_COLOR] = gc
 		arr[Mesh.ARRAY_INDEX] = gi
 		m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
-		m.surface_set_material(m.get_surface_count() - 1, glow_soft_mat if soft_glow else glow_mat)
+		m.surface_set_material(m.get_surface_count() - 1, ground_glow_mat if ground else (glow_soft_mat if soft_glow else glow_mat))
 	return m
 
 
@@ -309,3 +322,5 @@ static func release() -> void:
 	hull_mat = null
 	glow_mat = null
 	glow_soft_mat = null
+	ground_mat = null
+	ground_glow_mat = null
