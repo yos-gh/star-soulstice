@@ -168,8 +168,8 @@ func _wire_cube() -> ArrayMesh:
 				p[(axis + 2) % 3] = b
 				st.append_from(beam, 0, Transform3D(Basis.IDENTITY, p))
 	st.commit(m)
-	m.surface_set_material(0, _energy_mat(Color(1.0, 0.86, 0.25, 0.16)))
-	m.surface_set_material(1, _energy_mat(Color(1.0, 0.9, 0.35, 0.55)))
+	m.surface_set_material(0, _energy_mat(Color(1.0, 0.86, 0.25, 0.11)))
+	m.surface_set_material(1, _energy_mat(Color(1.0, 0.9, 0.35, 0.38)))
 	return m
 
 
