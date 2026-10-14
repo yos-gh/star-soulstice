@@ -7,7 +7,8 @@ extends Node3D
 ## damage up to x4 (about 6 presses/s keeps it full); auto fire never builds
 ## it, and it drains when you stop tapping.
 ##
-## Forms (Star Soldier style): 0 = 2 forward shots; 1 = faster fire, +1 rear
+## Forms (Star Soldier style, the ship rearranges its parts): 0 = 2 forward
+## shots from the pod tips; 1 = faster fire, +1 rear
 ## shot, faster ship; 2 = 3-way forward + 2-way rear and a one-hit shield.
 ##
 ## Side arm: the Spear (short, strong forward blade + an aura that erases
@@ -191,18 +192,18 @@ func _volley() -> void:
 	var back := Vector3(0, 0, 1)
 	match level:
 		0:
-			game.shots.fire(p + Vector3(-0.7, 0, -0.9), fwd, m)
-			game.shots.fire(p + Vector3(0.7, 0, -0.9), fwd, m)
+			game.shots.fire(p + Vector3(-0.72, 0, -0.75), fwd, m)
+			game.shots.fire(p + Vector3(0.72, 0, -0.75), fwd, m)
 		1:
-			game.shots.fire(p + Vector3(-1.15, 0, -0.7), fwd, m)
-			game.shots.fire(p + Vector3(1.15, 0, -0.7), fwd, m)
-			game.shots.fire(p + Vector3(0, 0, 0.8), back, m)
+			game.shots.fire(p + Vector3(-1.1, 0, -0.85), fwd, m)
+			game.shots.fire(p + Vector3(1.1, 0, -0.85), fwd, m)
+			game.shots.fire(p + Vector3(0, 0, 1.15), back, m)
 		_:
-			game.shots.fire(p + Vector3(0, 0, -0.8), fwd, m)
-			game.shots.fire(p + Vector3(-0.6, 0, -0.5), fwd.rotated(Vector3.UP, deg_to_rad(32.0)), m)
-			game.shots.fire(p + Vector3(0.6, 0, -0.5), fwd.rotated(Vector3.UP, deg_to_rad(-32.0)), m)
-			game.shots.fire(p + Vector3(-0.25, 0, 0.8), back.rotated(Vector3.UP, deg_to_rad(-30.0)), m)
-			game.shots.fire(p + Vector3(0.25, 0, 0.8), back.rotated(Vector3.UP, deg_to_rad(30.0)), m)
+			game.shots.fire(p + Vector3(0, 0, -0.4), fwd, m)
+			game.shots.fire(p + Vector3(-0.72, 0, -0.9), fwd.rotated(Vector3.UP, deg_to_rad(32.0)), m)
+			game.shots.fire(p + Vector3(0.72, 0, -0.9), fwd.rotated(Vector3.UP, deg_to_rad(-32.0)), m)
+			game.shots.fire(p + Vector3(-0.5, 0, 0.55), back.rotated(Vector3.UP, deg_to_rad(-30.0)), m)
+			game.shots.fire(p + Vector3(0.5, 0, 0.55), back.rotated(Vector3.UP, deg_to_rad(30.0)), m)
 	game.sfx.play("shot")
 
 

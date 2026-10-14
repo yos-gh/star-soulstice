@@ -38,4 +38,4 @@ Godot_console.exe --path . --fixed-fps 60 -- --autoplay --god --start=6|mid|boss
 ```
 
 見た目の切り分け用に `--hide=sprites,debris,lights,bullets,shots,items,units,player,islands,tiles,rock,turrets,labels,dof,glow,shadow` も使えます。
-モデルの確認は `--gallery=1`（自機・敵・アイテム・タイル）、`--gallery=2`（ボス）、`--gallery=3`（島を順に流す）。
+モデルの確認は `--gallery=1`（自機・敵・アイテム・タイル）、`--gallery=2`（ボス）、`--gallery=3`（地形を順に流す）、`--gallery=4`（自機3形態の拡大）。

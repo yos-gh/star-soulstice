@@ -137,6 +137,10 @@ func _parse_args() -> void:
 		elif a.begins_with("--capture="):
 			capture_dir = a.get_slice("=", 1)
 			DirAccess.make_dir_recursive_absolute(capture_dir)
+			# keep Godot from importing the screenshots
+			var root := capture_dir.get_slice("/", 0)
+			if not FileAccess.file_exists(root + "/.gdignore"):
+				FileAccess.open(root + "/.gdignore", FileAccess.WRITE)
 		elif a.begins_with("--capture-every="):
 			capture_every = float(a.get_slice("=", 1))
 		elif a.begins_with("--quit-after="):
@@ -428,7 +432,7 @@ func _physics_process(_delta: float) -> void:
 	state_t += dt
 	match state:
 		State.TITLE:
-			terrain.tick(dt, SCROLL if gallery != 1 and gallery != 2 else 0.0)
+			terrain.tick(dt, SCROLL if gallery == 0 or gallery == 3 else 0.0)
 			if gallery > 0:
 				_gallery_tick(dt)
 				play_t += dt
@@ -978,6 +982,9 @@ func _automation(dt: float) -> void:
 	capture_t += dt
 	if capture_t >= capture_every:
 		capture_t = 0.0
+		if log_status and player.alive:
+			var sp := camera.unproject_position(player.position)
+			print("ship_px=%d,%d" % [int(sp.x), int(sp.y)])
 		if log_status:
 			print("t=%.1f state=%d wave=%d/%d phase=%s score=%d lives=%d lvl=%d energy=%.0f conc=%.2f enemies=%d bullets=%d items=%d islands=%d tiles=%d fps=%d" % [
 				play_t, state, (stage.wi + 1) if stage else 0, stage.wave_count() if stage else 0, stage.phase if stage else "-",
@@ -991,7 +998,8 @@ func _automation(dt: float) -> void:
 		get_tree().quit()
 
 
-## Debug view (--gallery=1: units and items, 2: the boss, 3: islands only):
+## Debug view (--gallery=1: units and items, 2: the boss, 3: islands only,
+## 4: the ship forms enlarged):
 ## models laid out on the play plane, turning slowly.
 func _build_gallery() -> void:
 	hud.visible = false
@@ -1012,6 +1020,14 @@ func _build_gallery() -> void:
 			m.mesh = Vox.get_mesh("lazaro_piece")
 			m.rotation.y = -k * PI / 2.0
 			m.position = Vector3(-11, 0, 10.5) + Vector3(0.95, 0, 0.95).rotated(Vector3.UP, -k * PI / 2.0) * 1.15
+			units.add_child(m)
+	elif gallery == 4:
+		# the three ship forms, enlarged and still, as seen in play
+		for k in 3:
+			var m := MeshInstance3D.new()
+			m.mesh = Vox.get_mesh("ship%d" % k)
+			m.scale = Vector3.ONE * 3.0
+			m.position = Vector3((k - 1) * 9.0, 0, 0)
 			units.add_child(m)
 	elif gallery == 2:
 		for n in ["boss_hull", "boss_eye"]:

@@ -99,77 +99,132 @@ static func build(name: String) -> ArrayMesh:
 
 # ------------------------------------------------------------ player
 
-## After Star Soldier's Caesar: the same parts rearranged per form (it
-## transforms rather than grows). A sturdy fuselage and two armoured arms:
-## Form I   trident: the arms lie close along the body, three tips forward
-## Form II  the arms swing out on struts with armour between; tail gun opens
-## Form III flying wing: the nose retracts, the arms sweep out and a wing
-##          panel unfolds between them, leaving two tips forward
+## After Star Soldier's Caesar. The ship is one set of parts - a central
+## core and two rounded pods - that rearranges per form (it transforms, it
+## does not bulk up):
+## Form I   crown: the pods sit tight against the core, three tips forward
+##          (the core's nose the tallest), joined into one compact body
+## Form II  the pods slide outward on struts with armour plates between,
+##          a tail gun extends from the core (rear fire)
+## Form III flying wing: the core's nose draws back, the pods swing in at
+##          the rear and the gaps close with wing plating - a heart-shaped
+##          wing with two tips and a notch between them
+const SHIP_PAL := {
+	"w": [WHITE, 2], "W": [WHITE, 3], "H": [WHITE, 4],
+	"g": [LGREY, 2], "G": [LGREY, 3],
+	"d": [DGREY, 1], "D": [DGREY, 2],
+	"b": [BLUE, 3], "B": [BLUE, 4], "n": [NAVY, 3],
+	"R": [RED, 3], "r": [RED, 2],
+	"c": [WHITE, 4, false, CANOPY],
+	"L": [WHITE, 3, false, CYAN],
+	"E": [THRUST, 1, true],
+}
+## Top views, front row first.
+const SHIP_CORE := [
+	"...ww...",
+	"..wWWw..",
+	"..wHHw..",
+	".wWHHWw.",
+	".wWccWw.",
+	".wWccWw.",
+	".wWccWw.",
+	"wWWnnWWw",
+	"wWGHHGWw",
+	"wWGHHGWw",
+	"wGGHHGGw",
+	"wGGbbGGw",
+	"wWGbbGWw",
+	"dWGBBGWd",
+	"dDWBBWDd",
+	".dDBBDd.",
+	"..dEEd..",
+]
+const SHIP_POD := [
+	"..LL..",
+	".wWWw.",
+	".wHHw.",
+	"wWHHWw",
+	"wWHHWw",
+	"wWGGWw",
+	"wWGGWw",
+	"wrRRrw",
+	"wWGGWw",
+	"wWGGWw",
+	"wWWWWw",
+	"wWWWWw",
+	"dWbbWd",
+	"dDbbDd",
+	".DDDD.",
+	"..EE..",
+]
+## Pod placement per form: [left pod x, front z, inward slant per row].
+const POD_AT := [[-11, -7, 0.0], [-15, -8, 0.0], [-11, -10, 0.2]]
+const CORE_Z := [-9, -9, -4]
+
+
 static func _ship(lvl: int) -> ArrayMesh:
-	var v := Vox.new(32, 8, 36)
-	var nose := -15 if lvl < 2 else -9
-	# fuselage (6 wide, ridged)
-	v.fill_sym(0, 1, nose + 2, 2, 2, 12, WHITE)
-	v.fill_sym(0, 1, nose, 0, 2, nose + 1, WHITE)
-	v.fill_sym(1, 1, nose + 1, 1, 2, nose + 1, LGREY)
-	v.fill_sym(0, 0, nose + 2, 2, 0, 11, LGREY)
-	v.fill_sym(0, 3, nose + 3, 1, 3, 10, WHITE)
-	v.fill_sym(2, 3, nose + 6, 2, 3, 9, LGREY)
-	v.fill_sym(0, 4, nose + 6, 0, 4, nose + 10, CANOPY, true)
-	v.fill_sym(1, 4, nose + 6, 1, 4, nose + 10, NAVY)
-	v.fill_sym(0, 4, nose + 11, 0, 4, 9, LGREY)
-	v.fill_sym(0, 3, nose + 1, 0, 3, nose + 2, RED)
-	v.fill_sym(0, 1, 13, 1, 2, 13, DGREY)
-	v.fill_sym(0, 2, 14, 0, 2, 14, THRUST, true)
-	v.fill_sym(1, 1, 14, 1, 1, 14, THRUST, true)
-	# arms
+	var v := Vox.new(32, 8, 32)
+	var pod: Array = POD_AT[lvl]
+	var px: int = pod[0]
+	var pz: int = pod[1]
+	var slant: float = pod[2]
+	_stamp(v, SHIP_POD, SHIP_PAL, px, pz, 1, slant, true)
 	match lvl:
 		0:
-			_arm(v, 4, -13, 23, 0.0)
-			v.fill_sym(3, 1, -4, 3, 2, 8, DGREY)
+			# pods joined to the core behind V notches, on one rear base
+			v.fill_sym(4, 1, -2, 4, 2, 7, LGREY)
+			v.fill_sym(4, 3, 0, 4, 3, 5, WHITE)
+			v.fill_sym(0, 1, 7, 10, 1, 7, DGREY)
 		1:
-			_arm(v, 7, -11, 22, 0.0)
-			# side armour between body and arms
-			v.fill_sym(3, 1, -5, 6, 1, 0, BLUE)
-			v.fill_sym(4, 2, -4, 5, 2, -1, WHITE)
-			v.fill_sym(3, 1, 1, 6, 1, 3, NAVY)
-			v.fill_sym(3, 2, 2, 6, 2, 2, LGREY)
-			v.fill_sym(0, 5, 6, 0, 5, 15, DGREY)
-			v.fill_sym(0, 5, 16, 0, 5, 16, CYAN, true)
-		_:
-			_arm(v, 5, -14, 24, 0.22)
-			# the unfolded wing panel between body and arms
-			for z in range(-6, 11):
-				var xo := 5 + int((z + 14) * 0.22)
-				v.fill_sym(3, 1, z, xo - 1, 1, z, BLUE if z > 6 else WHITE)
-			v.fill_sym(3, 2, -2, 4, 2, 6, LGREY)
-			v.fill_sym(0, 5, 6, 0, 5, 15, DGREY)
-			v.fill_sym(0, 5, 16, 0, 5, 16, CYAN, true)
+			# struts and armour plates bridging core and pods
+			v.fill_sym(4, 1, -3, 8, 1, 2, BLUE)
+			v.fill_sym(5, 2, -2, 7, 2, 1, WHITE)
+			v.fill_sym(4, 1, 4, 8, 2, 5, DGREY)
+			v.fill_sym(4, 2, 4, 8, 2, 4, LGREY)
+			# tail gun
+			v.fill_sym(0, 4, 6, 0, 4, 11, DGREY)
+			v.fill_sym(0, 5, 7, 0, 5, 9, LGREY)
+			v.fill_sym(0, 4, 12, 0, 4, 12, CYAN, true)
+		2:
+			# wing plating unfolds from the pods' inner sides and closes the
+			# gap to the core, leaving a narrow notch where the nose was
+			for r in range(2, SHIP_POD.size() - 1):
+				var z := pz + r
+				var inner := px + int(floor(r * slant)) + 6
+				for x in range(inner, -1):
+					var top := BLUE if (z - CORE_Z[2]) % 5 == 2 else LGREY
+					v.fill_sym(-1 - x, 1, z, -1 - x, 1, z, WHITE)
+					v.fill_sym(-1 - x, 2, z, -1 - x, 2, z, top)
+	_stamp(v, SHIP_CORE, SHIP_PAL, -4, CORE_Z[lvl], 1, 0.0, false)
+	# belly keel
+	v.fill_sym(0, 0, CORE_Z[lvl] + 3, 2, 0, CORE_Z[lvl] + 14, DGREY)
 	return v.mesh(U, Vector3(0, 2.0, 0))
 
 
-## One armoured arm (mirrored), 3 voxels wide, from its tip at z_tip back
-## for `length` rows; `sweep` shifts it outward per row (swept arms).
-static func _arm(v: Vox, x0: int, z_tip: int, length: int, sweep: float) -> void:
-	for r in length:
-		var z := z_tip + r
-		var x := x0 + int(r * sweep)
-		if r < 2:
-			# tapered tip with an emitter
-			v.fill_sym(x + 1, 1, z, x + 1, 2, z, RED if r == 0 else WHITE)
-			if r == 0:
-				v.fill_sym(x + 1, 3, z, x + 1, 3, z, CYAN, true)
-			continue
-		v.fill_sym(x, 1, z, x + 2, 2, z, WHITE)
-		v.fill_sym(x, 0, z, x + 2, 0, z, DGREY)
-		v.fill_sym(x + 1, 3, z, x + 1, 3, z, LGREY if r < length - 4 else BLUE)
-		if r == 4 or r == 5:
-			v.fill_sym(x, 3, z, x + 2, 3, z, RED)
-		if r >= length - 2:
-			v.fill_sym(x + 1, 1, z, x + 1, 2, z, DGREY)
-	var zb := z_tip + length
-	var xb := x0 + int((length - 1) * sweep)
-	v.fill_sym(xb + 1, 1, zb, xb + 1, 1, zb, THRUST, true)
+## Stamps a top-view part: each string is a row (first = front, -z), each
+## character a column; spec = [colour, height, glow?, cap colour?] (the cap
+## replaces the top voxel and glows). Columns start at x0 and rows at z0;
+## `slant` shifts row r sideways by floor(r * slant). `mirror` also stamps
+## the mirror image (x -> -1 - x).
+static func _stamp(v: Vox, rows: Array, pal: Dictionary, x0: int, z0: int, y0: int, slant := 0.0, mirror := false) -> void:
+	for r in rows.size():
+		var s: String = rows[r]
+		var sx := x0 + int(floor(r * slant))
+		for c in s.length():
+			var ch := s[c]
+			if not pal.has(ch):
+				continue
+			var spec: Array = pal[ch]
+			var h: int = spec[1]
+			for y in range(y0, y0 + h):
+				var col: Color = spec[0]
+				var glow: bool = spec[2] if spec.size() > 2 else false
+				if y == y0 + h - 1 and spec.size() > 3:
+					col = spec[3]
+					glow = true
+				v.put(sx + c, y, z0 + r, col, glow)
+				if mirror:
+					v.put(-1 - (sx + c), y, z0 + r, col, glow)
 
 
 # ------------------------------------------------------------ enemies
