@@ -11,7 +11,7 @@ enum { ENERGY, POWER, STAR }
 const MAX := 700
 const MAGNET := [6.8, 6.8, 6.8]  # pickup pull radius (everything, power-ups included)
 const CUBE := 0.42  # energy cube edge
-const BEAM := 0.05  # its wire thickness
+const BEAM := 0.03  # its edge thickness
 const DRIFT := [2.4, 1.5, 1.8]
 
 var game: Game
@@ -147,8 +147,12 @@ func draw() -> void:
 		mms[k].multimesh.visible_instance_count = counts[k]
 
 
-## Energy: a simple see-through yellow wireframe cube (12 thin beams).
+## Energy: a see-through yellow cube whose edges are a little brighter.
 func _wire_cube() -> ArrayMesh:
+	var m := ArrayMesh.new()
+	var face := BoxMesh.new()
+	face.size = Vector3.ONE * CUBE
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, face.get_mesh_arrays())
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var h := CUBE * 0.5
@@ -163,12 +167,18 @@ func _wire_cube() -> ArrayMesh:
 				p[(axis + 1) % 3] = a
 				p[(axis + 2) % 3] = b
 				st.append_from(beam, 0, Transform3D(Basis.IDENTITY, p))
-	var m := st.commit()
+	st.commit(m)
+	m.surface_set_material(0, _energy_mat(Color(1.0, 0.86, 0.25, 0.16)))
+	m.surface_set_material(1, _energy_mat(Color(1.0, 0.9, 0.35, 0.55)))
+	return m
+
+
+func _energy_mat(c: Color) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(1.0, 0.86, 0.2, 0.7)
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.albedo_color = c
+	mat.cull_mode = BaseMaterial3D.CULL_BACK
 	mat.disable_receive_shadows = true
-	m.surface_set_material(0, mat)
-	return m
+	mat.no_depth_test = false
+	return mat

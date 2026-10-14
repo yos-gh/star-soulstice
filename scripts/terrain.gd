@@ -70,10 +70,10 @@ func set_area(a: String) -> void:
 
 func _build_backdrop() -> void:
 	# nebula
-	var ny := -170.0
+	var ny := -240.0
 	var neb := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(520, 520)
+	pm.size = Vector2(760, 760)
 	nebula_mat = ShaderMaterial.new()
 	nebula_mat.shader = load("res://shaders/space.gdshader")
 	nebula_mat.render_priority = -10

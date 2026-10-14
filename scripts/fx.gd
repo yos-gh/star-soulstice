@@ -1,24 +1,113 @@
 class_name Fx
 extends Node3D
-## Explosions: additive camera-facing sprites (one MultiMesh, blocky
-## fireballs), tumbling voxel debris in the unit's colours (one MultiMesh),
-## pooled flash lights and floating labels.
+## Effects: camera-facing sprites in two layers, tumbling voxel debris, pooled
+## flash lights and floating labels.
+##   glows  additive sprites (sparks, small flashes, shockwaves) - additive.gdshader
+##   puffs  pixel-art explosion sprites drawn opaque-ish (puff.gdshader):
+##          fire puffs that go white-hot -> yellow -> orange -> red -> smoke
+##          and break up, smoke, a four-point flash and thin rings.
+## Explosions follow the classic 2D shmup recipe: a brief white flash, puffs
+## that expand fast and slow down as they cool into grey smoke, a few sparks
+## and debris; big enemies go in a chain of small blasts instead of one big
+## glow. They sit just below the bullets so the bullets stay readable.
 
-const MAX_SPRITES := 1600
+const MAX_GLOWS := 1600
+const MAX_PUFFS := 1400
 const MAX_DEBRIS := 500
+enum { FIRE, SMOKE, FLASH, RING }  # puff styles
+enum { WARM, COOL }  # puff palettes
+const BLAST_Y := 0.05  # explosion height: under the bullets (drawn at 0.32)
 
-var sprites: MultiMeshInstance3D
+
+## One sprite layer: packed arrays + a MultiMesh of camera-facing quads.
+## custom data = (age 0..1, style, seed, palette)
+class Layer:
+	var mm: MultiMesh
+	var pos := PackedVector3Array()
+	var vel := PackedVector3Array()
+	var size := PackedVector2Array()  # start, end
+	var life := PackedFloat32Array()
+	var age := PackedFloat32Array()  # negative = delayed start
+	var col := PackedColorArray()
+	var style := PackedFloat32Array()
+	var seed := PackedFloat32Array()
+	var pal := PackedFloat32Array()
+	var damp := 2.5
+	var grow_pow := 2.0
+	var n := 0
+	var cap := 0
+
+	func _init(max_count: int) -> void:
+		cap = max_count
+		pos.resize(cap)
+		vel.resize(cap)
+		size.resize(cap)
+		life.resize(cap)
+		age.resize(cap)
+		col.resize(cap)
+		style.resize(cap)
+		seed.resize(cap)
+		pal.resize(cap)
+
+	func add(p: Vector3, v: Vector3, s0: float, s1: float, l: float, c: Color, st: float, delay: float, sd: float, pl: float) -> void:
+		if n >= cap:
+			return
+		pos[n] = p
+		vel[n] = v
+		size[n] = Vector2(s0, s1)
+		life[n] = l
+		age[n] = -delay
+		col[n] = c
+		style[n] = st
+		seed[n] = sd
+		pal[n] = pl
+		n += 1
+
+	func tick(dt: float) -> void:
+		var i := 0
+		while i < n:
+			var a := age[i] + dt
+			age[i] = a
+			if a < 0.0:
+				i += 1
+				continue
+			if a >= life[i]:
+				n -= 1
+				pos[i] = pos[n]
+				vel[i] = vel[n]
+				size[i] = size[n]
+				life[i] = life[n]
+				age[i] = age[n]
+				col[i] = col[n]
+				style[i] = style[n]
+				seed[i] = seed[n]
+				pal[i] = pal[n]
+				continue
+			vel[i] *= 1.0 - damp * dt
+			pos[i] += vel[i] * dt
+			i += 1
+
+	func draw() -> void:
+		var vis := 0
+		for i in n:
+			var a := age[i]
+			if a < 0.0:
+				continue
+			var f := a / life[i]
+			# expand fast, then slow down
+			var sz := lerpf(size[i].x, size[i].y, 1.0 - pow(1.0 - f, grow_pow))
+			mm.set_instance_transform(vis, Transform3D(Basis.from_scale(Vector3(sz, sz, sz)), pos[i]))
+			mm.set_instance_color(vis, col[i])
+			mm.set_instance_custom_data(vis, Color(f, style[i], seed[i], pal[i]))
+			vis += 1
+		mm.visible_instance_count = vis
+
+
+var glows: Layer
+var puffs: Layer
+var sprites: MultiMeshInstance3D  # the glow layer (kept for --hide)
+var puff_mi: MultiMeshInstance3D
 var debris: MultiMeshInstance3D
-
-var s_pos := PackedVector3Array()
-var s_vel := PackedVector3Array()
-var s_size := PackedVector2Array()  # start, end
-var s_life := PackedFloat32Array()
-var s_age := PackedFloat32Array()  # negative = delayed start
-var s_col := PackedColorArray()
-var s_style := PackedFloat32Array()
-var s_seed := PackedFloat32Array()
-var sn := 0
 
 var d_pos := PackedVector3Array()
 var d_vel := PackedVector3Array()
@@ -37,14 +126,6 @@ var rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	rng.seed = 99
-	s_pos.resize(MAX_SPRITES)
-	s_vel.resize(MAX_SPRITES)
-	s_size.resize(MAX_SPRITES)
-	s_life.resize(MAX_SPRITES)
-	s_age.resize(MAX_SPRITES)
-	s_col.resize(MAX_SPRITES)
-	s_style.resize(MAX_SPRITES)
-	s_seed.resize(MAX_SPRITES)
 	d_pos.resize(MAX_DEBRIS)
 	d_vel.resize(MAX_DEBRIS)
 	d_rot.resize(MAX_DEBRIS)
@@ -52,23 +133,12 @@ func _ready() -> void:
 	d_life.resize(MAX_DEBRIS)
 	d_scale.resize(MAX_DEBRIS)
 	d_col.resize(MAX_DEBRIS)
-	sprites = MultiMeshInstance3D.new()
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.use_custom_data = true
-	var q := QuadMesh.new()
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/additive.gdshader")
-	mat.render_priority = 1
-	q.material = mat
-	mm.mesh = q
-	mm.instance_count = MAX_SPRITES
-	mm.visible_instance_count = 0
-	sprites.multimesh = mm
-	sprites.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	sprites.custom_aabb = AABB(Vector3(-80, -40, -120), Vector3(160, 80, 180))
-	add_child(sprites)
+	glows = Layer.new(MAX_GLOWS)
+	sprites = _layer_node(glows, "res://shaders/additive.gdshader", 1)
+	puffs = Layer.new(MAX_PUFFS)
+	puffs.damp = 3.2
+	puffs.grow_pow = 3.0
+	puff_mi = _layer_node(puffs, "res://shaders/puff.gdshader", 0)
 
 	debris = MultiMeshInstance3D.new()
 	var dm := MultiMesh.new()
@@ -83,7 +153,7 @@ func _ready() -> void:
 
 	for i in 6:
 		var l := OmniLight3D.new()
-		l.omni_range = 14.0
+		l.omni_range = 10.0
 		l.light_energy = 0.0
 		l.shadow_enabled = false
 		l.visible = false
@@ -92,53 +162,93 @@ func _ready() -> void:
 		light_t.append(0.0)
 
 
+func _layer_node(layer: Layer, shader: String, priority: int) -> MultiMeshInstance3D:
+	var mi := MultiMeshInstance3D.new()
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.use_custom_data = true
+	var q := QuadMesh.new()
+	var mat := ShaderMaterial.new()
+	mat.shader = load(shader)
+	mat.render_priority = priority
+	q.material = mat
+	mm.mesh = q
+	mm.instance_count = layer.cap
+	mm.visible_instance_count = 0
+	mi.multimesh = mm
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.custom_aabb = AABB(Vector3(-80, -40, -120), Vector3(160, 80, 180))
+	add_child(mi)
+	layer.mm = mm
+	return mi
+
+
+## Additive glow sprite. style: 0 soft glow, 1 fireball, 2 ring, 3 square ring.
 func sprite(p: Vector3, v: Vector3, s0: float, s1: float, life: float, c: Color, style := 0.0, delay := 0.0) -> void:
-	if sn >= MAX_SPRITES:
-		return
-	s_pos[sn] = p
-	s_vel[sn] = v
-	s_size[sn] = Vector2(s0, s1)
-	s_life[sn] = life
-	s_age[sn] = -delay
-	s_col[sn] = c
-	s_style[sn] = style
-	s_seed[sn] = rng.randf()
-	sn += 1
+	glows.add(p, v, s0, s1, life, c, style, delay, rng.randf(), 0.0)
+
+
+## Pixel explosion sprite (see the styles and palettes above).
+func puff(p: Vector3, v: Vector3, s0: float, s1: float, life: float, style: int, delay := 0.0, pal := WARM) -> void:
+	puffs.add(p, v, s0, s1, life, Color(1, 1, 1), style, delay, rng.randf(), pal)
 
 
 func spark(p: Vector3, c: Color, count := 3, size := 0.45) -> void:
-	sprite(p, Vector3.ZERO, size * 1.6, size * 0.4, 0.12, c, 0.0)
+	sprite(p, Vector3.ZERO, size * 1.2, size * 0.3, 0.1, c * 0.8, 0.0)
 	for i in count:
 		var v := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.1, 0.25), rng.randf_range(-1, 1)).normalized() * rng.randf_range(4, 10)
-		sprite(p, v, size * 0.5, 0.05, rng.randf_range(0.12, 0.25), c, 0.0)
+		sprite(p, v, size * 0.4, 0.05, rng.randf_range(0.12, 0.22), c, 0.0)
 
 
 func smoke(p: Vector3, drift: Vector3, size := 1.0) -> void:
-	sprite(p, drift + Vector3(rng.randf_range(-0.5, 0.5), 1.5, rng.randf_range(-0.5, 0.5)), size * 0.6, size * 1.6, 0.9, Color(0.35, 0.3, 0.28), 1.0)
+	puff(p, drift, size * 0.6, size * 1.3, 0.7, SMOKE)
 
 
-## Explosion of the given scale (1 = small heli, 3 = gunship, 6+ = boss part).
-## `body` colours the voxel debris.
+## Explosion of the given scale (1 = small fighter, 3 = cruiser, 6+ = boss
+## part). `body` colours the voxel debris; a bluish `c` picks the cool
+## palette (the player's ship).
 func explode(p: Vector3, scale := 1.0, drift := Vector3.ZERO, body := Color(0.4, 0.4, 0.4), c := Color(1.0, 0.55, 0.2)) -> void:
-	var balls := int(clampf(3.0 + scale * 3.0, 3.0, 40.0))
-	sprite(p, drift, scale * 1.3, scale * 2.6, 0.16, Color(1.0, 0.7, 0.4), 0.0)
-	for i in balls:
-		var off := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.4, 0.8), rng.randf_range(-1, 1)) * scale * 0.7
-		var v := off * rng.randf_range(1.0, 3.0) + drift
-		var delay := rng.randf_range(0.0, 0.08 * scale) if i > 2 else 0.0
-		sprite(p + off * 0.3, v, scale * rng.randf_range(0.8, 1.3), scale * rng.randf_range(2.0, 3.0), rng.randf_range(0.5, 0.85) + scale * 0.05, c, 1.0, delay)
-	var sparks := int(clampf(scale * 6.0, 4.0, 40.0))
-	for i in sparks:
-		var v := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.1, 0.25), rng.randf_range(-1, 1)).normalized() * rng.randf_range(6, 16) * sqrt(scale)
-		sprite(p, v + drift, 0.35, 0.05, rng.randf_range(0.3, 0.6), Color(1.0, 0.75, 0.4), 0.0)
-	if scale >= 2.0:
-		sprite(p, drift, scale * 0.5, scale * 5.5, 0.45, Color(1.0, 0.7, 0.4), 2.0)
-	var chunks := int(clampf(scale * 6.0, 5.0, 60.0))
+	var pal := COOL if c.b > c.r else WARM
+	var at := Vector3(p.x, BLAST_Y, p.z)
+	if scale >= 2.4:
+		# a chain of small blasts across the body, then the core goes
+		var count := int(clampf(scale * 1.6, 3.0, 12.0))
+		var spread := minf(scale * 0.5, 4.0)
+		for i in count:
+			var off := Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)) * spread
+			_blast(at + off, rng.randf_range(0.8, 1.2) * minf(scale * 0.4, 1.4), drift, pal, i * 0.07 + rng.randf() * 0.04)
+		var last := count * 0.07
+		_blast(at, minf(scale * 0.55, 3.0), drift, pal, last)
+		puff(at, drift, scale * 0.5, scale * 2.6, 0.45, RING, last, pal)
+	else:
+		_blast(at, scale, drift, pal, 0.0)
+	var chunks := int(clampf(scale * 4.0, 4.0, 40.0))
 	for i in chunks:
 		var dv := Vector3(rng.randf_range(-1, 1), rng.randf_range(0.1, 0.6), rng.randf_range(-1, 1)) * rng.randf_range(4, 10) * sqrt(scale)
 		var dc := body if rng.randf() < 0.75 else body.darkened(0.5)
-		_debris(p, dv + drift, clampf(scale * 0.12, 0.14, 0.5), dc)
-	flash(p, scale)
+		_debris(at, dv + drift, clampf(scale * 0.1, 0.12, 0.4), dc)
+	flash(at, scale)
+
+
+## One blast: flash, fire puffs, smoke, sparks (and a ring when larger).
+func _blast(p: Vector3, s: float, drift: Vector3, pal: int, delay: float) -> void:
+	puff(p, drift, s * 1.5, s * 0.4, 0.09, FLASH, delay, pal)
+	var fires := 3 + int(s * 1.5)
+	for i in fires:
+		var a := rng.randf() * TAU
+		var off := Vector3(cos(a), 0, sin(a)) * s * rng.randf_range(0.1, 0.4)
+		puff(p + off, off * 2.0 + drift, s * rng.randf_range(0.45, 0.65), s * rng.randf_range(1.0, 1.4), rng.randf_range(0.42, 0.56), FIRE, delay + i * 0.025, pal)
+	for i in 2:
+		var off := Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)) * s * 0.3
+		puff(p + off, drift * 0.8 + off, s * 0.6, s * 1.3, rng.randf_range(0.55, 0.75), SMOKE, delay + 0.16, pal)
+	var sparks := 4 + int(s * 3.0)
+	var sc := Color(1.0, 0.85, 0.5) if pal == WARM else Color(0.6, 0.85, 1.0)
+	for i in sparks:
+		var v := Vector3(rng.randf_range(-1, 1), 0.05, rng.randf_range(-1, 1)).normalized() * rng.randf_range(7, 14) * sqrt(s)
+		sprite(p, v + drift, 0.16, 0.04, rng.randf_range(0.18, 0.32), sc * 0.7, 0.0, delay)
+	if s >= 1.3:
+		puff(p, drift, s * 0.4, s * 2.0, 0.3, RING, delay + 0.02, pal)
 
 
 func shockwave(p: Vector3, radius: float, c: Color, square := false) -> void:
@@ -152,11 +262,11 @@ func flash(p: Vector3, scale: float) -> void:
 			best = i
 	var l := lights[best]
 	l.position = p + Vector3(0, 2, 0)
-	l.light_color = Color(1.0, 0.6, 0.3)
-	l.omni_range = 8.0 + scale * 4.0
+	l.light_color = Color(1.0, 0.65, 0.35)
+	l.omni_range = 5.0 + scale * 2.5
 	l.visible = true
-	light_t[best] = 0.35 + scale * 0.06
-	l.light_energy = 2.0 + scale
+	light_t[best] = 0.2 + scale * 0.04
+	l.light_energy = 0.8 + scale * 0.35
 
 
 func _debris(p: Vector3, v: Vector3, sc: float, c: Color) -> void:
@@ -166,7 +276,7 @@ func _debris(p: Vector3, v: Vector3, sc: float, c: Color) -> void:
 	d_vel[dn] = v
 	d_rot[dn] = Vector3(rng.randf() * TAU, rng.randf() * TAU, rng.randf() * TAU)
 	d_spin[dn] = Vector3(rng.randf_range(-10, 10), rng.randf_range(-10, 10), rng.randf_range(-10, 10))
-	d_life[dn] = rng.randf_range(0.9, 1.8)
+	d_life[dn] = rng.randf_range(0.7, 1.4)
 	d_scale[dn] = sc * rng.randf_range(0.7, 1.4)
 	d_col[dn] = c
 	dn += 1
@@ -179,9 +289,9 @@ func popup(p: Vector3, text: String, c := Color(1, 1, 1), big := false) -> void:
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.no_depth_test = true
 	l.fixed_size = true
-	l.pixel_size = 0.0013 if big else 0.0009
+	l.pixel_size = 0.0008 if big else 0.0006
 	l.font_size = 40
-	l.outline_size = 10
+	l.outline_size = 8
 	l.modulate = c
 	l.outline_modulate = Color(0, 0, 0, 0.85)
 	l.position = p + Vector3(0, 1.0, 0)
@@ -192,7 +302,8 @@ func popup(p: Vector3, text: String, c := Color(1, 1, 1), big := false) -> void:
 
 
 func clear() -> void:
-	sn = 0
+	glows.n = 0
+	puffs.n = 0
 	dn = 0
 	for e: Array in labels:
 		(e[0] as Label3D).queue_free()
@@ -200,28 +311,9 @@ func clear() -> void:
 
 
 func tick(dt: float, scroll_speed: float) -> void:
+	glows.tick(dt)
+	puffs.tick(dt)
 	var i := 0
-	while i < sn:
-		var a := s_age[i] + dt
-		s_age[i] = a
-		if a < 0.0:
-			i += 1
-			continue
-		if a >= s_life[i]:
-			sn -= 1
-			s_pos[i] = s_pos[sn]
-			s_vel[i] = s_vel[sn]
-			s_size[i] = s_size[sn]
-			s_life[i] = s_life[sn]
-			s_age[i] = s_age[sn]
-			s_col[i] = s_col[sn]
-			s_style[i] = s_style[sn]
-			s_seed[i] = s_seed[sn]
-			continue
-		s_vel[i] *= 1.0 - 2.5 * dt
-		s_pos[i] += s_vel[i] * dt
-		i += 1
-	i = 0
 	while i < dn:
 		d_life[i] -= dt
 		if d_life[i] <= 0.0:
@@ -238,13 +330,14 @@ func tick(dt: float, scroll_speed: float) -> void:
 		d_vel[i].y -= 9.0 * dt
 		d_pos[i] += d_vel[i] * dt
 		d_rot[i] += d_spin[i] * dt
-		if rng.randf() < 0.12:
-			sprite(d_pos[i], Vector3(0, 0, scroll_speed * 0.3), 0.3, 0.8, 0.35, Color(0.6, 0.35, 0.2), 1.0)
+		if rng.randf() < 0.1:
+			# smoke trail behind flying chunks
+			puff(d_pos[i], Vector3(0, 0, scroll_speed * 0.3), 0.18, 0.4, 0.35, SMOKE)
 		i += 1
 	for k in lights.size():
 		if light_t[k] > 0.0:
 			light_t[k] -= dt
-			lights[k].light_energy = maxf(0.0, lights[k].light_energy - dt * 12.0)
+			lights[k].light_energy = maxf(0.0, lights[k].light_energy - dt * 10.0)
 			if light_t[k] <= 0.0:
 				lights[k].visible = false
 	var j := 0
@@ -263,19 +356,8 @@ func tick(dt: float, scroll_speed: float) -> void:
 
 
 func draw() -> void:
-	var mm := sprites.multimesh
-	var vis := 0
-	for i in sn:
-		var a := s_age[i]
-		if a < 0.0:
-			continue
-		var f := a / s_life[i]
-		var sz := lerpf(s_size[i].x, s_size[i].y, 1.0 - (1.0 - f) * (1.0 - f))
-		mm.set_instance_transform(vis, Transform3D(Basis.from_scale(Vector3(sz, sz, sz)), s_pos[i]))
-		mm.set_instance_color(vis, s_col[i])
-		mm.set_instance_custom_data(vis, Color(f, s_style[i], s_seed[i], 0.0))
-		vis += 1
-	mm.visible_instance_count = vis
+	glows.draw()
+	puffs.draw()
 	var dm := debris.multimesh
 	dm.visible_instance_count = dn
 	for i in dn:

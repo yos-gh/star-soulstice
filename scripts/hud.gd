@@ -197,8 +197,11 @@ func _notice(sz: Vector2) -> void:
 		_text(Vector2(0, sz.y - 60), Controls.notice, 14, Color(1, 1, 1, clampf(Controls.notice_t, 0.0, 1.0)), HORIZONTAL_ALIGNMENT_CENTER, sz.x)
 
 
-## Telegraphs (see Game.warn): 「 」 brackets that close in on the attacker
-## and blink just before the attack, plus a dashed line for charges.
+## Telegraphs (see Game.warn), all in white: a lock-on reticle of four
+## corner brackets that spins in from 45 degrees and closes on the attacker,
+## inner ticks in the second half, a fuse bar of four cells counting down,
+## and a blink just before the attack. Charges and big moves get doubled
+## corners and chevrons streaming along the path.
 func _warnings() -> void:
 	var g := game
 	for w: Dictionary in g.warnings:
@@ -210,19 +213,44 @@ func _warnings() -> void:
 		var rpx := g.camera.unproject_position(at + Vector3(float(w["r"]), 0, 0)).x - sp.x
 		var t: float = w["t"]
 		var f := 1.0 - t / maxf(float(w["dur"]), 0.01)
-		var c: Color = Game.WARN_COL[w["kind"]]
-		if t < 0.16 and int(t * 30.0) % 2 == 0:
-			c = Color(1, 1, 1)
-		var s := rpx * lerpf(2.3, 1.2, f) + 8.0
-		var l := maxf(8.0, s * 0.55)
-		var tl := sp + Vector2(-s, -s)
-		var br := sp + Vector2(s, s)
-		var bracket_tl := PackedVector2Array([tl + Vector2(0, l), tl, tl + Vector2(l, 0)])
-		var bracket_br := PackedVector2Array([br - Vector2(0, l), br, br - Vector2(l, 0)])
-		for pts in [bracket_tl, bracket_br]:
-			draw_polyline(pts, Color(0, 0, 0, 0.6), 5.0)
-			draw_polyline(pts, c, 2.5)
-		# charge path
+		var e := 1.0 - pow(1.0 - f, 3.0)
+		var heavy: bool = w["kind"] == Game.Warn.MOVE
+		var last := t < 0.16
+		if last and int(t * 40.0) % 2 == 1:
+			continue
+		var c := Color(1, 1, 1)
+		var s := rpx * lerpf(2.4, 1.25, e) + 9.0
+		var ang := lerpf(PI / 4.0, 0.0, e)
+		var l := maxf(7.0, s * 0.45)
+		var wdt := 3.0 if last else 2.0
+		for k in 4:
+			var sx := 1.0 if k % 2 == 0 else -1.0
+			var sy := 1.0 if k < 2 else -1.0
+			for inset: float in ([0.0, 5.0] if heavy else [0.0]):
+				var corner := Vector2(sx, sy) * (s - inset)
+				var pts := PackedVector2Array([
+					sp + (corner - Vector2(sx * l, 0)).rotated(ang),
+					sp + corner.rotated(ang),
+					sp + (corner - Vector2(0, sy * l)).rotated(ang),
+				])
+				draw_polyline(pts, Color(0, 0, 0, 0.55), wdt + 2.5)
+				draw_polyline(pts, c, wdt)
+		if f > 0.5:
+			var tick := 6.0 * (f - 0.5) * 2.0
+			for dir: Vector2 in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+				var a := sp + (dir * s).rotated(ang)
+				var b := sp + (dir * (s - tick)).rotated(ang)
+				draw_line(a, b, c, 2.0)
+		# fuse: four cells under the reticle
+		var cells := ceili((1.0 - f) * 4.0)
+		var cw := maxf(4.0, s * 0.32)
+		var y := sp.y + s + 7.0
+		for k in 4:
+			var r := Rect2(sp.x - cw * 2.0 - 3.0 + k * (cw + 2.0), y, cw, 3.0)
+			draw_rect(r.grow(1.0), Color(0, 0, 0, 0.5))
+			if k < cells:
+				draw_rect(r, c)
+		# charge path: chevrons streaming toward the target
 		var to = w["to"]
 		var target := Vector2.INF
 		if to is String and to == "player" and g.player.alive:
@@ -232,12 +260,15 @@ func _warnings() -> void:
 		if target != Vector2.INF:
 			var d := target - sp
 			var len := minf(d.length(), 420.0)
-			if len > s:
+			if len > s + 10.0:
 				var dir := d / d.length()
-				var k := s
-				var phase := fmod(g.time * 60.0, 18.0)
-				while k + 10.0 < len:
-					var a := sp + dir * (k + phase)
-					var b := sp + dir * minf(k + phase + 10.0, len)
-					draw_line(a, b, Color(c.r, c.g, c.b, 0.75), 2.0)
-					k += 18.0
+				var side := Vector2(-dir.y, dir.x)
+				var k := s + 6.0 + fmod(g.time * 90.0, 22.0)
+				while k < len:
+					var tip := sp + dir * k
+					var a := clampf(1.0 - k / len, 0.25, 0.9)
+					var col := Color(1, 1, 1, a)
+					var pts := PackedVector2Array([tip - dir * 6.0 + side * 5.0, tip, tip - dir * 6.0 - side * 5.0])
+					draw_polyline(pts, Color(0, 0, 0, a * 0.5), 4.0)
+					draw_polyline(pts, col, 2.0)
+					k += 22.0

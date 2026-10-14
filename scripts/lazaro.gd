@@ -98,7 +98,7 @@ func tick(dt: float) -> void:
 			center.z = move_toward(center.z, game.field_top + 6.0, 5.0 * dt)
 			open = 0.0
 			if st > 2.6 - SPLIT_WARN:
-				_warn_once("split", SPLIT_WARN, Game.Warn.MOVE, pieces)
+				_warn_once("split", SPLIT_WARN, Game.Warn.MOVE, [core], 2.6)
 			_place_merged()
 			if st > 2.6:
 				_begin_split()
@@ -175,7 +175,7 @@ func tick(dt: float) -> void:
 		"rise":
 			center = center.lerp(Vector3(clampf(game.player.position.x * 0.4, -6.0, 6.0), 0, game.field_top + 6.0), clampf(2.5 * dt, 0.0, 1.0))
 			if st > 1.0 - SPLIT_WARN:
-				_warn_once("split", SPLIT_WARN, Game.Warn.MOVE, pieces)
+				_warn_once("split", SPLIT_WARN, Game.Warn.MOVE, [core], 2.6)
 			_place_merged()
 			if st > 1.0:
 				_begin_split()
@@ -206,13 +206,19 @@ func tick(dt: float) -> void:
 
 
 ## Telegraphs each big move or energy volley once per cycle.
-func _warn_once(key: String, dur: float, kind: int, nodes: Array) -> void:
+func _warn_once(key: String, dur: float, kind: int, nodes: Array, radius := 0.0) -> void:
 	var k := "%s%d" % [key, cycle]
 	if warned.has(k):
 		return
 	warned[k] = true
 	for q: Enemy in nodes:
-		game.warn(q, dur, kind, q.radius, "player" if kind == Game.Warn.MOVE else null)
+		game.warn(q, dur, kind, radius if radius > 0.0 else q.radius, "player" if kind == Game.Warn.MOVE else null)
+	if key == "split":
+		# one reticle around the whole sphere, but every shell piece pulses
+		for q in pieces:
+			q.warn_t = dur
+			q.warn_dur = dur
+			q.warn_col = Game.WARN_COL[kind]
 
 
 func _begin_split() -> void:

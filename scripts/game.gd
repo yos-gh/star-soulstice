@@ -21,7 +21,7 @@ extends Node3D
 
 enum State { TITLE, PLAY, CLEAR, GAME_OVER }
 enum Warn { SHOT, MOVE }
-const WARN_COL := [Color(1.0, 0.55, 0.15), Color(1.0, 0.2, 0.2)]
+const WARN_COL := [Color(0.9, 0.85, 0.75), Color(1.0, 1.0, 1.0)]  # body pulse
 
 const DT := 1.0 / 60.0
 const GROUND_Y := -3.0
@@ -62,6 +62,7 @@ var spears := 0
 var clear_t := -1.0
 
 var camera: Camera3D
+var ground_blur: MeshInstance3D
 var cam_pos := Vector3.ZERO
 var shake_a := 0.0
 var env: Environment
@@ -205,18 +206,24 @@ func _setup_world() -> void:
 	camera.fov = CAM_FOV
 	camera.near = 1.0
 	camera.far = 400.0
-	var attrs := CameraAttributesPractical.new()
-	attrs.dof_blur_far_enabled = true
-	attrs.dof_blur_far_distance = CAM_DIST + 22.0  # islands and units stay sharp
-	attrs.dof_blur_far_transition = 18.0
-	attrs.dof_blur_amount = 0.09
-	camera.attributes = attrs
 	add_child(camera)
 	camera.current = true
 	var pitch := deg_to_rad(CAM_PITCH)
 	cam_pos = CAM_TARGET + Vector3(0, sin(pitch), cos(pitch)) * CAM_DIST
 	camera.look_at_from_position(cam_pos, CAM_TARGET, Vector3.UP)
 	_measure_field()
+	# soft focus for everything below the play plane (see groundblur.gdshader)
+	ground_blur = MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	var bmat := ShaderMaterial.new()
+	bmat.shader = load("res://shaders/groundblur.gdshader")
+	bmat.render_priority = -128
+	quad.material = bmat
+	ground_blur.mesh = quad
+	ground_blur.extra_cull_margin = 16384.0
+	ground_blur.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ground_blur.position = Vector3(0, 0, -3.0)
+	camera.add_child(ground_blur)
 
 	terrain = Terrain.new()
 	terrain.game = self
@@ -830,7 +837,8 @@ func on_tile_broken(at: Vector3, world: Vector3, t: int, star: bool) -> void:
 	var c: Color = [Color(0.35, 0.6, 0.62), Color(0.45, 0.5, 0.65), Color(0.5, 0.52, 0.58)][t]
 	for k in 4 + t * 2:
 		fx._debris(world + Vector3(randf_range(-0.7, 0.7), 0.4, randf_range(-0.7, 0.7)), Vector3(randf_range(-3, 3), randf_range(2, 4), randf_range(-3, 3)), 0.18, c)
-	fx.sprite(world + Vector3(0, 0.5, 0), Vector3.ZERO, 1.0, 2.6, 0.25, c.lightened(0.3), 0.0)
+	fx.puff(world + Vector3(0, 0.4, 0), Vector3(0, 0, scroll_speed * 0.5), 0.8, 1.8, 0.35, Fx.SMOKE)
+	fx.puff(world + Vector3(0, 0.45, 0), Vector3(0, 0, scroll_speed * 0.5), 1.2, 0.3, 0.07, Fx.FLASH)
 	sfx.play("tile_break")
 	if star:
 		items.spawn(at, Items.STAR, 1.0, Vector3(0, 0, -2.0))
@@ -901,7 +909,7 @@ func _draw_all() -> void:
 		units.visible = not hide_layers.has("units")
 		for e: Array in fx.labels:
 			(e[0] as Label3D).visible = not hide_layers.has("labels")
-		(camera.attributes as CameraAttributesPractical).dof_blur_far_enabled = not hide_layers.has("dof")
+		ground_blur.visible = not hide_layers.has("dof")
 		env.glow_enabled = not hide_layers.has("glow")
 		sun.shadow_enabled = not hide_layers.has("shadow")
 		player.visible = player.alive and not hide_layers.has("player")
@@ -1068,11 +1076,11 @@ func _gallery_tick(dt: float) -> void:
 
 ## Every dangerous attack is announced before it happens (unbreakable
 ## shots, charges, the mid-boss's and boss's big moves):
-##   - 「 」 brackets close in on the attacker (drawn by the HUD): orange
-##     for energy shots, red for charges and big moves; they blink just
-##     before the attack
-##   - the attacker pulses with a warm overlay that quickens
-##   - a charge also shows a dashed line toward its target
+##   - a white lock-on reticle spins in and closes on the attacker, with a
+##     fuse bar counting down and a blink just before the attack (drawn by
+##     the HUD); charges and big moves get doubled corners
+##   - the attacker pulses white, quickening
+##   - a charge also streams chevrons toward its target
 ##   - a short rising tone
 ## Breakable shells are never announced: they are the low-threat fodder.
 func warn(node: Node3D, dur: float, kind: int, radius := 1.0, to: Variant = null) -> void:
