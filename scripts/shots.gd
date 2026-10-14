@@ -7,9 +7,9 @@ extends Node3D
 const MAX := 400
 const BASE_DMG := 1.0
 const HOMING_DMG := 16.0
-const HOMING_SPEED := 75.0
-const TRAIL := 12
-const BLOOM := 0.1  # seconds the lasers float outward before homing
+const HOMING_SPEED := 30.0
+const TRAIL := 16
+const BLOOM := 0.0  # seconds the lasers float outward before homing (0 = off)
 
 var game: Game
 var pos := PackedVector3Array()
@@ -90,14 +90,14 @@ func launch_homing(p: Vector3, count: int) -> void:
 		var spread := 0.0 if count == 1 else lerpf(-1.0, 1.0, float(i) / (count - 1))
 		# fan out behind and to the sides; they float for a moment before
 		# turning on their targets
-		var ang := PI / 2.0 + spread * deg_to_rad(85.0) + randf_range(-0.08, 0.08)
-		var v := Vector3(cos(ang), 0, sin(ang)) * randf_range(16.0, 19.0)
+		var ang := PI / 2.0 + spread * deg_to_rad(75.0)
+		var v := Vector3(cos(ang), 0, sin(ang)) * 12.0
 		var tgt: Object = null
 		if not targets.is_empty():
 			tgt = targets[i % targets.size()]
 		var trail := PackedVector3Array()
 		trail.push_back(p)
-		homing.append({"pos": p + Vector3(0, 0, 0.6), "vel": v, "target": tgt, "life": 3.0, "trail": trail, "done": false, "fade": 0.25, "t": 0.0})
+		homing.append({"pos": p + Vector3(0, 0, 0.6), "vel": v, "target": tgt, "life": 2.6, "trail": trail, "done": false, "fade": 0.25, "t": 0.0})
 
 
 func tick(dt: float) -> void:
@@ -145,11 +145,11 @@ func tick(dt: float) -> void:
 			k += 1
 			continue
 		var ta := ht - BLOOM
-		var spd := minf(HOMING_SPEED, maxf(v.length(), 10.0) + ta * 220.0)
+		var spd := minf(HOMING_SPEED, 12.0 + ta * 40.0)
 		if is_instance_valid(tgt):
 			var to: Vector3 = (tgt as Enemy).hit_pos - hp
 			to.y = 0.0
-			var turn := clampf(8.0 + ta * 120.0, 0.0, 50.0)
+			var turn := clampf(4.0 + ta * 10.0, 0.0, 22.0)
 			var want := to.normalized() * spd
 			v = v.lerp(want, clampf(turn * dt, 0.0, 1.0))
 			if v.length() > 0.001:
@@ -212,8 +212,8 @@ func draw() -> void:
 			var side := Vector3(-d.z, 0, d.x).normalized()
 			var ta := float(j) / (cnt - 1)
 			var tb := float(j + 1) / (cnt - 1)
-			var wa := 0.2 * ta
-			var wb := 0.2 * tb
+			var wa := 0.24 * ta
+			var wb := 0.24 * tb
 			var ca := Color(0.3, 0.8, 1.0, ta * fa)
 			var cb := Color(0.6, 0.95, 1.0, tb * fa)
 			var y := Vector3(0, 0.5, 0)
@@ -232,11 +232,11 @@ func draw() -> void:
 			var hp: Vector3 = h["pos"]
 			var hv: Vector3 = h["vel"]
 			var dir := hv.normalized() if hv.length_squared() > 0.0001 else Vector3(0, 0, -1)
-			var sd := Vector3(-dir.z, 0, dir.x) * 0.16
+			var sd := Vector3(-dir.z, 0, dir.x) * 0.19
 			var y := Vector3(0, 0.55, 0)
 			var c := Color(0.9, 1.0, 1.0, 1.0)
-			var tip := hp + dir * 0.7 + y
-			var tail := hp - dir * 0.45 + y
+			var tip := hp + dir * 0.84 + y
+			var tail := hp - dir * 0.54 + y
 			_v(c, Vector2(1, 0.5), tip)
 			_v(c, Vector2(0.5, 0), hp - sd + y)
 			_v(c, Vector2(0.5, 1), hp + sd + y)

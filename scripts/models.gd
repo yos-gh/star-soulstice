@@ -99,62 +99,77 @@ static func build(name: String) -> ArrayMesh:
 
 # ------------------------------------------------------------ player
 
-## After Star Soldier's Caesar: no delta wing. A slim central fuselage
-## flanked by two long booms that reach forward past the nose (the twin
-## shots leave from their tips), tied to the body by short struts.
-## Form I   the compact twin-boom fighter
-## Form II  transforms: the booms swing out on wider struts, side armour
-##          plates and a tail gun appear (rear fire)
-## Form III outrigger pods with emitters, canards and tall fins
+## After Star Soldier's Caesar: the same parts rearranged per form (it
+## transforms rather than grows). A sturdy fuselage and two armoured arms:
+## Form I   trident: the arms lie close along the body, three tips forward
+## Form II  the arms swing out on struts with armour between; tail gun opens
+## Form III flying wing: the nose retracts, the arms sweep out and a wing
+##          panel unfolds between them, leaving two tips forward
 static func _ship(lvl: int) -> ArrayMesh:
-	var v := Vox.new(30, 8, 34)
-	var bx := 6 if lvl == 0 else 9  # boom x (inner column)
-	# fuselage
-	v.fill_sym(0, 1, -10, 0, 3, 12, WHITE)
-	v.fill_sym(1, 1, -7, 1, 2, 11, WHITE)
-	v.fill_sym(0, 1, -12, 0, 2, -11, WHITE)
-	v.fill_sym(0, 0, -9, 1, 0, 10, LGREY)
-	v.fill_sym(0, 4, -7, 0, 4, -3, CANOPY, true)
-	v.fill_sym(1, 3, -7, 1, 3, -3, NAVY)
-	v.fill_sym(0, 4, -2, 0, 4, 8, LGREY)
-	v.fill_sym(0, 3, -10, 0, 3, -9, RED)
-	# struts from body to booms
-	for x in range(2, bx):
-		v.fill_sym(x, 1, 1, x, 1, 5, BLUE if x % 2 == 0 else NAVY)
-	v.fill_sym(2, 2, 2, bx - 1, 2, 3, LGREY)
-	# twin booms reaching forward
-	v.fill_sym(bx, 1, -15, bx + 1, 2, 9, WHITE)
-	v.fill_sym(bx, 3, -10, bx + 1, 3, 6, LGREY)
-	v.fill_sym(bx, 1, -16, bx + 1, 1, -16, RED)
-	v.fill_sym(bx, 2, -16, bx, 2, -16, CYAN, true)
-	v.fill_sym(bx, 3, -13, bx + 1, 3, -11, RED)
-	v.fill_sym(bx, 0, -12, bx + 1, 0, 8, DGREY)
-	# engines at the rear of body and booms
+	var v := Vox.new(32, 8, 36)
+	var nose := -15 if lvl < 2 else -9
+	# fuselage (6 wide, ridged)
+	v.fill_sym(0, 1, nose + 2, 2, 2, 12, WHITE)
+	v.fill_sym(0, 1, nose, 0, 2, nose + 1, WHITE)
+	v.fill_sym(1, 1, nose + 1, 1, 2, nose + 1, LGREY)
+	v.fill_sym(0, 0, nose + 2, 2, 0, 11, LGREY)
+	v.fill_sym(0, 3, nose + 3, 1, 3, 10, WHITE)
+	v.fill_sym(2, 3, nose + 6, 2, 3, 9, LGREY)
+	v.fill_sym(0, 4, nose + 6, 0, 4, nose + 10, CANOPY, true)
+	v.fill_sym(1, 4, nose + 6, 1, 4, nose + 10, NAVY)
+	v.fill_sym(0, 4, nose + 11, 0, 4, 9, LGREY)
+	v.fill_sym(0, 3, nose + 1, 0, 3, nose + 2, RED)
 	v.fill_sym(0, 1, 13, 1, 2, 13, DGREY)
 	v.fill_sym(0, 2, 14, 0, 2, 14, THRUST, true)
-	v.fill_sym(bx, 1, 10, bx + 1, 2, 10, DGREY)
-	v.fill_sym(bx, 1, 11, bx + 1, 1, 11, THRUST, true)
-	# small tail stabilisers
-	v.fill_sym(1, 3, 9, 1, 5, 12, BLUE)
-	v.fill_sym(1, 5, 11, 1, 5, 12, RED)
-	if lvl >= 1:
-		# side armour plates between body and booms, tail gun
-		v.fill_sym(2, 1, -5, bx - 1, 1, 0, BLUE)
-		v.fill_sym(3, 2, -4, bx - 2, 2, -1, WHITE)
-		v.fill_sym(0, 5, 6, 0, 5, 14, DGREY)
-		v.fill_sym(0, 5, 15, 0, 5, 15, CYAN, true)
-		v.fill_sym(bx + 2, 1, 2, bx + 2, 2, 8, BLUE)
-	if lvl >= 2:
-		# outrigger pods with emitters, canards, tall fins
-		v.fill_sym(bx + 3, 1, -6, bx + 4, 2, 6, WHITE)
-		v.fill_sym(bx + 3, 3, -4, bx + 4, 3, 4, BLUE)
-		v.fill_sym(bx + 3, 1, -7, bx + 4, 1, -7, CYAN, true)
-		v.fill_sym(bx + 2, 1, 0, bx + 2, 1, 4, NAVY)
-		v.fill_sym(2, 2, -10, 4, 2, -9, WHITE)
-		v.fill_sym(4, 2, -10, 4, 2, -10, RED)
-		v.fill_sym(bx, 4, 3, bx, 6, 8, BLUE)
-		v.fill_sym(bx, 6, 6, bx, 6, 8, RED)
+	v.fill_sym(1, 1, 14, 1, 1, 14, THRUST, true)
+	# arms
+	match lvl:
+		0:
+			_arm(v, 4, -13, 23, 0.0)
+			v.fill_sym(3, 1, -4, 3, 2, 8, DGREY)
+		1:
+			_arm(v, 7, -11, 22, 0.0)
+			# side armour between body and arms
+			v.fill_sym(3, 1, -5, 6, 1, 0, BLUE)
+			v.fill_sym(4, 2, -4, 5, 2, -1, WHITE)
+			v.fill_sym(3, 1, 1, 6, 1, 3, NAVY)
+			v.fill_sym(3, 2, 2, 6, 2, 2, LGREY)
+			v.fill_sym(0, 5, 6, 0, 5, 15, DGREY)
+			v.fill_sym(0, 5, 16, 0, 5, 16, CYAN, true)
+		_:
+			_arm(v, 5, -14, 24, 0.22)
+			# the unfolded wing panel between body and arms
+			for z in range(-6, 11):
+				var xo := 5 + int((z + 14) * 0.22)
+				v.fill_sym(3, 1, z, xo - 1, 1, z, BLUE if z > 6 else WHITE)
+			v.fill_sym(3, 2, -2, 4, 2, 6, LGREY)
+			v.fill_sym(0, 5, 6, 0, 5, 15, DGREY)
+			v.fill_sym(0, 5, 16, 0, 5, 16, CYAN, true)
 	return v.mesh(U, Vector3(0, 2.0, 0))
+
+
+## One armoured arm (mirrored), 3 voxels wide, from its tip at z_tip back
+## for `length` rows; `sweep` shifts it outward per row (swept arms).
+static func _arm(v: Vox, x0: int, z_tip: int, length: int, sweep: float) -> void:
+	for r in length:
+		var z := z_tip + r
+		var x := x0 + int(r * sweep)
+		if r < 2:
+			# tapered tip with an emitter
+			v.fill_sym(x + 1, 1, z, x + 1, 2, z, RED if r == 0 else WHITE)
+			if r == 0:
+				v.fill_sym(x + 1, 3, z, x + 1, 3, z, CYAN, true)
+			continue
+		v.fill_sym(x, 1, z, x + 2, 2, z, WHITE)
+		v.fill_sym(x, 0, z, x + 2, 0, z, DGREY)
+		v.fill_sym(x + 1, 3, z, x + 1, 3, z, LGREY if r < length - 4 else BLUE)
+		if r == 4 or r == 5:
+			v.fill_sym(x, 3, z, x + 2, 3, z, RED)
+		if r >= length - 2:
+			v.fill_sym(x + 1, 1, z, x + 1, 2, z, DGREY)
+	var zb := z_tip + length
+	var xb := x0 + int((length - 1) * sweep)
+	v.fill_sym(xb + 1, 1, zb, xb + 1, 1, zb, THRUST, true)
 
 
 # ------------------------------------------------------------ enemies
