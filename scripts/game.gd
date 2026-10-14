@@ -114,6 +114,7 @@ var bot_goal := Vector3.ZERO
 var frames := 0
 var hide_layers := PackedStringArray()  # debug: --hide=sprites,debris,lights,bullets,shots,items,units,terrain
 var gallery := 0  # debug: --gallery=1|2 lays models out for inspection
+var palette_name := "fortress"  # --palette=NAME (see Palette)
 
 
 func _ready() -> void:
@@ -154,6 +155,8 @@ func _parse_args() -> void:
 			log_status = true
 		elif a == "--mute":
 			AudioServer.set_bus_mute(0, true)
+		elif a.begins_with("--palette="):
+			palette_name = a.get_slice("=", 1)
 		elif a.begins_with("--gallery"):
 			gallery = int(a.get_slice("=", 1)) if a.contains("=") else 1
 		elif a.begins_with("--hide="):
@@ -229,6 +232,7 @@ func _setup_world() -> void:
 	terrain.game = self
 	add_child(terrain)
 	terrain.prepare()
+	Palette.apply(self, palette_name)
 	units = Node3D.new()
 	add_child(units)
 	items = Items.new()
@@ -429,6 +433,10 @@ func _physics_process(_delta: float) -> void:
 	frames += 1
 	if Controls.notice_t > 0.0:
 		Controls.notice_t -= dt
+	if Input.is_action_just_pressed("palette"):
+		var pn := Palette.next(self)
+		Controls.notice = "PALETTE : " + pn.to_upper()
+		Controls.notice_t = 2.0
 	if Input.is_action_just_pressed("fullscreen"):
 		var w := get_window()
 		w.mode = Window.MODE_WINDOWED if w.mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN

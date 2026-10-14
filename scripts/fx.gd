@@ -1,14 +1,15 @@
 class_name Fx
 extends Node3D
-## Effects: camera-facing sprites in two layers, tumbling voxel debris, pooled
+## Effects: camera-facing sprites in three layers, tumbling voxel debris, pooled
 ## flash lights and floating labels.
 ##   glows  additive sprites (sparks, small flashes, shockwaves) - additive.gdshader
-##   puffs  pixel-art explosion sprites drawn opaque-ish (puff.gdshader):
-##          fire puffs that go white-hot -> yellow -> orange -> red -> smoke
-##          and break up, smoke, a four-point flash and thin rings.
-## Explosions follow the classic 2D shmup recipe: a brief white flash, puffs
-## that expand fast and slow down as they cool into grey smoke, a few sparks
-## and debris; big enemies go in a chain of small blasts instead of one big
+##   puffs  explosion sprites (puff.gdshader): turbulent fire billows with
+##          dot-work colour steps, a four-point flash and thin rings
+##   smokes lit translucent smoke, its own layer under the fire
+## Explosions after DoDonPachi DaiFukkatsu (fire dot work), Under Defeat and
+## Ikaruga (lit translucent smoke, crisp flash and shards): a brief glint,
+## a few big billows that expand fast, cool and tear apart over rolling
+## smoke, shards and debris; big enemies go in a chain of small blasts instead of one big
 ## glow. They sit just below the bullets so the bullets stay readable.
 
 const MAX_GLOWS := 1600
@@ -105,6 +106,8 @@ class Layer:
 
 var glows: Layer
 var puffs: Layer
+var smokes: Layer  # smoke has its own layer, drawn under the fire
+var smoke_mi: MultiMeshInstance3D
 var sprites: MultiMeshInstance3D  # the glow layer (kept for --hide)
 var puff_mi: MultiMeshInstance3D
 var debris: MultiMeshInstance3D
@@ -135,6 +138,10 @@ func _ready() -> void:
 	d_col.resize(MAX_DEBRIS)
 	glows = Layer.new(MAX_GLOWS)
 	sprites = _layer_node(glows, "res://shaders/additive.gdshader", 1)
+	smokes = Layer.new(MAX_PUFFS)
+	smokes.damp = 1.6
+	smokes.grow_pow = 2.0
+	smoke_mi = _layer_node(smokes, "res://shaders/puff.gdshader", -1)
 	puffs = Layer.new(MAX_PUFFS)
 	puffs.damp = 3.2
 	puffs.grow_pow = 3.0
@@ -191,7 +198,7 @@ func sprite(p: Vector3, v: Vector3, s0: float, s1: float, life: float, c: Color,
 
 ## Pixel explosion sprite (see the styles and palettes above).
 func puff(p: Vector3, v: Vector3, s0: float, s1: float, life: float, style: int, delay := 0.0, pal := WARM) -> void:
-	puffs.add(p, v, s0, s1, life, Color(1, 1, 1), style, delay, rng.randf(), pal)
+	(smokes if style == SMOKE else puffs).add(p, v, s0, s1, life, Color(1, 1, 1), style, delay, rng.randf(), pal)
 
 
 func spark(p: Vector3, c: Color, count := 3, size := 0.45) -> void:
@@ -233,22 +240,26 @@ func explode(p: Vector3, scale := 1.0, drift := Vector3.ZERO, body := Color(0.4,
 
 ## One blast: flash, fire puffs, smoke, sparks (and a ring when larger).
 func _blast(p: Vector3, s: float, drift: Vector3, pal: int, delay: float) -> void:
-	puff(p, drift, s * 1.5, s * 0.4, 0.09, FLASH, delay, pal)
-	var fires := 3 + int(s * 1.5)
+	puff(p, drift, s * 1.6, s * 0.5, 0.08, FLASH, delay, pal)
+	# a few big turbulent billows rather than many small balls
+	var fires := 2 + int(s * 1.2)
 	for i in fires:
 		var a := rng.randf() * TAU
-		var off := Vector3(cos(a), 0, sin(a)) * s * rng.randf_range(0.1, 0.4)
-		puff(p + off, off * 2.0 + drift, s * rng.randf_range(0.45, 0.65), s * rng.randf_range(1.0, 1.4), rng.randf_range(0.42, 0.56), FIRE, delay + i * 0.025, pal)
-	for i in 2:
-		var off := Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)) * s * 0.3
-		puff(p + off, drift * 0.8 + off, s * 0.6, s * 1.3, rng.randf_range(0.55, 0.75), SMOKE, delay + 0.16, pal)
+		var off := Vector3(cos(a), 0, sin(a)) * s * (0.0 if i == 0 else rng.randf_range(0.25, 0.5))
+		puff(p + off, off * 2.2 + drift, s * rng.randf_range(0.6, 0.8), s * rng.randf_range(1.3, 1.7), rng.randf_range(0.5, 0.62), FIRE, delay + i * 0.03, pal)
+	# lit smoke rolls out under the fire and lingers, carried by the wreck
+	for i in 2 + int(s):
+		var a := rng.randf() * TAU
+		var off := Vector3(cos(a), 0, sin(a)) * s * rng.randf_range(0.2, 0.5)
+		puff(p + off, drift * 0.9 + off * 1.2, s * 0.8, s * rng.randf_range(1.5, 1.9), rng.randf_range(0.8, 1.1), SMOKE, delay + 0.05 + i * 0.04, pal)
+	# crisp shards
 	var sparks := 4 + int(s * 3.0)
 	var sc := Color(1.0, 0.85, 0.5) if pal == WARM else Color(0.6, 0.85, 1.0)
 	for i in sparks:
-		var v := Vector3(rng.randf_range(-1, 1), 0.05, rng.randf_range(-1, 1)).normalized() * rng.randf_range(7, 14) * sqrt(s)
-		sprite(p, v + drift, 0.16, 0.04, rng.randf_range(0.18, 0.32), sc * 0.7, 0.0, delay)
+		var v := Vector3(rng.randf_range(-1, 1), 0.05, rng.randf_range(-1, 1)).normalized() * rng.randf_range(8, 16) * sqrt(s)
+		sprite(p, v + drift, 0.14, 0.03, rng.randf_range(0.18, 0.3), sc * 0.7, 0.0, delay)
 	if s >= 1.3:
-		puff(p, drift, s * 0.4, s * 2.0, 0.3, RING, delay + 0.02, pal)
+		puff(p, drift, s * 0.5, s * 2.3, 0.3, RING, delay + 0.02, pal)
 
 
 func shockwave(p: Vector3, radius: float, c: Color, square := false) -> void:
@@ -304,6 +315,7 @@ func popup(p: Vector3, text: String, c := Color(1, 1, 1), big := false) -> void:
 func clear() -> void:
 	glows.n = 0
 	puffs.n = 0
+	smokes.n = 0
 	dn = 0
 	for e: Array in labels:
 		(e[0] as Label3D).queue_free()
@@ -313,6 +325,7 @@ func clear() -> void:
 func tick(dt: float, scroll_speed: float) -> void:
 	glows.tick(dt)
 	puffs.tick(dt)
+	smokes.tick(dt)
 	var i := 0
 	while i < dn:
 		d_life[i] -= dt
@@ -358,6 +371,7 @@ func tick(dt: float, scroll_speed: float) -> void:
 func draw() -> void:
 	glows.draw()
 	puffs.draw()
+	smokes.draw()
 	var dm := debris.multimesh
 	dm.visible_instance_count = dn
 	for i in dn:

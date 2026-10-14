@@ -31,6 +31,8 @@ var last_layout := -1
 var gallery_i := 0
 
 var nebula_mat: ShaderMaterial
+var planet_mat: ShaderMaterial
+var ring_mat: ShaderMaterial
 var planet: Node3D
 var star_layers: Array = []  # {mm: MultiMesh, pos: PackedVector3Array, rect: Rect2}
 var deep: Array[MeshInstance3D] = []
@@ -92,6 +94,7 @@ func _build_backdrop() -> void:
 	sp.rings = 48
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://shaders/planet.gdshader")
+	planet_mat = mat
 	sp.material = mat
 	body.mesh = sp
 	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -101,6 +104,7 @@ func _build_backdrop() -> void:
 	rp.size = Vector2(150, 150)
 	var rmat := ShaderMaterial.new()
 	rmat.shader = load("res://shaders/ring.gdshader")
+	ring_mat = rmat
 	rp.material = rmat
 	ring.mesh = rp
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

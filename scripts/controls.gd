@@ -27,6 +27,7 @@ static func setup() -> void:
 	_bind("confirm", [KEY_SPACE, KEY_Z, KEY_ENTER, KEY_PERIOD], [JOY_BUTTON_A, JOY_BUTTON_START], [])
 	_bind("back", [KEY_Q], [JOY_BUTTON_BACK], [])
 	_bind("fullscreen", [KEY_F11], [], [])
+	_bind("palette", [KEY_F2], [], [])
 	var pads := Input.get_connected_joypads()
 	if not pads.is_empty():
 		_set_style(pads[0])
