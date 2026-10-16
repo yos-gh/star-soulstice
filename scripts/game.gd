@@ -37,6 +37,13 @@ const EXTENDS := [200000, 600000, 1200000]
 ## BONUS_T. Tuned so a quick clear earns about as much as the destruction.
 const BONUS_T := 260.0
 const BONUS_RATE := 1300
+## Item scoring (see docs/scoring.md)
+const ENERGY_GAIN := 0.5  # homing energy per unit of energy picked up
+const ENERGY_SCORE := 2  # points per unit of energy
+const POWER_UP_SCORE := 1000  # power-up taken in Form I / II
+const POWER_SCORE := 5000  # power-up taken in Form III (chained)
+const STAR_SCORE := 5000  # hidden star (chained)
+const CHAIN_MAX := 8
 
 var state := State.TITLE
 var state_t := 0.0
@@ -57,6 +64,8 @@ var deaths := 0
 var kills := 0
 var tiles_broken := 0
 var energy_got := 0.0
+var star_mul := 1  # star chain multiplier, reset each stage
+var power_mul := 1  # Form III power-up chain, carried over, reset by a miss
 var homing_fired := 0
 var spears := 0
 var clear_t := -1.0
@@ -340,6 +349,8 @@ func _start_game() -> void:
 	deaths = 0
 	tiles_broken = 0
 	energy_got = 0.0
+	star_mul = 1  # per stage
+	power_mul = 1  # per game (carried between stages)
 	homing_fired = 0
 	spears = 0
 	clear_t = -1.0
@@ -827,6 +838,7 @@ func _player_hit() -> void:
 	player.alive = false
 	player.visible = false
 	deaths += 1
+	power_mul = 1
 	lives -= 1
 	respawn_t = 1.8
 	fx.explode(player.position + Vector3(0, 0.4, 0), 2.6, Vector3.ZERO, Models.WHITE, Color(0.5, 0.75, 1.0))
@@ -856,25 +868,31 @@ func on_tile_broken(at: Vector3, world: Vector3, t: int, star: bool) -> void:
 func collect(kind: int, value: float, at: Vector3) -> void:
 	match kind:
 		Items.ENERGY:
-			player.energy = minf(Player.ENERGY_MAX, player.energy + value)
-			energy_got += value
-			_item_score(int(round(2 * value)))
+			player.energy = minf(Player.ENERGY_MAX, player.energy + value * ENERGY_GAIN)
+			energy_got += value * ENERGY_GAIN
+			_item_score(int(round(ENERGY_SCORE * value)))
 			sfx.play("energy")
 		Items.POWER:
 			if player.level < 2:
 				player.set_level(player.level + 1)
-				_item_score(1000)
+				_item_score(POWER_UP_SCORE)
 				show_msg("FORM %s" % ["I", "II", "III"][player.level], "", 1.0)
 			else:
 				if not player.shield:
 					player.shield = true
-				_item_score(5000)
-				fx.popup(at, "5000", Color(0.6, 0.85, 1.0))
+				# chain: x1, x2, x4, x8 ... kept across stages, reset by a miss
+				var v := POWER_SCORE * power_mul
+				_item_score(v)
+				fx.popup(at, "%d" % v if power_mul == 1 else "%d x%d" % [v, power_mul], Color(0.6, 0.85, 1.0), power_mul >= 4)
+				power_mul = mini(power_mul * 2, CHAIN_MAX)
 			fx.shockwave(player.position + Vector3(0, 0.4, 0), 2.5, Color(0.4, 0.7, 1.0))
 			sfx.play("power")
 		Items.STAR:
-			_item_score(5000)
-			fx.popup(at, "5000", Color(1.0, 0.9, 0.4))
+			# chain within the stage: x1, x2, x4, x8
+			var v := STAR_SCORE * star_mul
+			_item_score(v)
+			fx.popup(at, "%d" % v if star_mul == 1 else "%d x%d" % [v, star_mul], Color(1.0, 0.9, 0.4), star_mul >= 4)
+			star_mul = mini(star_mul * 2, CHAIN_MAX)
 			sfx.play("star")
 
 

@@ -6,6 +6,8 @@ extends Node3D
 
 const MAX := 400
 const BASE_DMG := 1.0
+## Afterimages drawn behind each shot: (distance back, scale, alpha).
+const GHOSTS := [Vector3(0.0, 1.0, 1.0), Vector3(1.1, 0.8, 0.45), Vector3(2.0, 0.62, 0.22)]
 const HOMING_DMG := 16.0
 const HOMING_SPEED := 30.0
 ## Time scale: the first implementation's path, flown K times faster
@@ -44,7 +46,7 @@ func _ready() -> void:
 	mat.render_priority = 1
 	q.material = mat
 	mm.mesh = q
-	mm.instance_count = MAX
+	mm.instance_count = MAX * 3
 	mm.visible_instance_count = 0
 	bolts.multimesh = mm
 	bolts.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -178,17 +180,26 @@ func homing_hit(h: Dictionary) -> void:
 
 func draw() -> void:
 	var mm := bolts.multimesh
-	mm.visible_instance_count = n
+	var k := 0
 	for i in n:
 		var m := mul[i]
 		var f := (m - 1.0) / (Player.CONC_MAX_MUL - 1.0)
-		var w := 0.22 + 0.16 * f
-		var l := 1.7 + 0.5 * f
+		# size follows the multiplier: x1 = 1.0, x4 = 1.5
+		var s := 1.0 + 0.5 * f
 		var dir := vel[i].normalized()
-		# local -z (UV.y = 0) is the head
-		var b := Basis(Vector3(-dir.z, 0, dir.x) * w, Vector3.UP, -dir * l)
-		mm.set_instance_transform(i, Transform3D(b, pos[i] + Vector3(0, 0.4, 0)))
-		mm.set_instance_color(i, Color(0.4, 0.85, 1.0).lerp(Color(1.0, 0.78, 0.3), f))
+		var side := Vector3(-dir.z, 0, dir.x)
+		var c := Color(0.4, 0.85, 1.0).lerp(Color(1.0, 0.78, 0.3), f)
+		# the shot, then two fading afterimages behind it (visual only)
+		for g in GHOSTS.size():
+			var gh: Vector3 = GHOSTS[g]  # (back offset, scale, alpha)
+			var w := 0.22 * s * gh.y
+			var l := 1.7 * s * gh.y
+			# local -z (UV.y = 0) is the head
+			var b := Basis(side * w, Vector3.UP, -dir * l)
+			mm.set_instance_transform(k, Transform3D(b, pos[i] - dir * gh.x * s + Vector3(0, 0.4, 0)))
+			mm.set_instance_color(k, Color(c.r, c.g, c.b, gh.z))
+			k += 1
+	mm.visible_instance_count = k
 	ribbon_mesh.clear_surfaces()
 	var any := false
 	for h: Dictionary in homing:
