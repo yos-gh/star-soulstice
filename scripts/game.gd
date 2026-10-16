@@ -42,7 +42,7 @@ const ENERGY_GAIN := 0.5  # homing energy per unit of energy picked up
 const ENERGY_SCORE := 2  # points per unit of energy
 const POWER_UP_SCORE := 1000  # power-up taken in Form I / II
 const POWER_SCORE := 5000  # power-up taken in Form III (chained)
-const STAR_SCORE := 5000  # hidden star (chained)
+const STAR_SCORE := 1000  # hidden star (chained)
 const CHAIN_MAX := 8
 
 var state := State.TITLE
@@ -67,6 +67,8 @@ var energy_got := 0.0
 var star_mul := 1  # star chain multiplier, reset each stage
 var stars_got := 0
 var powers_got := 0
+var powers_dropped := 0
+var powers_taken := 0
 var power_mul := 1  # Form III power-up chain, carried over, reset by a miss
 var homing_fired := 0
 var spears := 0
@@ -354,6 +356,8 @@ func _start_game() -> void:
 	star_mul = 1  # per stage
 	stars_got = 0
 	powers_got = 0
+	powers_dropped = 0
+	powers_taken = 0
 	power_mul = 1  # per game (carried between stages)
 	homing_fired = 0
 	spears = 0
@@ -426,7 +430,7 @@ func boss_destroyed() -> void:
 	player.invuln = 99.0
 	show_msg("STAGE CLEAR", "", 3.0)
 	sfx.play("clear")
-	print("CLEAR t=%.1f destroy=%d items=%d bonus=%d deaths=%d kills=%d tiles=%d stars=%d power3=%d" % [stage_t, destroy_score, item_score, bonus, deaths, kills, tiles_broken, stars_got, powers_got])
+	print("CLEAR t=%.1f destroy=%d items=%d bonus=%d deaths=%d kills=%d tiles=%d stars=%d power3=%d power_drop=%d power_taken=%d" % [stage_t, destroy_score, item_score, bonus, deaths, kills, tiles_broken, stars_got, powers_got, powers_dropped, powers_taken])
 
 
 func show_msg(m: String, sub := "", t := 2.0, warning := false) -> void:
@@ -766,6 +770,7 @@ func kill(e: Enemy) -> void:
 			items.spawn(q, Items.ENERGY, 1.0)
 			fx.sprite(q + Vector3(0, 0.4, 0), Vector3.ZERO, 0.8, 0.2, 0.2, Color(0.5, 1.0, 0.6), 0.0)
 	if e.drops_power:
+		powers_dropped += 1
 		items.spawn(at, Items.POWER, 1.0, Vector3(0, 0, -3.0))
 	if e.score >= 1000:
 		fx.popup(at, str(e.score), Color(1, 0.9, 0.5), e.score >= 5000)
@@ -877,6 +882,7 @@ func collect(kind: int, value: float, at: Vector3) -> void:
 			_item_score(int(round(ENERGY_SCORE * value)))
 			sfx.play("energy")
 		Items.POWER:
+			powers_taken += 1
 			if player.level < 2:
 				player.set_level(player.level + 1)
 				_item_score(POWER_UP_SCORE)
