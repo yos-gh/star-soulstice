@@ -65,6 +65,8 @@ var kills := 0
 var tiles_broken := 0
 var energy_got := 0.0
 var star_mul := 1  # star chain multiplier, reset each stage
+var stars_got := 0
+var powers_got := 0
 var power_mul := 1  # Form III power-up chain, carried over, reset by a miss
 var homing_fired := 0
 var spears := 0
@@ -350,6 +352,8 @@ func _start_game() -> void:
 	tiles_broken = 0
 	energy_got = 0.0
 	star_mul = 1  # per stage
+	stars_got = 0
+	powers_got = 0
 	power_mul = 1  # per game (carried between stages)
 	homing_fired = 0
 	spears = 0
@@ -422,7 +426,7 @@ func boss_destroyed() -> void:
 	player.invuln = 99.0
 	show_msg("STAGE CLEAR", "", 3.0)
 	sfx.play("clear")
-	print("CLEAR t=%.1f destroy=%d items=%d bonus=%d deaths=%d kills=%d tiles=%d" % [stage_t, destroy_score, item_score, bonus, deaths, kills, tiles_broken])
+	print("CLEAR t=%.1f destroy=%d items=%d bonus=%d deaths=%d kills=%d tiles=%d stars=%d power3=%d" % [stage_t, destroy_score, item_score, bonus, deaths, kills, tiles_broken, stars_got, powers_got])
 
 
 func show_msg(m: String, sub := "", t := 2.0, warning := false) -> void:
@@ -881,6 +885,7 @@ func collect(kind: int, value: float, at: Vector3) -> void:
 				if not player.shield:
 					player.shield = true
 				# chain: x1, x2, x4, x8 ... kept across stages, reset by a miss
+				powers_got += 1
 				var v := POWER_SCORE * power_mul
 				_item_score(v)
 				fx.popup(at, "%d" % v if power_mul == 1 else "%d x%d" % [v, power_mul], Color(0.6, 0.85, 1.0), power_mul >= 4)
@@ -889,6 +894,7 @@ func collect(kind: int, value: float, at: Vector3) -> void:
 			sfx.play("power")
 		Items.STAR:
 			# chain within the stage: x1, x2, x4, x8
+			stars_got += 1
 			var v := STAR_SCORE * star_mul
 			_item_score(v)
 			fx.popup(at, "%d" % v if star_mul == 1 else "%d x%d" % [v, star_mul], Color(1.0, 0.9, 0.4), star_mul >= 4)
