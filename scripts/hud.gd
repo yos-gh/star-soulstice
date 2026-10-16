@@ -40,6 +40,14 @@ func _draw() -> void:
 		_notice(sz)
 		return
 	_warnings()
+	if g.state == Game.State.VIEWER:
+		# the viewer draws its own panel; keep what the subject shows
+		_boss_gauge(sz, ViewerPanel.W if g.viewer.panel.visible else 0.0)
+		_messages(sz)
+		if g.flash_a > 0.0:
+			draw_rect(Rect2(Vector2.ZERO, sz), Color(1, 1, 1, g.flash_a * 0.5))
+		_notice(sz)
+		return
 	# top bar
 	draw_rect(Rect2(0, 0, sz.x, 40), Color(0, 0, 0, 0.35))
 	_text(Vector2(16, 28), "SCORE", 14, DIM)
@@ -59,14 +67,7 @@ func _draw() -> void:
 			label = "BOSS"
 		_text(Vector2(0, 58), label, 13, DIM, HORIZONTAL_ALIGNMENT_RIGHT, sz.x - 14)
 		_text(Vector2(0, 74), "%d:%04.1f" % [int(g.stage_t / 60.0), fmod(g.stage_t, 60.0)], 13, DIM, HORIZONTAL_ALIGNMENT_RIGHT, sz.x - 14)
-	# boss / mid-boss gauges
-	if g.boss != null and g.boss.phase >= 1 and g.boss.phase < 3:
-		var e := g.boss.eye
-		_gauge(Rect2(sz.x * 0.2, 48, sz.x * 0.6, 8), e.hp / e.max_hp, PINK if not e.armored else Color(0.6, 0.55, 0.65))
-		_text(Vector2(sz.x * 0.2, 72), "STAR CORTEX", 13, Color(1, 0.75, 0.85))
-	elif g.lazaro != null and not g.lazaro.defeated:
-		_gauge(Rect2(sz.x * 0.25, 48, sz.x * 0.5, 7), g.lazaro.hp / Lazaro.HP, GOLD)
-		_text(Vector2(sz.x * 0.25, 70), "LAZARO", 13, Color(1, 0.9, 0.6))
+	_boss_gauge(sz)
 	_messages(sz)
 	if g.state == Game.State.CLEAR and g.state_t > 3.0:
 		_results(sz)
@@ -77,6 +78,23 @@ func _draw() -> void:
 	if g.flash_a > 0.0:
 		draw_rect(Rect2(Vector2.ZERO, sz), Color(1, 1, 1, g.flash_a * 0.5))
 	_notice(sz)
+
+
+## The gauge of the last boss on the field that shows one (the stage boss
+## comes after the mid-boss).
+func _boss_gauge(sz: Vector2, left := 0.0) -> void:
+	for i in range(game.bosses.size() - 1, -1, -1):
+		var b := game.bosses[i]
+		if not is_instance_valid(b):
+			continue
+		var gd := b.gauge()
+		if gd.is_empty():
+			continue
+		var x: float = gd["x"]
+		var span := sz.x - left
+		_gauge(Rect2(left + span * x, 48, span * float(gd["w"]), gd["h"]), gd["frac"], gd["color"])
+		_text(Vector2(left + span * x, gd["name_y"]), gd["name"], 13, gd["name_color"])
+		return
 
 
 func _gauge(r: Rect2, f: float, c: Color) -> void:
@@ -187,9 +205,14 @@ func _title(sz: Vector2) -> void:
 		var l: Array = lines[i]
 		_text(Vector2(sz.x * 0.2, y + i * 26), l[0], 16, CYAN)
 		_text(Vector2(sz.x * 0.42, y + i * 26), l[1], 16, Color(1, 1, 1, 0.85))
-	_center(sz.y * 0.85, "PRESS %s TO START" % Controls.label("confirm"), 22, Color(1, 1, 1, 0.5 + 0.5 * sin(game.time * 4.0)))
+	var menu := ["GAME START", "VIEWER"]
+	for i in menu.size():
+		var sel := game.title_sel == i
+		var c := Color(1, 1, 1, 0.8 + 0.2 * sin(game.time * 4.0)) if sel else Color(0.75, 0.85, 1.0, 0.45)
+		_center(sz.y * 0.79 + i * 34, ("-  %s  -" % menu[i]) if sel else menu[i], 22 if sel else 18, c)
+	_center(sz.y * 0.79 + 64, "UP / DOWN : SELECT     %s : DECIDE" % Controls.label("confirm"), 13, DIM)
 	if game.hi_score > 0:
-		_center(sz.y * 0.92, "HI %08d" % game.hi_score, 16, Color(1, 0.85, 0.6))
+		_center(sz.y * 0.94, "HI %08d" % game.hi_score, 16, Color(1, 0.85, 0.6))
 
 
 func _notice(sz: Vector2) -> void:

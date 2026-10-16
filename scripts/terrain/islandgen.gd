@@ -11,6 +11,12 @@ extends RefCounted
 ##   asteroid  a rock with hatches bolted on (debris belt)
 ## Voxels are R units; a cell (one 2 x 2 tile) is K x K voxels. Tiles sit
 ## in sockets half a voxel below the deck. Local y = 0 is the deck top.
+## A stage picks kinds and sizes per area (StageDef.areas). A new kind
+## needs a footprint (the first match in make), a tile rule (the second)
+## and its surface (_structure, or a builder of its own like _asteroid);
+## add it to KINDS so the viewer can show it.
+
+const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid"]
 
 const R := 0.5
 const K := 4

@@ -77,21 +77,24 @@ static func apply(game: Game, name: String) -> void:
 	env.adjustment_color_correction = gt
 	game.sun.light_color = p["sun"]
 	game.sun.light_energy = p["sun_e"]
-	var t := game.terrain
+	var t := game.backdrop
 	var neb: Array = p["neb"]
-	t.nebula_mat.set_shader_parameter("base", neb[0])
-	t.nebula_mat.set_shader_parameter("neb_a", neb[1])
-	t.nebula_mat.set_shader_parameter("neb_b", neb[2])
-	t.nebula_mat.set_shader_parameter("neb_c", neb[3])
-	t.nebula_mat.set_shader_parameter("brightness", p["neb_b"])
+	if t.nebula_mat != null:
+		t.nebula_mat.set_shader_parameter("base", neb[0])
+		t.nebula_mat.set_shader_parameter("neb_a", neb[1])
+		t.nebula_mat.set_shader_parameter("neb_b", neb[2])
+		t.nebula_mat.set_shader_parameter("neb_c", neb[3])
+		t.nebula_mat.set_shader_parameter("brightness", p["neb_b"])
 	var pl: Array = p["planet"]
 	# the planet is scenery: keep it dim so it never competes with the field
 	const PB := 0.5
-	t.planet_mat.set_shader_parameter("band_a", (pl[0] as Color) * PB)
-	t.planet_mat.set_shader_parameter("band_b", (pl[1] as Color) * PB)
-	t.planet_mat.set_shader_parameter("band_c", (pl[2] as Color) * PB)
-	t.planet_mat.set_shader_parameter("rim_col", (pl[3] as Color) * 0.6)
-	t.ring_mat.set_shader_parameter("ring_col", p["ring"])
+	if t.planet_mat != null:
+		t.planet_mat.set_shader_parameter("band_a", (pl[0] as Color) * PB)
+		t.planet_mat.set_shader_parameter("band_b", (pl[1] as Color) * PB)
+		t.planet_mat.set_shader_parameter("band_c", (pl[2] as Color) * PB)
+		t.planet_mat.set_shader_parameter("rim_col", (pl[3] as Color) * 0.6)
+	if t.ring_mat != null:
+		t.ring_mat.set_shader_parameter("ring_col", p["ring"])
 	var gm := Vox.ground_mat
 	gm.set_shader_parameter("tint", p["g_tint"])
 	gm.set_shader_parameter("dim", p["g_dim"])

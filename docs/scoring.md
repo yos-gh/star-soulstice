@@ -7,17 +7,17 @@
 
 | 対象 | スコア | 耐久 | 場所 |
 |---|---:|---:|---|
-| 編隊機（dart） | 100 | 1 | `scripts/enemy.gd` setup |
-| 円盤（swirl） | 200 | 2 | 〃 |
-| 突進機雷（rammer） | 300 | 3 | 〃 |
-| 砲台（turret） | 400 | 5 | 〃 |
-| 小惑星・小（rock） | 150 | 3 | 〃 |
+| 編隊機（dart） | 100 | 1 | `scripts/enemies/dart.gd` `_init_kind` |
+| 円盤（swirl） | 200 | 2 | `scripts/enemies/swirl.gd` 〃 |
+| 突進機雷（rammer） | 300 | 3 | `scripts/enemies/rammer.gd` 〃 |
+| 砲台（turret） | 400 | 5 | `scripts/enemies/turret.gd` 〃 |
+| 小惑星・小（rock） | 150 | 3 | `scripts/enemies/rock.gd` 〃 |
 | 小惑星・大（rock big） | 500 | 8 | 〃 |
-| コンテナ（container） | 1,000 | 14 | 〃 |
-| 中型機（bulwark） | 3,000 | 120 | 〃 |
-| 中ボス ラザロ（撃破ボーナス） | 20,000 | 240 | `scripts/lazaro.gd` `_defeat` / `HP` |
-| ボスのポッド（4基） | 5,000 | 90 | `scripts/boss.gd` setup / `POD_HP` |
-| ボス STAR CORTEX の目 | 50,000 | 800 | `scripts/boss.gd` setup / `EYE_HP` |
+| コンテナ（container） | 1,000 | 14 | `scripts/enemies/container.gd` 〃 |
+| 中型機（bulwark） | 3,000 | 120 | `scripts/enemies/bulwark.gd` 〃 |
+| 中ボス ラザロ（撃破ボーナス） | 20,000 | 240 | `scripts/bosses/lazaro.gd` `SCORE` / `HP` |
+| ボスのポッド（4基） | 5,000 | 90 | `scripts/bosses/star_cortex.gd` `POD_SCORE` / `POD_HP` |
+| ボス STAR CORTEX の目 | 50,000 | 800 | `scripts/bosses/star_cortex.gd` `EYE_SCORE` / `EYE_HP` |
 
 撃破した敵の弾は消えてエネルギーになる（スコアはエネルギー取得分のみ）。
 
@@ -25,7 +25,7 @@
 
 | 対象 | スコア | 耐久 | 場所 |
 |---|---:|---:|---|
-| タイル（薄いハッチ） | 50 | 0.5 | `scripts/island.gd` `TILE_SCORE` / `TILE_HP` |
+| タイル（薄いハッチ） | 50 | 0.5 | `scripts/terrain/island.gd` `TILE_SCORE` / `TILE_HP` |
 | タイル（十字ハッチ） | 150 | 1 | 〃 |
 | タイル（防爆扉） | 400 | 1.5 | 〃 |
 | 物理弾（撃ち落とし） | 10 | 1 | `scripts/game.gd` `_collide` |
@@ -48,20 +48,20 @@
 
 | 発生元 | 量 | 場所 |
 |---|---:|---|
-| 編隊機 / 円盤 / 突進機雷 | 2 / 3 / 3 | `scripts/enemy.gd` `energy_drop` |
+| 編隊機 / 円盤 / 突進機雷 | 2 / 3 / 3 | `scripts/enemies/<種類>.gd` `energy_drop` |
 | 砲台 / コンテナ | 4 / 4 | 〃 |
 | 小惑星 小 / 大 | 3 / 8 | 〃 |
 | 中型機 | 14 | 〃 |
-| ボスのポッド | 12 | `scripts/boss.gd` |
-| ラザロ撃破 | 40 | `scripts/lazaro.gd` |
-| タイル 薄 / 十字 / 防爆扉 | 2 / 5 / 10 | `scripts/island.gd` `TILE_ENERGY` |
+| ボスのポッド | 12 | `scripts/bosses/star_cortex.gd` |
+| ラザロ撃破 | 40 | `scripts/bosses/lazaro.gd` |
+| タイル 薄 / 十字 / 防爆扉 | 2 / 5 / 10 | `scripts/terrain/island.gd` `TILE_ENERGY` |
 | 消した弾（撃破・スピア） | 1 発につき 1 | `scripts/game.gd` |
 
 ## クリアボーナス
 
 | 項目 | 値 | 場所 |
 |---|---|---|
-| タイムボーナス | (260 秒 − クリアタイム) × 1,300（100 点単位、負なら 0） | `scripts/game.gd` `BONUS_T` / `BONUS_RATE` |
+| タイムボーナス | (260 秒 − クリアタイム) × 1,300（100 点単位、負なら 0） | ステージごと：`scripts/stage/stage_def.gd` `bonus_t` / `bonus_rate`（各ステージの `stageN.gd` で上書きできる） |
 
 ## エクステンド
 

@@ -1,5 +1,4 @@
-class_name Boss
-extends Node3D
+extends BossBase
 ## Stage 1 boss STAR CORTEX (an homage to Star Soldier's Star Brain): an
 ## octagonal fortress whose great eye opens and shuts. The hull is armour
 ## (two blocks on the flanks; a channel in front of the eye lets shots in);
@@ -10,13 +9,19 @@ extends Node3D
 ## spirals while shut and adds heavy orbs (not erasable by the Spear) when
 ## open. There are quiet gaps in every cycle to come in with the Spear.
 
+const INFO := {
+	"name": "STAR CORTEX", "role": "boss",
+	"desc": "目が開いた時だけ効く。ポッドは扇状の物理弾。ポッドを失うか時間で怒り状態に",
+	"demos": [["FULL", ""], ["PHASE B", "B"]],
+}
 const EYE_HP := 800.0
+const EYE_SCORE := 50000
 const POD_HP := 90.0
+const POD_SCORE := 5000
 const POD_OFF := [Vector3(-5.6, 0, -2.4), Vector3(5.6, 0, -2.4), Vector3(-4.3, 0, 3.3), Vector3(4.3, 0, 3.3)]
 const ARMOUR_OFF := [Vector3(-4.0, 0, 0.0), Vector3(4.0, 0, 0.0)]
 const ARMOUR_R := 2.7
 
-var game: Game
 var hull: MeshInstance3D
 var armour: Array[Enemy] = []
 var eye: Enemy
@@ -49,13 +54,13 @@ func setup(g: Game) -> void:
 	eye.hp = EYE_HP
 	eye.max_hp = EYE_HP
 	eye.armored = true
-	eye.score = 50000
+	eye.score = EYE_SCORE
 	eye.blast = 6.0
 	for k in 4:
 		var e := game.spawn_part(self, "boss_pod", 1.45)
 		e.hp = POD_HP
 		e.max_hp = POD_HP
-		e.score = 5000
+		e.score = POD_SCORE
 		e.energy_drop = 12.0
 		e.blast = 2.5
 		e.armored = true
@@ -178,11 +183,12 @@ func tick(dt: float) -> void:
 				game.sfx.play("exp_l")
 				game.shake(2.0)
 				destroyed = true
+				finished = true
 				visible = false
 				for q in [eye] + armour + pods:
 					game.remove_enemy(q)
 					q.visible = false
-				game.boss_destroyed()
+				game.boss_destroyed(self)
 				return
 	open = move_toward(open, 1.0 if open_want else 0.0, dt * 2.5)
 	eye.armored = open < 0.7 or phase == 3
@@ -229,7 +235,37 @@ func _pods(dt: float) -> void:
 			break
 
 
+func gauge() -> Dictionary:
+	if phase < 1 or phase >= 3:
+		return {}
+	return {"frac": eye.hp / eye.max_hp, "color": Hud.PINK if not eye.armored else Color(0.6, 0.55, 0.65), "name": INFO["name"], "name_color": Color(1, 0.75, 0.85), "x": 0.2, "w": 0.6, "h": 8.0, "name_y": 72.0}
+
+
+func force_defeat() -> void:
+	if phase < 3:
+		game.kill(eye)
+
+
+## "B": straight into the enraged phase, pods still up.
+func viewer_skip(to: String) -> void:
+	if to == "B":
+		center.z = game.field_top + 6.5
+		phase = 2
+		st = 0.0
+		cycle_t = 0.0
+		fired.clear()
+		for q in pods:
+			q.armored = false
+		_place()
+
+
+func debug_state() -> String:
+	var names := ["enter", "A", "B (enraged)", "dying"]
+	return "phase %s %.1fs  eye %s %d/%d  pods %d" % [names[phase], st, "open" if not eye.armored else "shut", int(maxf(eye.hp, 0.0)), int(EYE_HP), pods_alive()]
+
+
 func _die() -> void:
+	defeated = true
 	phase = 3
 	dying_t = 0.0
 	open_want = true

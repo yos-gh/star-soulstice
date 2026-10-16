@@ -9,17 +9,28 @@ extends Node3D
 ## their projection onto the plane along the view ray, so what you see is
 ## what you hit.
 ##
+## Game owns the world (camera, terrain, units, bullets, effects) and the
+## rules (scoring, hits, lives). What a stage contains is data: StageDef
+## scripts listed in Stages, enemy kinds in EnemyKinds, bosses in Bosses,
+## models in Models (see docs/architecture.md). The viewer (Viewer) runs
+## the same world without a stage.
+##
 ## Command-line options (after "--"):
 ##   --autoplay        a simple bot plays
 ##   --god             the player cannot die
+##   --stage=N         begin at stage N
 ##   --start=N|mid|boss  begin at wave N, the mid-boss or the boss
 ##   --capture=DIR     save a screenshot every --capture-every seconds (default 3)
 ##   --quit-after=S    quit after S seconds of play
 ##   --quit-on-clear   quit when the stage ends (clear or game over)
 ##   --log             print status every --capture-every seconds
 ##   --mute            no sound
+##   --viewer[=CAT[:N]]  open the viewer (at category CAT, item N)
+##   --viewer-tour[=S] show every viewer item for S seconds (default 2.5),
+##                     saving one screenshot each into --capture, then quit
+##   --press=T:ACTION[:HOLD],...  press input actions at T seconds (tests)
 
-enum State { TITLE, PLAY, CLEAR, GAME_OVER }
+enum State { TITLE, PLAY, CLEAR, GAME_OVER, VIEWER }
 enum Warn { SHOT, MOVE }
 const WARN_COL := [Color(0.9, 0.85, 0.75), Color(1.0, 1.0, 1.0)]  # body pulse
 
@@ -33,10 +44,7 @@ const CAM_FOV := 40.0
 const CAM_TARGET := Vector3(0, 0, 0.0)
 const START_LIVES := 3
 const EXTENDS := [200000, 600000, 1200000]
-## Time bonus: BONUS_RATE points for every second the stage took under
-## BONUS_T. Tuned so a quick clear earns about as much as the destruction.
-const BONUS_T := 260.0
-const BONUS_RATE := 1300
+## (The time bonus is per stage: StageDef.bonus_t / bonus_rate.)
 ## Item scoring (see docs/scoring.md)
 const ENERGY_GAIN := 0.5  # homing energy per unit of energy picked up
 const ENERGY_SCORE := 2  # points per unit of energy
@@ -81,6 +89,7 @@ var shake_a := 0.0
 var env: Environment
 var sun: DirectionalLight3D
 var terrain: Terrain
+var backdrop: Backdrop
 var units: Node3D
 var player: Player
 var shots: Shots
@@ -90,11 +99,16 @@ var fx: Fx
 var sfx: Sfx
 var hud: Hud
 var stage: Stage
+var stage_def: StageDef
+var stage_no := 1
+var title_def: StageDef  # the first stage: the title screen flies over it
 var enemies: Array[Enemy] = []
+var bosses: Array[BossBase] = []  # mid-bosses and bosses on the field
 var warnings: Array = []  # {node, t, dur, kind, r, to} (see warn)
 var delayed: Array = []  # {node, t, fn} (see warn_then)
-var lazaro: Lazaro
-var boss: Boss
+var bot: Bot
+var viewer: Viewer
+var title_sel := 0  # title menu: 0 game start, 1 viewer
 
 # play field on the plane (measured from the camera)
 var field_top := -14.0
@@ -122,12 +136,14 @@ var capture_t := 0.0
 var quit_after := -1.0
 var quit_on_clear := false
 var log_status := false
-var bot_frame := 0
-var bot_goal := Vector3.ZERO
 var frames := 0
 var hide_layers := PackedStringArray()  # debug: --hide=sprites,debris,lights,bullets,shots,items,units,terrain
-var gallery := 0  # debug: --gallery=1|2 lays models out for inspection
 var palette_name := "fortress"  # --palette=NAME (see Palette)
+var start_stage := 1  # --stage=N
+var viewer_at := ""  # --viewer=CAT[:N]
+var viewer_tour := 0.0  # --viewer-tour=S
+var presses: Array = []  # --press: [time, action, hold], in time order
+var held: Array = []  # [release time, action]
 
 
 func _ready() -> void:
@@ -137,8 +153,8 @@ func _ready() -> void:
 	Input.joy_connection_changed.connect(Controls.on_joy_changed)
 	_setup_world()
 	_enter_title()
-	if gallery > 0:
-		_build_gallery()
+	if viewer_at != "" or viewer_tour > 0.0:
+		_enter_viewer()
 	elif autoplay:
 		_start_game()
 
@@ -153,6 +169,17 @@ func _parse_args() -> void:
 			quit_on_clear = true
 		elif a.begins_with("--start="):
 			start_at = a.get_slice("=", 1)
+		elif a.begins_with("--stage="):
+			start_stage = clampi(int(a.get_slice("=", 1)), 1, Stages.count())
+		elif a.begins_with("--viewer-tour"):
+			viewer_tour = float(a.get_slice("=", 1)) if a.contains("=") else 2.5
+		elif a.begins_with("--viewer"):
+			viewer_at = a.get_slice("=", 1) if a.contains("=") else "-"
+		elif a.begins_with("--press="):
+			for s in a.get_slice("=", 1).split(","):
+				var parts := s.split(":")
+				presses.append([float(parts[0]), parts[1], float(parts[2]) if parts.size() > 2 else 0.0])
+			presses.sort_custom(func(x: Array, y: Array) -> bool: return x[0] < y[0])
 		elif a.begins_with("--capture="):
 			capture_dir = a.get_slice("=", 1)
 			DirAccess.make_dir_recursive_absolute(capture_dir)
@@ -170,8 +197,6 @@ func _parse_args() -> void:
 			AudioServer.set_bus_mute(0, true)
 		elif a.begins_with("--palette="):
 			palette_name = a.get_slice("=", 1)
-		elif a.begins_with("--gallery"):
-			gallery = int(a.get_slice("=", 1)) if a.contains("=") else 1
 		elif a.begins_with("--hide="):
 			hide_layers = a.get_slice("=", 1).split(",")
 
@@ -241,11 +266,17 @@ func _setup_world() -> void:
 	ground_blur.position = Vector3(0, 0, -3.0)
 	camera.add_child(ground_blur)
 
+	title_def = Stages.create(1)
 	terrain = Terrain.new()
 	terrain.game = self
 	add_child(terrain)
-	terrain.prepare()
+	terrain.use_stage(title_def)
+	backdrop = Backdrop.new()
+	backdrop.game = self
+	add_child(backdrop)
+	backdrop.use(title_def.backdrop)
 	Palette.apply(self, palette_name)
+	bot = Bot.new(self)
 	units = Node3D.new()
 	add_child(units)
 	items = Items.new()
@@ -273,6 +304,13 @@ func _setup_world() -> void:
 	hud = Hud.new()
 	hud.game = self
 	layer.add_child(hud)
+	viewer = Viewer.new()
+	viewer.game = self
+	add_child(viewer)
+	viewer.panel = ViewerPanel.new()
+	viewer.panel.viewer = viewer
+	viewer.panel.visible = false
+	layer.add_child(viewer.panel)
 
 
 func _measure_field() -> void:
@@ -318,7 +356,12 @@ func on_field(p: Vector3, margin := 0.0) -> bool:
 
 ## Enemies only fire while on screen and not right on top of the player.
 func can_fire(p: Vector3) -> bool:
-	return state == State.PLAY and player.alive and on_field(p, -0.8) and p.z < player.position.z - 2.0
+	return combat_on() and player.alive and on_field(p, -0.8) and p.z < player.position.z - 2.0
+
+
+## Enemies attack only during play (and in the viewer, unless it says no).
+func combat_on() -> bool:
+	return state == State.PLAY or (state == State.VIEWER and viewer.fire_on)
 
 
 # ------------------------------------------------------------ states
@@ -329,26 +372,35 @@ func _enter_title() -> void:
 		return
 	state = State.TITLE
 	state_t = 0.0
-	_clear_field()
+	clear_field()
 	player.visible = false
 	player.alive = false
 	scroll_speed = SCROLL
+	terrain.use_stage(title_def)
+	backdrop.use(title_def.backdrop)
 	terrain.reset(false)
 	terrain.spawning = true
 	terrain.turrets = false
 
 
 func _start_game() -> void:
+	score = 0
+	lives = START_LIVES
+	next_extend = 0
+	power_mul = 1  # per game (carried between stages)
+	play_t = 0.0
+	_start_stage(start_stage, true)
+
+
+## Starts stage n. A new game puts the ship in Form I with some energy;
+## after a clear the ship keeps its form, shield and energy.
+func _start_stage(n: int, new_game: bool) -> void:
 	state = State.PLAY
 	state_t = 0.0
-	play_t = 0.0
 	stage_t = 0.0
-	score = 0
 	destroy_score = 0
 	item_score = 0
 	bonus = 0
-	lives = START_LIVES
-	next_extend = 0
 	kills = 0
 	deaths = 0
 	tiles_broken = 0
@@ -358,36 +410,41 @@ func _start_game() -> void:
 	powers_got = 0
 	powers_dropped = 0
 	powers_taken = 0
-	power_mul = 1  # per game (carried between stages)
 	homing_fired = 0
 	spears = 0
 	clear_t = -1.0
-	_clear_field()
+	clear_field()
+	stage_no = n
+	stage_def = Stages.create(n)
+	terrain.use_stage(stage_def)
+	backdrop.use(stage_def.backdrop)
 	terrain.reset(true)
-	stage = Stage.new(self)
-	if start_at != "":
+	stage = Stage.new(self, stage_def)
+	if start_at != "" and new_game:
 		stage.start_at(start_at)
-	scroll_speed = SCROLL
+	scroll_speed = stage_def.scroll
+	var keep := [player.level, player.shield, player.energy]
 	player.reset_at(Vector3(0, 0, field_bottom + 2.0))
 	player.entering = 0.9
 	player.invuln = 2.5
 	player.energy = 20.0
+	if not new_game:
+		player.set_level(keep[0])
+		player.shield = keep[1]
+		player.energy = keep[2]
 	sfx.play("start")
-	show_msg("STAGE 1", "ORBITAL FORTRESS", 2.0)
-	print("START at=%s" % start_at)
+	show_msg(stage_def.title, stage_def.subtitle, 2.0)
+	print("START at=%s" % start_at if n == 1 else "START stage=%d" % n)
 
 
-func _clear_field() -> void:
+func clear_field() -> void:
 	for e: Enemy in enemies.duplicate():
 		remove_enemy(e)
 	for c in units.get_children():
 		c.queue_free()
-	if lazaro != null:
-		lazaro.queue_free()
-		lazaro = null
-	if boss != null:
-		boss.queue_free()
-		boss = null
+	for b in bosses:
+		b.queue_free()
+	bosses.clear()
 	bullets.n = 0
 	shots.clear()
 	items.clear()
@@ -422,9 +479,15 @@ func boss_dying() -> void:
 	items.vacuum = true
 
 
-func boss_destroyed() -> void:
+## Called by a boss when it is gone for good; the stage boss clears the stage.
+func boss_destroyed(b: BossBase) -> void:
+	if state == State.VIEWER:
+		viewer.on_boss_destroyed(b)
+		return
+	if not b.final:
+		return
 	clear_t = stage_t
-	bonus = maxi(0, int((BONUS_T - stage_t) * BONUS_RATE / 100.0) * 100)
+	bonus = maxi(0, int((stage_def.bonus_t - stage_t) * stage_def.bonus_rate / 100.0) * 100)
 	state = State.CLEAR
 	state_t = 0.0
 	player.invuln = 99.0
@@ -450,6 +513,8 @@ func _physics_process(_delta: float) -> void:
 	var dt := DT
 	time += dt
 	frames += 1
+	if not presses.is_empty() or not held.is_empty():
+		_scripted_input()
 	if Controls.notice_t > 0.0:
 		Controls.notice_t -= dt
 	if Input.is_action_just_pressed("palette"):
@@ -472,13 +537,19 @@ func _physics_process(_delta: float) -> void:
 	state_t += dt
 	match state:
 		State.TITLE:
-			terrain.tick(dt, SCROLL if gallery == 0 or gallery == 3 else 0.0)
-			if gallery > 0:
-				_gallery_tick(dt)
-				play_t += dt
+			backdrop.tick(dt, SCROLL)
+			terrain.tick(dt, SCROLL)
 			fx.tick(dt, scroll_speed)
+			if Input.is_action_just_pressed("up") or Input.is_action_just_pressed("down"):
+				title_sel = 1 - title_sel
+				sfx.play("cursor")
 			if Input.is_action_just_pressed("confirm") and state_t > 0.3:
-				_start_game()
+				if title_sel == 1:
+					_enter_viewer()
+				else:
+					_start_game()
+		State.VIEWER:
+			viewer.tick(dt)
 		State.PLAY:
 			_tick_play(dt)
 		State.CLEAR:
@@ -496,7 +567,10 @@ func _physics_process(_delta: float) -> void:
 				hi_score = maxi(hi_score, score)
 				if quit_on_clear:
 					get_tree().quit()
-				_enter_title()
+				if stage_no < Stages.count():
+					_start_stage(stage_no + 1, false)
+				else:
+					_enter_title()
 		State.GAME_OVER:
 			_tick_play(dt)
 			if state_t > 2.0 and (Input.is_action_just_pressed("confirm") or state_t > 6.0):
@@ -511,8 +585,40 @@ func _physics_process(_delta: float) -> void:
 	_automation(dt)
 
 
+## --press: presses (and later releases) input actions as if by hand.
+func _scripted_input() -> void:
+	var i := 0
+	while i < held.size():
+		if time >= float(held[i][0]):
+			Input.action_release(held[i][1])
+			held.remove_at(i)
+			continue
+		i += 1
+	while not presses.is_empty() and time >= float(presses[0][0]):
+		var p: Array = presses.pop_front()
+		Input.action_press(p[1])
+		held.append([time + maxf(float(p[2]), DT * 0.5), p[1]])
+
+
 func _input(event: InputEvent) -> void:
 	Controls.note_event(event)
+	if state == State.VIEWER:
+		viewer.on_input(event)
+
+
+func _enter_viewer() -> void:
+	paused = false
+	clear_field()
+	state = State.VIEWER
+	state_t = 0.0
+	viewer.enter(viewer_at, viewer_tour)
+
+
+## Back from the viewer to the title screen.
+func leave_viewer() -> void:
+	viewer.leave()
+	camera.h_offset = 0.0
+	_enter_title()
 
 
 func _tick_play(dt: float) -> void:
@@ -525,7 +631,7 @@ func _tick_play(dt: float) -> void:
 	var hold := false
 	var side := false
 	if autoplay:
-		var b := _bot()
+		var b := bot.think()
 		move = b[0]
 		tap = b[1]
 		hold = b[2]
@@ -550,8 +656,16 @@ func _tick_play(dt: float) -> void:
 				_respawn()
 			else:
 				_game_over()
-	var want_scroll := BOSS_SCROLL if (stage != null and stage.phase != "waves") else SCROLL
+	var want_scroll := stage_def.boss_scroll if (stage != null and stage.phase != "waves") else stage_def.scroll
 	scroll_speed = move_toward(scroll_speed, want_scroll, dt * 1.5)
+	tick_world(dt)
+
+
+## Everything but the stage script and the ship: the ground and scenery,
+## units, bosses, telegraphs, bullets, shots, items and effects, then hits.
+## The viewer runs the world through this too.
+func tick_world(dt: float) -> void:
+	backdrop.tick(dt, scroll_speed)
 	terrain.tick(dt, scroll_speed)
 	for e: Enemy in enemies.duplicate():
 		if is_instance_valid(e) and not e.dead and e.controller == null:
@@ -559,10 +673,9 @@ func _tick_play(dt: float) -> void:
 	for e: Enemy in enemies.duplicate():
 		if is_instance_valid(e) and not e.dead and e.controller != null:
 			e.tick(dt)
-	if lazaro != null:
-		lazaro.tick(dt)
-	if boss != null:
-		boss.tick(dt)
+	for b: BossBase in bosses.duplicate():
+		if is_instance_valid(b):
+			b.tick(dt)
 	_tick_warnings(dt)
 	bullets.tick(dt)
 	shots.tick(dt)
@@ -574,8 +687,11 @@ func _tick_play(dt: float) -> void:
 
 # ------------------------------------------------------------ spawning
 
+## Spawns an enemy of an EnemyKinds kind. params: x, z (default just above
+## the screen), counts (toward clearing the wave), island + cell (a ground
+## unit), and whatever the kind reads.
 func spawn_enemy(kind: String, params := {}) -> Enemy:
-	var e := Enemy.new()
+	var e := EnemyKinds.create(kind)
 	e.setup(self, kind, params)
 	if params.has("island"):
 		var isl: Island = params["island"]
@@ -593,8 +709,9 @@ func spawn_enemy(kind: String, params := {}) -> Enemy:
 	return e
 
 
+## A part of a boss (`ctrl`), hit as an enemy, moved by its boss.
 func spawn_part(ctrl: Object, mesh: String, radius: float) -> Enemy:
-	var e := Enemy.new()
+	var e := EnemyKinds.create("part")
 	e.setup(self, "part", {"mesh": mesh})
 	e.controller = ctrl
 	e.radius = radius
@@ -605,17 +722,18 @@ func spawn_part(ctrl: Object, mesh: String, radius: float) -> Enemy:
 	return e
 
 
-func spawn_lazaro() -> Lazaro:
-	lazaro = Lazaro.new()
-	add_child(lazaro)
-	lazaro.setup(self)
-	return lazaro
+## Spawns a Bosses kind; `final` = the stage boss (its death clears the stage).
+func spawn_boss(kind: String, final := false) -> BossBase:
+	var b := Bosses.create(kind)
+	b.final = final
+	add_child(b)
+	bosses.append(b)
+	b.setup(self)
+	return b
 
 
-func spawn_boss() -> void:
-	boss = Boss.new()
-	add_child(boss)
-	boss.setup(self)
+func remove_boss(b: BossBase) -> void:
+	bosses.erase(b)
 
 
 func remove_enemy(e: Enemy) -> void:
@@ -756,10 +874,7 @@ func kill(e: Enemy) -> void:
 	kills += 1
 	add_score(e.score, true)
 	var at := e.hit_pos
-	var body := Models.CRIMSON
-	if e.kind == "container":
-		body = Models.STEEL
-	fx.explode(at + Vector3(0, 0.4, 0), e.blast, Vector3(0, 0, scroll_speed * 0.4), body)
+	fx.explode(at + Vector3(0, 0.4, 0), e.blast, Vector3(0, 0, scroll_speed * 0.4), e.debris_col)
 	sfx.play("exp_l" if e.blast >= 2.5 else ("exp_m" if e.blast >= 1.5 else "exp_s"))
 	if e.blast >= 2.5:
 		shake(0.5 + e.blast * 0.1)
@@ -863,15 +978,20 @@ func on_tile_broken(at: Vector3, world: Vector3, t: int, star: bool) -> void:
 	tiles_broken += 1
 	add_score(Island.TILE_SCORE[t], true)
 	items.burst_energy(at, Island.TILE_ENERGY[t], 3.0)
+	tile_break_fx(world, t)
+	sfx.play("tile_break")
+	if star:
+		items.spawn(at, Items.STAR, 1.0, Vector3(0, 0, -2.0))
+		fx.sprite(world + Vector3(0, 0.6, 0), Vector3.ZERO, 0.5, 3.0, 0.4, Color(1.0, 0.9, 0.4), 2.0)
+
+
+## Shards, smoke and a flash where tile type t broke (world = its position).
+func tile_break_fx(world: Vector3, t: int) -> void:
 	var c: Color = [Color(0.35, 0.6, 0.62), Color(0.45, 0.5, 0.65), Color(0.5, 0.52, 0.58)][t]
 	for k in 4 + t * 2:
 		fx._debris(world + Vector3(randf_range(-0.7, 0.7), 0.4, randf_range(-0.7, 0.7)), Vector3(randf_range(-3, 3), randf_range(2, 4), randf_range(-3, 3)), 0.18, c)
 	fx.puff(world + Vector3(0, 0.4, 0), Vector3(0, 0, scroll_speed * 0.5), 0.8, 1.8, 0.35, Fx.SMOKE)
 	fx.puff(world + Vector3(0, 0.45, 0), Vector3(0, 0, scroll_speed * 0.5), 1.2, 0.3, 0.07, Fx.FLASH)
-	sfx.play("tile_break")
-	if star:
-		items.spawn(at, Items.STAR, 1.0, Vector3(0, 0, -2.0))
-		fx.sprite(world + Vector3(0, 0.6, 0), Vector3.ZERO, 0.5, 3.0, 0.4, Color(1.0, 0.9, 0.4), 2.0)
 
 
 func collect(kind: int, value: float, at: Vector3) -> void:
@@ -930,6 +1050,14 @@ func _update_camera(dt: float) -> void:
 	shake_a = maxf(0.0, shake_a - dt * 2.2)
 	var s := shake_a * shake_a * 0.6
 	var off := Vector3(randf_range(-s, s), 0, randf_range(-s, s))
+	if state == State.VIEWER:
+		# the viewer's free camera; cam_pos stays the play camera, so hits
+		# and the drawing of bullets on the plane do not move with it
+		var v := viewer.camera_view()
+		camera.position = v[0] + off
+		camera.look_at(v[1] + off, Vector3.UP)
+		camera.h_offset = v[2]
+		return
 	camera.position = cam_pos + off
 	camera.look_at(CAM_TARGET + off, Vector3.UP)
 
@@ -969,78 +1097,11 @@ func _draw_all() -> void:
 
 # ------------------------------------------------------------ automation
 
-## A simple bot: lines up under the nearest enemy, dodges bullets, picks up
-## items, taps fast for Concentration and uses the Spear when bullets crowd
-## in or a big target is close.
-func _bot() -> Array:
-	bot_frame += 1
-	var pp := player.position
-	var goal := Vector3(pp.x, 0, field_bottom - 5.5)
-	var best: Enemy = null
-	var bd := INF
-	for e in enemies:
-		if e.dead or e.intangible or e.armored or not e.visible or not on_field(e.hit_pos, -1.0):
-			continue
-		var d := absf(e.hit_pos.x - pp.x) + maxf(0.0, e.hit_pos.z - pp.z) * 2.0
-		if e.kind == "container":
-			d -= 6.0
-		if d < bd:
-			bd = d
-			best = e
-	if best != null:
-		goal.x = best.hit_pos.x
-		if best.kind == "bulwark" or best.controller != null:
-			goal.z = clampf(best.hit_pos.z + 7.0, field_top + 6.0, field_bottom - 3.0)
-	# items
-	for k in items.n:
-		if items.kind[k] != Items.ENERGY or items.pos[k].distance_to(pp) < 5.0:
-			if items.pos[k].z < pp.z + 1.0 and items.pos[k].z > field_top + 3.0:
-				goal = items.pos[k]
-				break
-	var steer := goal - pp
-	steer.y = 0.0
-	if steer.length() > 1.0:
-		steer = steer.normalized()
-	# dodge
-	var push := Vector3.ZERO
-	for b in bullets.n:
-		var d := pp - bullets.pos[b]
-		d.y = 0.0
-		var dist := d.length()
-		if dist < 3.2 and dist > 0.01:
-			var v := bullets.vel[b]
-			var closing := -d.normalized().dot(v.normalized())
-			if closing > 0.2:
-				var side := Vector3(-v.z, 0, v.x).normalized()
-				if side.dot(d) < 0.0:
-					side = -side
-				push += side * (3.2 - dist) * 1.4 + d.normalized() * (3.2 - dist) * 0.4
-	for e in enemies:
-		if e.dead or not e.ram or e.intangible:
-			continue
-		var d := pp - e.hit_pos
-		d.y = 0.0
-		var dist := d.length()
-		var safe := e.radius + 2.2
-		if dist < safe and dist > 0.01:
-			push += d.normalized() * (safe - dist) * 1.5
-	var mv := steer + push * 1.2
-	var m2 := Vector2(mv.x, mv.z)
-	if m2.length() > 1.0:
-		m2 = m2.normalized()
-	var tap := bot_frame % 8 == 0
-	var hold := true
-	var near := bullets.count_near(pp, 3.0)
-	var side := false
-	if player.spear_cd <= 0.0:
-		if near >= 4 or (best != null and best.radius >= 1.4 and absf(best.hit_pos.x - pp.x) < 2.5 and best.hit_pos.z > pp.z - Player.SPEAR_LEN) or player.energy >= 60.0:
-			side = true
-	return [m2, tap, hold, side]
-
-
 func _automation(dt: float) -> void:
 	if capture_dir == "" and not log_status and quit_after < 0.0:
 		return
+	if state == State.VIEWER and viewer.tour > 0.0:
+		return  # the tour saves its own screenshots
 	capture_t += dt
 	if capture_t >= capture_every:
 		capture_t = 0.0
@@ -1058,56 +1119,6 @@ func _automation(dt: float) -> void:
 	if quit_after > 0.0 and play_t >= quit_after:
 		print("QUIT score=%d t=%.1f" % [score, stage_t])
 		get_tree().quit()
-
-
-## Debug view (--gallery=1: units and items, 2: the boss, 3: islands only,
-## 4: the ship forms enlarged):
-## models laid out on the play plane, turning slowly.
-func _build_gallery() -> void:
-	hud.visible = false
-	terrain.spawning = gallery == 3
-	var row := func(names: Array, z: float, gap: float) -> void:
-		for i in names.size():
-			var m := MeshInstance3D.new()
-			m.mesh = Vox.get_mesh(names[i])
-			m.position = Vector3((i - (names.size() - 1) * 0.5) * gap, 0, z)
-			m.set_meta("spin", true)
-			units.add_child(m)
-	if gallery == 1:
-		row.call(["ship0", "ship1", "ship2", "power", "star"], -9.0, 4.5)
-		row.call(["dart", "swirl", "rammer", "container", "turret_base", "turret_head"], -3.0, 4.5)
-		row.call(["bulwark", "boss_pod", "rock_l", "rock_s", "tile0", "tile1", "tile2"], 4.0, 4.6)
-		for k in 4:
-			var m := MeshInstance3D.new()
-			m.mesh = Vox.get_mesh("lazaro_piece")
-			m.rotation.y = -k * PI / 2.0
-			m.position = Vector3(-11, 0, 10.5) + Vector3(0.95, 0, 0.95).rotated(Vector3.UP, -k * PI / 2.0) * 1.15
-			units.add_child(m)
-	elif gallery == 4:
-		# the three ship forms, enlarged and still, as seen in play
-		for k in 3:
-			var m := MeshInstance3D.new()
-			m.mesh = Vox.get_mesh("ship%d" % k)
-			m.scale = Vector3.ONE * 3.0
-			m.position = Vector3((k - 1) * 9.0, 0, 0)
-			units.add_child(m)
-	elif gallery == 2:
-		for n in ["boss_hull", "boss_eye"]:
-			var m := MeshInstance3D.new()
-			m.mesh = Vox.get_mesh(n)
-			m.position = Vector3(0, 0 if n == "boss_hull" else -0.4, -2)
-			units.add_child(m)
-		for k in 4:
-			var m := MeshInstance3D.new()
-			m.mesh = Vox.get_mesh("boss_pod")
-			m.position = Vector3(0, 0, -2) + Boss.POD_OFF[k]
-			units.add_child(m)
-
-
-func _gallery_tick(dt: float) -> void:
-	for c in units.get_children():
-		if c.has_meta("spin"):
-			(c as Node3D).rotation.y += dt * 0.4
 
 
 # ------------------------------------------------------------ telegraphs
@@ -1157,7 +1168,7 @@ func _tick_warnings(dt: float) -> void:
 			continue
 		if d["t"] <= 0.0:
 			delayed.remove_at(i)
-			if state == State.PLAY:
+			if combat_on():
 				(d["fn"] as Callable).call()
 			continue
 		i += 1

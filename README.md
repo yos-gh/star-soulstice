@@ -5,7 +5,7 @@
 
 ## 起動
 
-`play.bat` をダブルクリック（初回は自動でインポートしてから起動）。
+`play.bat` をダブルクリック（スクリプトの登録を毎回更新してから起動）。
 
 ## 操作
 
@@ -38,11 +38,22 @@
 
 - **稼ぎ**: スターはステージ内の取得数で ×1→×2→×4→×8、第2形態でのパワーアップ取得も ×1→×8（持ち越し・ミスで戻る）。基本スコアの一覧は [docs/scoring.md](docs/scoring.md)。
 
+## 閲覧モード（VIEWER）
+
+タイトルで ↑↓ から「VIEWER」を選ぶと、自機・敵（編隊の動き）・中型機・中ボス・ボス・各ウェーブ・地形の区画・背景・爆発などのエフェクト・敵弾・アイテム・全モデルを 1 つずつ確認できます。
+本編と同じ世界で動くので見た目も動きも本編どおりで、Esc でいつでも世界ごと止めてカメラを回り込ませたり寄ったりできます（F で 1 フレームずつ、1〜5 で速さ）。
+キーの一覧は画面左のパネルと [docs/architecture.md](docs/architecture.md#閲覧モードviewer) にあります。
+
+## コードの構成
+
+ステージ・敵・ボス・地形・背景・モデルは登録表とステージ定義に分けてあり、足したものは本編と閲覧モードの両方に自動で出ます。
+足し方は [docs/architecture.md](docs/architecture.md) にまとめています。
+
 ## テスト用オプション
 
 ```
-Godot_console.exe --path . --fixed-fps 60 -- --autoplay --god --start=6|mid|boss --log --capture=captures --capture-every=3 --quit-after=60 --quit-on-clear --mute
+Godot_console.exe --path . --fixed-fps 60 -- --autoplay --god --stage=1 --start=6|mid|boss --log --capture=captures --capture-every=3 --quit-after=60 --quit-on-clear --mute
 ```
 
 見た目の切り分け用に `--hide=sprites,debris,lights,bullets,shots,items,units,player,islands,tiles,rock,turrets,labels,dof,glow,shadow` も使えます。
-モデルの確認は `--gallery=1`（自機・敵・アイテム・タイル）、`--gallery=2`（ボス）、`--gallery=3`（地形を順に流す）、`--gallery=4`（自機3形態の拡大）。
+閲覧モードへ直接入るには `--viewer`（`--viewer=boss:1` のように分類と番号も指定可）、全項目を順に撮るには `--viewer-tour=2.5 --capture=captures/tour`。

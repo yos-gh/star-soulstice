@@ -1,11 +1,16 @@
-class_name Lazaro
-extends Node3D
+extends BossBase
 ## Mid-boss (after Star Soldier's Lazaro): a sphere that splits into four
 ## shell pieces, surrounds the player, then slams shut on where the player
 ## was. While closed after a slam its core is exposed for a while.
 ## The pieces take reduced damage; all damage goes to one shared pool.
 
+const INFO := {
+	"name": "LAZARO", "role": "mid",
+	"desc": "4 つに割れて自機を囲み、閉じて挟む。閉じた直後は核がむき出し",
+	"demos": [["FULL", ""]],
+}
 const HP := 240.0
+const SCORE := 20000
 const PIECE_MUL := 0.55
 const ORBIT_R := 7.5
 const PINCH_TIME := 1.5  # slow enough to slip out, or to shoot a piece down
@@ -13,7 +18,6 @@ const SPLIT_WARN := 0.6  # telegraph before the pieces fly out
 const PINCH_WARN := 0.9  # before they slam shut
 const LIFE := 50.0
 
-var game: Game
 var pieces: Array[Enemy] = []
 var core: Enemy
 var hp := HP
@@ -24,9 +28,6 @@ var center := Vector3.ZERO
 var orbit_c := Vector3.ZERO
 var orbit_a := 0.0
 var pinch_from: Array[Vector3] = []
-var finished := false
-var defeated := false
-var dead := false  # for wave bookkeeping
 var fire_k := 0
 var open := 0.0  # 0 closed .. 1 pieces pushed apart to show the core
 var warn := 0.0
@@ -80,8 +81,24 @@ func _defeat() -> void:
 	defeated = true
 	state = "dying"
 	st = 0.0
-	game.add_score(20000, true)
-	game.fx.popup(center + Vector3(0, 2, 0), "20000", Color(1, 0.85, 0.4), true)
+	game.add_score(SCORE, true)
+	game.fx.popup(center + Vector3(0, 2, 0), str(SCORE), Color(1, 0.85, 0.4), true)
+
+
+func gauge() -> Dictionary:
+	if defeated:
+		return {}
+	return {"frac": hp / HP, "color": Hud.GOLD, "name": INFO["name"], "name_color": Color(1, 0.9, 0.6), "x": 0.25, "w": 0.5, "h": 7.0, "name_y": 70.0}
+
+
+func force_defeat() -> void:
+	if not defeated and not finished:
+		hp = 0.0
+		_defeat()
+
+
+func debug_state() -> String:
+	return "%s %.1fs  HP %d/%d  cycle %d" % [state, st, int(maxf(hp, 0.0)), int(HP), cycle]
 
 
 func tick(dt: float) -> void:
@@ -239,12 +256,11 @@ func _orbit_pos(k: int, r: float) -> Vector3:
 
 func _finish() -> void:
 	finished = true
-	dead = true
 	for q in pieces:
 		game.remove_enemy(q)
 		q.queue_free()
 	game.remove_enemy(core)
 	core.queue_free()
 	pieces.clear()
-	game.lazaro = null
+	game.remove_boss(self)
 	queue_free()
