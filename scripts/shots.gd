@@ -6,8 +6,13 @@ extends Node3D
 
 const MAX := 400
 const BASE_DMG := 1.0
-## Afterimages drawn behind each shot: (distance back, scale, alpha).
-const GHOSTS := [Vector3(0.0, 1.0, 1.0), Vector3(1.1, 0.8, 0.45), Vector3(2.0, 0.62, 0.22)]
+## Each shot is drawn as the bolt plus a short "shadow" a little behind it,
+## with a clear gap between ("====  --"): (length factor, alpha). Visual only.
+const SHOT_LEN := 1.7
+const SHOT_W := 0.22
+const GHOST_LEN := 0.42  # x the shot length
+const GHOST_GAP := 0.45  # world units between the bolt and its shadow
+const GHOST_ALPHA := 0.5
 const HOMING_DMG := 16.0
 const HOMING_SPEED := 30.0
 ## Time scale: the first implementation's path, flown K times faster
@@ -46,7 +51,7 @@ func _ready() -> void:
 	mat.render_priority = 1
 	q.material = mat
 	mm.mesh = q
-	mm.instance_count = MAX * 3
+	mm.instance_count = MAX * 2
 	mm.visible_instance_count = 0
 	bolts.multimesh = mm
 	bolts.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -184,21 +189,21 @@ func draw() -> void:
 	for i in n:
 		var m := mul[i]
 		var f := (m - 1.0) / (Player.CONC_MAX_MUL - 1.0)
-		# size follows the multiplier: x1 = 1.0, x4 = 1.5
-		var s := 1.0 + 0.5 * f
+		# thickness follows the multiplier: x1 = 1.0, x4 = 2.0 (length fixed)
+		var w := SHOT_W * (1.0 + f)
 		var dir := vel[i].normalized()
 		var side := Vector3(-dir.z, 0, dir.x)
 		var c := Color(0.4, 0.85, 1.0).lerp(Color(1.0, 0.78, 0.3), f)
-		# the shot, then two fading afterimages behind it (visual only)
-		for g in GHOSTS.size():
-			var gh: Vector3 = GHOSTS[g]  # (back offset, scale, alpha)
-			var w := 0.22 * s * gh.y
-			var l := 1.7 * s * gh.y
-			# local -z (UV.y = 0) is the head
-			var b := Basis(side * w, Vector3.UP, -dir * l)
-			mm.set_instance_transform(k, Transform3D(b, pos[i] - dir * gh.x * s + Vector3(0, 0.4, 0)))
-			mm.set_instance_color(k, Color(c.r, c.g, c.b, gh.z))
-			k += 1
+		var at := pos[i] + Vector3(0, 0.4, 0)
+		# local -z (UV.y = 0) is the head
+		mm.set_instance_transform(k, Transform3D(Basis(side * w, Vector3.UP, -dir * SHOT_LEN), at))
+		mm.set_instance_color(k, c)
+		k += 1
+		var gl := SHOT_LEN * GHOST_LEN
+		var back := SHOT_LEN * 0.5 + GHOST_GAP + gl * 0.5
+		mm.set_instance_transform(k, Transform3D(Basis(side * w * 0.85, Vector3.UP, -dir * gl), at - dir * back))
+		mm.set_instance_color(k, Color(c.r, c.g, c.b, GHOST_ALPHA))
+		k += 1
 	mm.visible_instance_count = k
 	ribbon_mesh.clear_surfaces()
 	var any := false
