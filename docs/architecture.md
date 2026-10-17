@@ -46,6 +46,7 @@ Stages ──> StageDef（stage1.gd …）
    - `_init_kind()` で耐久・半径・スコア・エネルギー・爆発の大きさなど。モデル名が種類名と違うときは `mesh_name`。
    - `_behave(dt)` で動きと攻撃。出現時の指定は `p` に入っている。危険な攻撃の前は `game.warn` / `game.warn_then` で予兆を出す。
    - 画面の外で待ってから来る敵（後ろの `chaser`、横の `flanker`）の予兆は、レティクルが画面の縁に出る。1 列の編隊で狙い（自機の位置）と予兆を 1 つにまとめるときは、`Formations.chasers` のように列の全員に同じ辞書（`group`）を渡し、先頭が書いて後続が読む。
+   - 決まった道筋を列で飛ぶ編隊は、雛形で道筋（`Curve2D`、平面上の x と z）を作って全員に渡し、各機は先頭から一定の距離だけ後ろを飛ぶ（`Formations.racers` と `racer.gd`）。道筋は画面の割合で描いておき、反転・対角線での折り返しで 4 隅と 2 方向に使い回す。
 2. `scripts/enemies/enemy_kinds.gd` の `KINDS` に足す。
 3. モデルを `scripts/models/enemy_models.gd` に足す（`NAMES` と `make`）。
 4. 新しい編隊が要るなら `scripts/stage/formations.gd` に雛形を足す。

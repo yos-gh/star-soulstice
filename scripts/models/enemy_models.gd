@@ -3,7 +3,7 @@ extends Models
 ## Small and mid-size enemies, ground guns and drifting rocks: polished gold
 ## and bronze armour over gunmetal, red eyes.
 
-const NAMES := ["dart", "swirl", "rammer", "chaser", "flanker", "container", "turret_base", "turret_head", "bulwark", "rock_s", "rock_l"]
+const NAMES := ["dart", "swirl", "rammer", "chaser", "flanker", "racer", "container", "turret_base", "turret_head", "bulwark", "rock_s", "rock_l"]
 
 
 static func make(name: String) -> ArrayMesh:
@@ -18,6 +18,8 @@ static func make(name: String) -> ArrayMesh:
 			return _chaser()
 		"flanker":
 			return _flanker()
+		"racer":
+			return _racer()
 		"container":
 			return _container()
 		"turret_base":
@@ -117,6 +119,23 @@ static func _flanker() -> ArrayMesh:
 	v.fill_sym(1, 1, 3, 1, 2, 4, GUN_D)
 	v.fill_sym(1, 2, 5, 1, 2, 5, AMBER, true)
 	v.fill_sym(9, 2, 4, 9, 2, 5, CRIM)
+	return v.mesh(U, Vector3(0, 2.0, 0))
+
+
+## Lap racer: a slim arrowhead with chevron wings swept far back, a red
+## eye and a bright engine, built for speed.
+static func _racer() -> ArrayMesh:
+	var v := Vox.new(18, 6, 20)
+	v.fill_sym(0, 1, -9, 0, 2, 7, GOLD_L)
+	v.fill_sym(0, 0, -6, 1, 0, 6, GUN_D)
+	v.fill_sym(0, 3, -3, 0, 3, 4, GUN)
+	v.fill_sym(0, 3, -7, 0, 3, -5, EYE, true)
+	for k in range(1, 9):
+		var z0 := -3 + k
+		v.fill_sym(k, 1, z0, k, 1, z0 + 3 - k / 3, GOLD if k < 6 else BRONZE)
+	v.fill_sym(8, 1, 5, 8, 2, 6, CRIM)
+	v.fill_sym(1, 2, 3, 1, 2, 6, BRONZE)
+	v.fill_sym(0, 1, 8, 0, 2, 9, AMBER, true)
 	return v.mesh(U, Vector3(0, 2.0, 0))
 
 

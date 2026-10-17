@@ -57,7 +57,7 @@ static func _ship(f: Formations, d: StageDef) -> Array:
 	out.append({"name": "FORMS SIDE BY SIDE", "type": "model", "stage": d, "scroll": 0.0, "spin": false,
 		"parts": [["ship0", Vector3(-9, 0, 0), 0.0, 3.0], ["ship1", Vector3(0, 0, 0), 0.0, 3.0], ["ship2", Vector3(9, 0, 0), 0.0, 3.0]],
 		"desc": "3 形態を 3 倍に拡大して並べたもの", "cam": {"target": Vector3.ZERO, "dist": 40.0, "pitch": 66.0}})
-	var targets: Array = f.swirls(0.0, -1, 5, 0.3) + f.swirls(0.8, 1, 5, 0.3) + f.vform(2.4, 0.0)
+	var targets: Array = f.swirls(0.0, -1, 5, 0.3) + f.swirls(0.8, 1, 5, 0.3) + f.vform(2.4, 1)
 	for k in 3:
 		out.append({"name": "WEAPONS FORM %s" % forms[k], "type": "spawns", "spawns": targets, "pilot": "weapons", "form": k, "stage": d,
 			"desc": "連打で集中ゲージを溜め、4.2 秒ごとにスピアとホーミング 8 発"})

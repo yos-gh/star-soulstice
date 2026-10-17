@@ -1,27 +1,30 @@
 extends Enemy
-## Strikes from behind. A train waits below the screen while a lock-on on
-## the bottom edge marks its lane (the ship's column), then charges straight
-## up it, brakes ahead of the ship, turns to face it, fires one aimed shell
-## and leaves upward. The rear shot meets it on the way in; after it has
-## passed it hangs right in front of the guns.
+## Strikes from behind. A lock-on on the bottom edge marks where a train
+## will come up; it rises slowly beside the ship's column (the rear shot
+## meets it there), stops, turns and fires one aimed shell up at the ship,
+## then breaks away fast, curving out to the side away from the ship.
 ## params: i (place in the train, 0 = the leader, who sets the lane and
-## shows the warning), group (shared by the train), gap
+## shows the warning), group (shared by the train), gap, side (+1 / -1 =
+## the ship's right / left, 0 = toward the centre)
 
 const INFO := {
 	"name": "CHASER", "category": "small",
-	"desc": "後方強襲機：画面の下に予兆を出し、自機の列を後ろから突き上げる。前に出て止まり、振り向いて狙いの物理弾を 1 発",
+	"desc": "後方強襲機：画面の下に予兆を出し、自機の列の横を後ろからゆっくり上がってくる。止まって狙いの物理弾を 1 発、カーブを描いて横へ高速で抜ける",
 	"demos": [
 		["TRAIN OF 3", "chasers", [0.0, 3]],
-		["TWO TRAINS", "chasers", [0.0, 3], "chasers", [1.8, 3]],
+		["BOTH SIDES", "chasers", [0.0, 3, -1], "chasers", [1.4, 3, 1]],
 	],
 }
 
-const WAIT := 0.7  # telegraph before the charge (from behind: a little longer)
-const SPEED := 24.0
-const BRAKE := 60.0
+const WAIT := 0.5  # telegraph before it shows
+const OFFSET := 3.2  # from the ship's column
+const RISE := 6.0
+const ESCAPE := 26.0
 
 var lane := 0.0
 var stop_z := 0.0
+var away := 1.0  # escape side
+var heading := Vector3(0, 0, -1)
 
 
 func _init_kind() -> void:
@@ -33,46 +36,54 @@ func _init_kind() -> void:
 
 func _behave(dt: float) -> void:
 	var i: int = p.get("i", 0)
+	var pl := game.player
 	if t <= dt * 1.5:
 		var grp: Dictionary = p.get("group", {})
 		if i == 0 or not grp.has("x"):
-			var px: float = game.player.position.x if game.player.alive else 0.0
-			grp["x"] = clampf(px, -game.hw_bottom + 1.5, game.hw_bottom - 1.5)
+			var px: float = pl.position.x if pl.alive else 0.0
+			var side := float(p.get("side", 0))
+			if side == 0.0:
+				side = -signf(px) if absf(px) > 1.0 else 1.0
+			var lim := game.hw_bottom - 1.5
+			var x := px + side * OFFSET
+			if absf(x) > lim:
+				x = px - side * OFFSET  # no room on that side: the other one
+			grp["x"] = clampf(x, -lim, lim)
 		lane = grp["x"]
-		position = Vector3(lane, 0, game.field_bottom + 2.0 + i * float(p.get("gap", 1.8)))
-		stop_z = game.field_top + 9.0 + i * 1.9
+		position = Vector3(lane, 0, game.field_bottom + 1.6 + i * float(p.get("gap", 1.8)))
+		stop_z = game.field_bottom - 5.0 + i * float(p.get("gap", 1.8))
 		if i == 0:
-			game.warn(self, WAIT, Game.Warn.MOVE, radius, Vector3(lane, 0, game.field_bottom - 9.0))
+			game.warn(self, WAIT, Game.Warn.MOVE, radius, Vector3(lane, 0, stop_z))
 	if t < WAIT:
 		return
-	var look := game.player.position - position
+	var look := pl.position - position
 	match step:
 		0:
-			# straight up the lane, no steering: step aside and it misses
-			vel = Vector3(0, 0, -SPEED)
-			if position.z <= stop_z + SPEED * SPEED / (2.0 * BRAKE):
+			# up slowly, easing to a stop beside the ship
+			var d := position.z - stop_z
+			vel = Vector3(0, 0, -minf(RISE, sqrt(maxf(0.0, 2.0 * 10.0 * d)) + 0.3))
+			if d <= 0.05:
+				vel = Vector3.ZERO
 				step = 1
+				fire_t = 0.3 + i * 0.15
 		1:
-			# brake ahead of the ship and turn round to face it
-			vel = vel.move_toward(Vector3.ZERO, BRAKE * dt)
-			rotation.y = lerp_angle(rotation.y, atan2(-look.x, -look.z), 12.0 * dt)
-			if vel.length() < 0.3:
-				step = 2
-				fire_t = 0.25
-		2:
-			rotation.y = lerp_angle(rotation.y, atan2(-look.x, -look.z), 12.0 * dt)
+			rotation.y = lerp_angle(rotation.y, atan2(-look.x, -look.z), 10.0 * dt)
 			fire_t -= dt
 			if fire_t <= 0.0:
-				if not fired and game.can_fire(position):
+				if not fired and game.combat_on() and pl.alive and game.on_field(position, -0.8) and look.length() > 3.0:
 					fired = true
-					game.bullets.fire(position, game.bullets.aim(position), 8.0, Bullets.SHELL, self, Bullets.NEEDLE)
-				step = 3
-				fire_t = 0.3
+					game.bullets.fire(position, game.bullets.aim(position), 7.0, Bullets.SHELL, self, Bullets.NEEDLE)
+				step = 2
+				away = signf(lane - pl.position.x) if absf(lane - pl.position.x) > 0.1 else signf(lane + 0.001)
+				heading = Vector3(0, 0, -1)
+				vel = heading * 6.0
 		_:
-			# away upward
-			fire_t -= dt
-			if fire_t <= 0.0:
-				vel = vel.move_toward(Vector3(0, 0, -18.0), 36.0 * dt)
-				rotation.y = lerp_angle(rotation.y, 0.0, 8.0 * dt)
+			# break away: speed up while the heading swings out to the side
+			var want := Vector3(away, 0, -0.35).normalized()
+			heading = heading.slerp(want, clampf(3.5 * dt, 0.0, 1.0)).normalized()
+			vel = heading * minf(ESCAPE, vel.length() + 60.0 * dt)
+			face(heading)
 	position += vel * dt
-	model.rotation.z = sin(t * 9.0) * 0.12 if step == 0 else lerpf(model.rotation.z, 0.0, 6.0 * dt)
+	if step == 0:
+		rotation.y = lerp_angle(rotation.y, 0.0, 8.0 * dt)
+	model.rotation.z = lerpf(model.rotation.z, away * 0.6 if step >= 2 else 0.0, 6.0 * dt)
