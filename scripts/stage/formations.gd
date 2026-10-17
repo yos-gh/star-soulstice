@@ -117,71 +117,97 @@ func pincer(at: float, count: int, left_up := true) -> Array:
 
 
 ## A train of racers, after the GG Aleste 2 squadrons: in from a corner of
-## the screen, fast laps around its edges (the last one spiralling in), then
-## out snaking across it. Wherever the ship is, they pass somewhere easy to
-## shoot; coming from the edges, they rarely surprise it.
+## the screen on a curve, fast laps round an ellipse in the middle of it,
+## then off its top edge on a curve into a sine wave out across the screen.
+## Wherever the ship is, they pass somewhere easy to shoot; coming in from
+## a corner, they rarely surprise it.
 ##   corner  where they come in: "bl", "br", "tl" or "tr"
-##   laps    1 or 2 laps around the edges before the inner one
-##   along   false: first along the side edge (up or down); true: first
-##           along the bottom or top edge
+##   laps    laps round the ellipse (1 or 2)
+##   along   false: in up (or down) the side first; true: in along the
+##           bottom (or top) first, and out to the side
 func racers(at: float, corner: String, laps: int, count: int, along := false, gap := 2.2) -> Array:
-	# the path in screen fractions (u right, v down; +-0.9 = the lap's
-	# edges), drawn once: in at the bottom left, up the left edge, clockwise
-	var lap := [Vector2(-0.9, 0.55), Vector2(-0.9, -0.55), Vector2(-0.72, -0.85), Vector2(-0.35, -0.9), Vector2(0.35, -0.9),
-		Vector2(0.72, -0.85), Vector2(0.9, -0.55), Vector2(0.9, 0.55), Vector2(0.72, 0.85), Vector2(0.35, 0.9),
-		Vector2(-0.35, 0.9), Vector2(-0.72, 0.85)]
-	var inner := [Vector2(-0.62, 0.45), Vector2(-0.62, -0.25), Vector2(-0.5, -0.55), Vector2(-0.15, -0.62), Vector2(0.3, -0.62),
-		Vector2(0.55, -0.52)]
-	# the snaking exit: rows across, a hairpin at each end
-	var snake := [Vector2(0.42, -0.3), Vector2(0.0, -0.28), Vector2(-0.42, -0.26), Vector2(-0.56, -0.1),
-		Vector2(-0.42, 0.06), Vector2(0.0, 0.08), Vector2(0.42, 0.1), Vector2(0.56, 0.26),
-		Vector2(0.42, 0.42), Vector2(0.0, 0.44), Vector2(-0.42, 0.46), Vector2(-0.56, 0.62),
-		Vector2(-0.42, 0.78), Vector2(0.0, 0.8), Vector2(0.5, 0.82), Vector2(0.66, 1.0), Vector2(0.7, 1.4)]
-	var uv: Array = [Vector2(-0.9, 1.3)]
-	var lap_at: Array = []  # the first point of each lap
-	for k in clampi(laps, 1, 3):
-		lap_at.append(uv.size())
-		uv += lap
-	uv += inner + snake
-	# mirror and rotate: along = reflect across the corner's diagonal
+	var lap_at: Array = []
+	var path := _racer_path(clampi(laps, 1, 3), lap_at)
+	# mirror and turn (the ellipse is the unit circle here, so it stays put)
 	var pts := PackedVector2Array()
-	for q: Vector2 in uv:
+	for q: Vector2 in path:
 		var a := Vector2(-q.y, -q.x) if along else q
 		if corner.contains("r"):
 			a.x = -a.x
 		if corner.contains("t"):
 			a.y = -a.y
-		pts.append(_screen(a))
-	var c := _spline(pts, pts.size())
-	# fire once a lap, from the middle of the lap's highest edge on screen
+		pts.append(_screen(Vector2(a.x * RACE_A, RACE_V + a.y * RACE_B)))
+	var c := Curve2D.new()
+	c.bake_interval = 0.2
+	var dist := PackedFloat32Array([0.0])
+	for k in pts.size():
+		c.add_point(pts[k])
+		if k > 0:
+			dist.append(dist[k - 1] + pts[k].distance_to(pts[k - 1]))
+	# fire once a lap, from the highest point of the ellipse on screen
 	var fire := []
-	for s0: int in lap_at:
-		var j := s0
-		for k in range(s0, s0 + lap.size()):
-			if pts[k].y < pts[j].y - 0.01:
+	for r: Array in lap_at:
+		var j: int = r[0]
+		for k in range(r[0], r[1]):
+			if pts[k].y < pts[j].y:
 				j = k
-		if pts[j + 1].y > pts[j].y + 0.5:
-			j -= 1
-		fire.append(_spline(pts, j + 1).get_baked_length() + pts[j].distance_to(pts[j + 1]) * 0.5)
+		fire.append(dist[j])
 	var out := []
 	for i in count:
 		out.append([at + i * 0.02, "racer", {"curve": c, "i": i, "gap": gap, "fire": fire, "x": pts[0].x, "z": pts[0].y}])
 	return out
 
 
-## A smooth (Catmull-Rom) curve through the first `n` of `pts`.
-func _spline(pts: PackedVector2Array, n: int) -> Curve2D:
-	var c := Curve2D.new()
-	c.bake_interval = 0.2
-	for k in n:
-		var tan := (pts[mini(k + 1, pts.size() - 1)] - pts[maxi(k - 1, 0)]) / 6.0
-		c.add_point(pts[k], -tan, tan)
-	return c
+## The racers' ellipse in screen fractions (see _screen): half axes and the
+## height of its centre (above the middle: the bottom of the ellipse passes
+## in front of a ship low on the screen).
+const RACE_A := 0.66
+const RACE_B := 0.55
+const RACE_V := -0.2
 
 
-## Screen fraction (u right, v down; the racers' lap runs at +-0.9) to a
-## point on the play plane: the lap keeps inside the sides and runs along
-## the bottom edge just below the ship's reach.
+## The racers' path drawn once with the ellipse as the unit circle: in from
+## the bottom left corner, up onto the left of the circle, clockwise round
+## it, off the top on a quarter curve into a cosine wave down the screen.
+## `lap_at` gets [first, end) sample indices of each lap.
+func _racer_path(laps: int, lap_at: Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var e := Vector2(-1.74, 2.37)
+	var l := Vector2(-1.0, 0.0)
+	out.append_array(_bezier(e, e + Vector2(0.25, -1.0).normalized() * 0.9, l + Vector2(0, 0.9), l, 40, true))
+	var n := 120  # samples a lap
+	for k in laps:
+		lap_at.append([out.size(), out.size() + n])
+		for j in range(1, n + 1):
+			var th := PI + TAU * (k * n + j) / n
+			out.append(Vector2(cos(th), sin(th)))
+	for j in range(1, int(n * 0.25) + 1):
+		var th := PI + TAU * (laps * n + j) / n
+		out.append(Vector2(cos(th), sin(th)))
+	# off the top (heading right) and round into the wave, heading down
+	var w := 0.6
+	var s := Vector2(w, -0.42)
+	out.append_array(_bezier(Vector2(0, -1), Vector2(0.4, -1), s + Vector2(0, -0.35), s, 16, false))
+	var kw := 3.4
+	var v := s.y
+	while v < 2.9:
+		v += 0.04
+		out.append(Vector2(w * cos(kw * (v - s.y)), v))
+	return out
+
+
+## Points along a cubic Bezier from p0 (only if `first`) to p3.
+func _bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, steps: int, first: bool) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for j in range(0 if first else 1, steps + 1):
+		var t := float(j) / steps
+		var u := 1.0 - t
+		out.append(p0 * u * u * u + p1 * 3.0 * u * u * t + p2 * 3.0 * u * t * t + p3 * t * t * t)
+	return out
+
+
+## Screen fraction (u right, v down; +-0.9 is a little inside the edges)
+## to a point on the play plane.
 func _screen(q: Vector2) -> Vector2:
 	var z := lerpf(_top() + 2.0, game.field_bottom - 0.4, (q.y + 0.9) / 1.8)
 	return Vector2(q.x / 0.9 * (game.half_width_at(z) - 1.4), z)

@@ -2,14 +2,14 @@ extends Enemy
 ## Strikes from behind. A lock-on on the bottom edge marks where a train
 ## will come up; it rises slowly beside the ship's column (the rear shot
 ## meets it there), stops, turns and fires one aimed shell up at the ship,
-## then breaks away fast, curving out to the side away from the ship.
+## then breaks away fast, easing round onto a diagonal away from the ship.
 ## params: i (place in the train, 0 = the leader, who sets the lane and
 ## shows the warning), group (shared by the train), gap, side (+1 / -1 =
 ## the ship's right / left, 0 = toward the centre)
 
 const INFO := {
 	"name": "CHASER", "category": "small",
-	"desc": "後方強襲機：画面の下に予兆を出し、自機の列の横を後ろからゆっくり上がってくる。止まって狙いの物理弾を 1 発、カーブを描いて横へ高速で抜ける",
+	"desc": "後方強襲機：画面の下に予兆を出し、自機の列の横を後ろからゆっくり上がってくる。止まって狙いの物理弾を 1 発、ゆるく曲がって斜め上へ高速で抜ける",
 	"demos": [
 		["TRAIN OF 3", "chasers", [0.0, 3]],
 		["BOTH SIDES", "chasers", [0.0, 3, -1], "chasers", [1.4, 3, 1]],
@@ -78,9 +78,10 @@ func _behave(dt: float) -> void:
 				heading = Vector3(0, 0, -1)
 				vel = heading * 6.0
 		_:
-			# break away: speed up while the heading swings out to the side
-			var want := Vector3(away, 0, -0.35).normalized()
-			heading = heading.slerp(want, clampf(3.5 * dt, 0.0, 1.0)).normalized()
+			# break away: speed up while the heading eases round to a
+			# diagonal, up and away from the ship
+			var want := Vector3(away * 0.8, 0, -1.0).normalized()
+			heading = heading.slerp(want, clampf(1.4 * dt, 0.0, 1.0)).normalized()
 			vel = heading * minf(ESCAPE, vel.length() + 60.0 * dt)
 			face(heading)
 	position += vel * dt

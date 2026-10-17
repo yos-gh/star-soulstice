@@ -1,15 +1,15 @@
 extends Enemy
 ## Lap racer, after the GG Aleste 2 squadrons: a fast train in from a
-## corner, round the edges of the screen once or twice (the last lap
-## spiralling in), then out snaking across it; every other one fires an
-## aimed shell from the top edge each lap. The path is a Curve2D on the
+## corner on a curve, once or twice round an ellipse in the middle of the
+## screen, then out along a sine wave; every other one fires an aimed
+## shell from the top of the ellipse each lap. The path is a Curve2D on the
 ## play plane built by Formations.racers and shared by the train; each
 ## member flies it `i * gap` behind the leader.
 ## params: curve, i, gap, fire (path distances where it fires)
 
 const INFO := {
 	"name": "RACER", "category": "small",
-	"desc": "周回機（GG アレスタ 2 の編隊から）：画面の隅から高速で入り、縁を 1〜2 周して内側へ回り込み、蛇行しながら抜ける。周回ごとに上の縁から狙いの物理弾",
+	"desc": "周回機（GG アレスタ 2 の編隊から）：画面の隅から曲線で入り、画面中央の楕円を高速で 1〜2 周、サインカーブを描いて抜ける。周回ごとに楕円の上から狙いの物理弾",
 	"demos": [
 		["1 LAP FROM TOP LEFT", "racers", [0.0, "tl", 1, 8]],
 		["2 LAPS FROM BOTTOM RIGHT", "racers", [0.0, "br", 2, 8]],
