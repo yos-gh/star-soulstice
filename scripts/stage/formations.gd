@@ -118,9 +118,10 @@ func pincer(at: float, count: int, left_up := true) -> Array:
 
 ## A train of racers, after the GG Aleste 2 squadrons: in from a corner
 ## straight along a side, a big loop filling the screen round the ship (one
-## or two laps), then away on a wide sine wave from the far side. Wherever
-## the ship is, they pass somewhere easy to shoot; coming in from a corner,
-## they rarely surprise it.
+## or two laps), then away snaking: rows back and forth across the middle,
+## each crossing the centre line in front of the ship. Wherever the ship
+## is, they pass somewhere easy to shoot; coming in from a corner, they
+## rarely surprise it.
 ##   corner  where they come in: "bl", "br", "tl" or "tr" (from a top
 ##           corner they leave upward, away from the ship)
 ##   laps    laps round the loop (1 or 2)
@@ -169,8 +170,10 @@ const RACE_V := 0.05
 
 ## The racers' path drawn once with the loop as the unit circle: straight
 ## up from below the bottom left onto the left of the circle, clockwise
-## round it, on to its right side and away down a cosine wave as wide as
-## the loop. `lap_at` gets [first, end) sample indices of each lap.
+## round it, then off the left of it into a snake: four rows across the
+## middle (each one crossing the centre line, in front of the ship when
+## mirrored to come in from the top), joined by round hairpins, and out.
+## `lap_at` gets [first, end) sample indices of each lap.
 func _racer_path(laps: int, lap_at: Array) -> PackedVector2Array:
 	var out := PackedVector2Array([Vector2(-1.0, 2.6)])
 	var v := 2.6
@@ -183,16 +186,42 @@ func _racer_path(laps: int, lap_at: Array) -> PackedVector2Array:
 		for j in range(1, n + 1):
 			var th := PI + TAU * (k * n + j) / n
 			out.append(Vector2(cos(th), sin(th)))
-	for j in range(1, int(n * 0.5) + 1):
-		var th := PI + TAU * (laps * n + j) / n
-		out.append(Vector2(cos(th), sin(th)))
-	# from the right of the circle (heading down) on its crest: three
-	# quarters of a wave before it is off the screen
-	var kw := 4.1
-	v = 0.0
-	while v < 2.7:
-		v += 0.04
-		out.append(Vector2(cos(kw * v), v))
+	# the snake: rows at v0, v0 + 2r, ... from -w to w
+	var w := 0.6
+	var r := 0.205
+	var v0 := -0.29
+	out.append_array(_arc(Vector2(-1.0 - v0, 0.0), -v0, PI, PI * 1.5))
+	for row in 4:
+		var y := v0 + row * 2.0 * r
+		var dir := 1.0 if row % 2 == 0 else -1.0
+		out.append_array(_line(Vector2(out[out.size() - 1].x, y), Vector2(dir * w, y)))
+		if row < 3:
+			# hairpin round the end, onto the next row
+			out.append_array(_arc(Vector2(dir * w, y + r), r, -PI / 2.0, PI / 2.0 if dir > 0.0 else -PI * 1.5))
+	# a quarter turn at the end of the last row, and straight out
+	var last := out[out.size() - 1]
+	out.append_array(_arc(last + Vector2(0, 0.2), 0.2, -PI / 2.0, -PI))
+	out.append_array(_line(out[out.size() - 1], Vector2(out[out.size() - 1].x, 3.0)))
+	return out
+
+
+## Points along a circular arc (centre c, radius rad) from angle a0 to a1,
+## leaving out the first one.
+func _arc(c: Vector2, rad: float, a0: float, a1: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var steps := maxi(4, int(absf(a1 - a0) * rad / 0.03))
+	for j in range(1, steps + 1):
+		var a := lerpf(a0, a1, float(j) / steps)
+		out.append(c + Vector2(cos(a), sin(a)) * rad)
+	return out
+
+
+## Points along a straight line from a to b, leaving out the first one.
+func _line(a: Vector2, b: Vector2) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var steps := maxi(1, int(a.distance_to(b) / 0.05))
+	for j in range(1, steps + 1):
+		out.append(a.lerp(b, float(j) / steps))
 	return out
 
 
