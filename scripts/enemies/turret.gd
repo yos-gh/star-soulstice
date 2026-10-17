@@ -1,12 +1,16 @@
 extends Enemy
-## Ground gun on an island: aimed shell bursts. Spawned with its island
+## Ground gun on an island: announced bursts of three aimed, unbreakable
+## needles. It holds fire while the ship is over it or close by (bullet
+## sealing): fly in on top of it to shut it up. Spawned with its island
 ## (params: island, cell); the head turns as a separate mesh.
 
 const INFO := {
 	"name": "TURRET", "category": "ground",
-	"desc": "砲台：甲板の上から狙いの物理弾を 3 連射",
+	"desc": "砲台：甲板の上から狙いのエネルギー弾を 3 連射（予兆あり）。真上や至近距離では撃てない（弾封じ）",
 	"demos": [["ON A DECK", "ground", []]],
 }
+
+const SEAL := 6.0  # holds fire while the ship is this close (on the plane)
 
 var head: MeshInstance3D
 
@@ -35,12 +39,25 @@ func _behave(dt: float) -> void:
 	var d := game.player.position - hp_
 	head.rotation.y = lerp_angle(head.rotation.y, atan2(-d.x, -d.z), 6.0 * dt)
 	fire_t -= dt
-	if fire_t <= 0.0:
-		if game.on_field(hp_, -1.0) and d.length() > 4.5 and game.combat_on():
-			if step < 3:
-				game.bullets.fire(hp_, atan2(d.z, d.x), 7.5, Bullets.SHELL, self, Bullets.NEEDLE)
-				step += 1
-				fire_t = 0.14
-				return
+	if fire_t > 0.0:
+		return
+	if not game.on_field(hp_, -1.0) or not game.combat_on():
+		step = 0
+		fire_t = 2.6
+		return
+	if d.length() < SEAL:
+		# sealed: the burst stops; it tries again shortly
+		step = 0
+		fire_t = 0.6
+		return
+	if step == 0:
+		game.warn(self, WINDUP_SHOT, Game.Warn.SHOT, radius)
+		step = 1
+		fire_t = WINDUP_SHOT
+	elif step <= 3:
+		game.bullets.fire(hp_, atan2(d.z, d.x), 7.5, Bullets.ORB, self, Bullets.NEEDLE)
+		step += 1
+		fire_t = 0.14
+	else:
 		step = 0
 		fire_t = 2.6

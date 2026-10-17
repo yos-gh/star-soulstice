@@ -5,9 +5,11 @@ extends Node3D
 ##
 ## Kinds (every kind comes as a round ball or a needle):
 ##   SHELL  physical: shootable (blocks your shots, breaks after `hp`),
-##          low threat, can be plentiful. Cool blue, dark centre, bright outline.
+##          low threat: the curtains of mid-size enemies and bosses. Cool
+##          blue, dark centre, bright outline.
 ##   ORB    energy: cannot be shot; only the Spear aura or killing its
-##          shooter removes it. Keep these few. Warm orange, white-hot centre.
+##          shooter removes it. The small fighters' and turrets' aimed shots,
+##          always announced (Game.warn). Warm orange, white-hot centre.
 ##   HEAVY  big energy ball (boss): not even the Spear erases it. Warm red.
 ## Every bullet remembers its shooter so a kill can turn them into energy.
 

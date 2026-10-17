@@ -1,7 +1,8 @@
 extends Enemy
 ## Strikes from behind. A lock-on on the bottom edge marks where a train
 ## will come up; it rises slowly beside the ship's column (the rear shot
-## meets it there), stops, turns and fires one aimed shell up at the ship,
+## meets it there), stops, turns and fires one aimed unbreakable needle
+## (announced) up at the ship,
 ## then breaks away fast, easing round onto a diagonal away from the ship.
 ## params: i (place in the train, 0 = the leader, who sets the lane and
 ## shows the warning), group (shared by the train), gap, side (+1 / -1 =
@@ -9,7 +10,7 @@ extends Enemy
 
 const INFO := {
 	"name": "CHASER", "category": "small",
-	"desc": "後方強襲機：画面の下に予兆を出し、自機の列の横を後ろからゆっくり上がってくる。止まって狙いの物理弾を 1 発、ゆるく曲がって斜め上へ高速で抜ける",
+	"desc": "後方強襲機：画面の下に予兆を出し、自機の列の横を後ろからゆっくり上がってくる。止まって狙いのエネルギー弾を 1 発（予兆あり）、ゆるく曲がって斜め上へ高速で抜ける",
 	"demos": [
 		["TRAIN OF 3", "chasers", [0.0, 3]],
 		["BOTH SIDES", "chasers", [0.0, 3, -1], "chasers", [1.4, 3, 1]],
@@ -65,14 +66,16 @@ func _behave(dt: float) -> void:
 			if d <= 0.05:
 				vel = Vector3.ZERO
 				step = 1
-				fire_t = 0.3 + i * 0.15
+				# one unbreakable needle, announced (the train one after another)
+				fire_t = WINDUP_SHOT + i * 0.15
+				if game.combat_on() and pl.alive and game.on_field(position, -0.8):
+					game.warn_then(self, fire_t, Game.Warn.SHOT, func() -> void:
+						if game.combat_on() and pl.alive and game.on_field(position, -0.8) and (pl.position - position).length() > 3.0:
+							game.bullets.fire(position, game.bullets.aim(position), 7.0, Bullets.ORB, self, Bullets.NEEDLE))
 		1:
 			rotation.y = lerp_angle(rotation.y, atan2(-look.x, -look.z), 10.0 * dt)
 			fire_t -= dt
-			if fire_t <= 0.0:
-				if not fired and game.combat_on() and pl.alive and game.on_field(position, -0.8) and look.length() > 3.0:
-					fired = true
-					game.bullets.fire(position, game.bullets.aim(position), 7.0, Bullets.SHELL, self, Bullets.NEEDLE)
+			if fire_t <= -0.05:
 				step = 2
 				away = signf(lane - pl.position.x) if absf(lane - pl.position.x) > 0.1 else signf(lane + 0.001)
 				heading = Vector3(0, 0, -1)
