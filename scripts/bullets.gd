@@ -12,6 +12,9 @@ extends Node3D
 ##          always announced (Game.warn). Warm orange, white-hot centre.
 ##   HEAVY  big energy ball (boss): not even the Spear erases it. Warm red.
 ## Every bullet remembers its shooter so a kill can turn them into energy.
+## Ground guns `launch` theirs: for LIFT seconds the bullet climbs from the
+## gun up to the flight level (drawn small and dim, rising along the view
+## ray) and cannot hit the ship yet.
 
 enum { SHELL, ORB, HEAVY }
 enum { ROUND, NEEDLE }
@@ -23,6 +26,7 @@ const SIZE := [0.68, 0.62, 1.5]  # round sprite diameter per kind
 const NEEDLE_W := 0.36
 const NEEDLE_L := 1.1
 const COLOR := [Color(0.35, 0.78, 1.0), Color(1.0, 0.5, 0.22), Color(1.0, 0.28, 0.36)]
+const LIFT := 0.4  # seconds a launched bullet takes to climb to the flight level
 
 var game: Game
 var pos := PackedVector3Array()
@@ -33,6 +37,8 @@ var kind := PackedInt32Array()
 var shape := PackedInt32Array()
 var hp := PackedFloat32Array()
 var owner_id := PackedInt64Array()
+var lift := PackedFloat32Array()  # seconds left climbing (launched bullets)
+var lift_y := PackedFloat32Array()  # height it was launched from
 var n := 0
 var bounds := Rect2(-30, -30, 60, 60)  # x, z
 
@@ -48,6 +54,8 @@ func _ready() -> void:
 	shape.resize(MAX)
 	hp.resize(MAX)
 	owner_id.resize(MAX)
+	lift.resize(MAX)
+	lift_y.resize(MAX)
 	sprites = MultiMeshInstance3D.new()
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -79,7 +87,18 @@ func fire(p: Vector3, ang: float, speed: float, k: int, owner: Object, shp := RO
 	shape[n] = NEEDLE if (shp == NEEDLE and k != HEAVY) else ROUND
 	hp[n] = 1.0
 	owner_id[n] = owner.get_instance_id() if owner != null else 0
+	lift[n] = 0.0
 	n += 1
+
+
+## Fires from a ground gun at `muzzle` (a point below the play plane): the
+## bullet starts on the plane where the muzzle is seen and climbs for LIFT.
+func launch(muzzle: Vector3, ang: float, speed: float, k: int, owner: Object, shp := ROUND) -> void:
+	if n >= MAX:
+		return
+	fire(game.to_plane(muzzle), ang, speed, k, owner, shp)
+	lift[n - 1] = LIFT
+	lift_y[n - 1] = muzzle.y
 
 
 func aim(from: Vector3) -> float:
@@ -122,6 +141,8 @@ func _remove(i: int) -> void:
 	shape[i] = shape[n]
 	hp[i] = hp[n]
 	owner_id[i] = owner_id[n]
+	lift[i] = lift[n]
+	lift_y[i] = lift_y[n]
 
 
 ## Removes the bullets fired by `owner`; returns where they were.
@@ -193,6 +214,8 @@ func tick(dt: float) -> void:
 				vel[i] = v * (ns / s)
 			if ns == tspd[i]:
 				acc[i] = 0.0
+		if lift[i] > 0.0:
+			lift[i] = maxf(0.0, lift[i] - dt)
 		var p := pos[i] + vel[i] * dt
 		pos[i] = p
 		if p.x < bounds.position.x or p.x > bounds.end.x or p.z < bounds.position.y or p.z > bounds.end.y:
@@ -202,8 +225,11 @@ func tick(dt: float) -> void:
 
 
 ## True if a bullet touches the circle (p, r); that bullet is removed.
+## Launched bullets still climbing pass under it.
 func hit_test(p: Vector3, r: float) -> bool:
 	for i in n:
+		if lift[i] > 0.0:
+			continue
 		var d := pos[i] - p
 		var rr := r + radius(i)
 		if d.x * d.x + d.z * d.z < rr * rr:
@@ -240,6 +266,16 @@ func draw() -> void:
 			b = Basis.from_scale(Vector3(s, 1.0, s))
 		# drawn just above the ships, on the view ray through its plane point so
 		# what you see lines up with what hits
-		mm.set_instance_transform(i, Transform3D(b, game.from_plane(pos[i], 0.32)))
-		mm.set_instance_color(i, COLOR[k])
+		var y := 0.32
+		var c: Color = COLOR[k]
+		if lift[i] > 0.0:
+			# climbing from the gun: lower on the ray (so smaller), shrunk and
+			# dim, easing up to full size at the flight level
+			var f := 1.0 - lift[i] / LIFT
+			f = f * f * (3.0 - 2.0 * f)
+			y = lerpf(lift_y[i], 0.32, f)
+			b = b.scaled(Vector3.ONE * lerpf(0.25, 1.0, f))
+			c = Color(c.r, c.g, c.b).darkened(0.55 * (1.0 - f))
+		mm.set_instance_transform(i, Transform3D(b, game.from_plane(pos[i], y)))
+		mm.set_instance_color(i, c)
 		mm.set_instance_custom_data(i, Color(1.0 if k == SHELL else 0.0, aspect, 0.0, 0.0))

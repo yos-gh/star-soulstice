@@ -1,16 +1,18 @@
 extends Enemy
-## Ground gun on an island: announced bursts of three aimed, unbreakable
-## needles. It holds fire while the ship is over it or close by (bullet
-## sealing): fly in on top of it to shut it up. Spawned with its island
-## (params: island, cell); the head turns as a separate mesh.
+## Ground gun on an island: one announced, aimed, unbreakable needle at a
+## time, launched up from the gun to the flight level (Bullets.launch). It
+## holds fire while the ship is over it or close by (bullet sealing): fly
+## in on top of it to shut it up. Spawned with its island (params: island,
+## cell); the head turns as a separate mesh.
 
 const INFO := {
 	"name": "TURRET", "category": "ground",
-	"desc": "砲台：甲板の上から狙いのエネルギー弾を 3 連射（予兆あり）。真上や至近距離では撃てない（弾封じ）",
+	"desc": "砲台：甲板から狙いのエネルギー弾を 1 発ずつ打ち上げる（予兆あり）。真上や至近距離では撃てない（弾封じ）",
 	"demos": [["ON A DECK", "ground", []]],
 }
 
 const SEAL := 6.0  # holds fire while the ship is this close (on the plane)
+const MUZZLE_Y := 0.6  # above the base, where the shot leaves the head
 
 var head: MeshInstance3D
 
@@ -46,7 +48,7 @@ func _behave(dt: float) -> void:
 		fire_t = 2.6
 		return
 	if d.length() < SEAL:
-		# sealed: the burst stops; it tries again shortly
+		# sealed: the shot is called off; it tries again shortly
 		step = 0
 		fire_t = 0.6
 		return
@@ -54,10 +56,11 @@ func _behave(dt: float) -> void:
 		game.warn(self, WINDUP_SHOT, Game.Warn.SHOT, radius)
 		step = 1
 		fire_t = WINDUP_SHOT
-	elif step <= 3:
-		game.bullets.fire(hp_, atan2(d.z, d.x), 7.5, Bullets.ORB, self, Bullets.NEEDLE)
-		step += 1
-		fire_t = 0.14
 	else:
+		# one shot, launched up from the gun to the flight level
+		var muzzle := global_position + Vector3(0, MUZZLE_Y, 0)
+		game.bullets.launch(muzzle, atan2(d.z, d.x), 7.5, Bullets.ORB, self, Bullets.NEEDLE)
+		game.fx.sprite(muzzle, Vector3(0, 4.0, 0), 0.5, 1.6, 0.22, Color(1.0, 0.7, 0.35))
+		game.fx.flash(muzzle, 0.3)
 		step = 0
 		fire_t = 2.6

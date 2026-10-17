@@ -2,7 +2,7 @@ extends Enemy
 ## Lap racer, after the GG Aleste 2 squadrons: a fast train of small
 ## saucers in from a corner straight along a side, round a loop that fills
 ## the screen (closing round the ship), then away on a wide sine wave;
-## every other one fires an aimed unbreakable needle (announced) from the
+## every other one fires an aimed unbreakable orb (announced) from the
 ## top of the loop each lap.
 ## The path is a Curve2D on the play plane built by Formations.racers and
 ## shared by the train; each member flies it `i * gap` behind the leader.
@@ -44,14 +44,14 @@ func _behave(dt: float) -> void:
 	model.rotation.y += dt * 6.0
 	model.rotation.z = sin(t * 3.0) * 0.2
 	if int(p.get("i", 0)) % 2 == 0:
-		# an unbreakable needle from the top of the loop, announced
+		# an unbreakable orb from the top of the loop, announced
 		# WINDUP_SHOT before it gets there
 		for f: float in p.get("fire", []):
 			var w := f - SPEED * WINDUP_SHOT
 			if last < w and s >= w and game.can_fire(position):
 				game.warn_then(self, WINDUP_SHOT, Game.Warn.SHOT, func() -> void:
 					if game.can_fire(position):
-						game.bullets.fire(position, game.bullets.aim(position), 7.0, Bullets.ORB, self, Bullets.NEEDLE))
+						game.bullets.fire(position, game.bullets.aim(position), 7.0, Bullets.ORB, self))
 
 
 ## The point `s` along the path, carried on straight before it and after it.
