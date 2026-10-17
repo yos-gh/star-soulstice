@@ -49,19 +49,28 @@ func col(at: float, xn: float, count: int, interval: float, dir: int) -> Array:
 	return out
 
 
-## Five darts in a V from the upper corner on `side` (-1 = left), slanting
-## down across the screen so the V crosses the centre line at the middle.
+## Five darts in a V from the upper corner on `side` (-1 = left), down
+## across the screen on a gentle arc: steeper at first, then easing out
+## toward the far side, crossing the centre line at the middle. The V
+## turns as one piece (each dart circles the same centre at the same rate).
 func vform(at: float, side: int) -> Array:
 	var out := []
-	var x0 := side * 0.8 * game.hw_top
-	var z0 := _top() - 1.5
-	var vz := 13.0
-	var v := Vector3(-x0 / ((_mid() - z0) / vz), 0, vz)
-	var dir := v.normalized()
-	var across := Vector3(dir.z, 0, -dir.x)
+	var dir := -float(side)  # +1 = heading right
+	var p0 := Vector2(side * 0.8 * game.hw_top, _top() - 1.5)
+	# headings from straight down toward the far side: the arc to the centre
+	# crossing starts 18 degrees steeper than the straight line to it and
+	# arrives 18 degrees flatter, then turns on to 48 degrees in all
+	var chord := atan2(absf(p0.x), _mid() - p0.y)
+	var phi0 := chord - deg_to_rad(18.0)
+	var r := absf(p0.x) / (cos(phi0) - cos(chord + deg_to_rad(18.0)))
+	var w := 18.0 / r
+	var c := p0 + Vector2(dir * cos(phi0), -sin(phi0)) * r  # centre of the turn
+	var h := Vector2(dir * sin(phi0), cos(phi0))
+	var across := Vector2(h.y, -h.x)
 	for i in range(-2, 3):
-		var o := across * (i * 1.7) - dir * (absi(i) * 1.3)
-		out.append([at, "dart", {"x": x0 + o.x, "z": z0 + o.z, "vx": v.x, "vz": v.z, "fire_at": 0.55 if absi(i) == 2 else 99.0}])
+		var q := p0 + across * (i * 1.7) - h * (absi(i) * 1.3)
+		var v := Vector2(dir * (q - c).y, -dir * (q - c).x) * w
+		out.append([at, "dart", {"x": q.x, "z": q.y, "vx": v.x, "vz": v.y, "turn_t": 0.0, "turn": -dir * w, "turn_dur": deg_to_rad(48.0) / w, "fire_at": 0.55 if absi(i) == 2 else 99.0}])
 	return out
 
 
