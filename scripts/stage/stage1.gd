@@ -65,7 +65,7 @@ func build_waves(f: Formations) -> void:
 	wave("debris", f.col(0.0, 0.75, 6, 0.2, -1) + f.rammers(1.6, [-0.3], 0.2))
 	wave("debris", f.swirls(0.0, -1, 5, 0.25) + f.swirls(1.2, 1, 5, 0.25), 8.0)
 	wave("debris", f.vform(0.0, 1) + f.rammers(1.2, [-0.5, 0.5], 0.4) + f.vform(2.2, -1))
-	# laps round the screen (after GG Aleste 2)
+	# a loop round the whole screen (after GG Aleste 2)
 	wave("debris", f.racers(0.0, "tl", 1, 8), 12.0)
 	# side strikers: one edge, then both at once
 	wave("debris", f.flankers(0.0, -1, 3) + f.pincer(1.6, 1), 7.0)
@@ -86,6 +86,6 @@ func build_waves(f: Formations) -> void:
 	wave("core", f.bulwark(0.0, -0.55) + f.bulwark(1.0, 0.55) + f.swirls(3.0, -1, 4, 0.25) + f.swirls(3.5, 1, 4, 0.25), 12.0)
 	# from behind and both sides
 	wave("core", f.chasers(0.0, 3) + f.pincer(1.2, 2) + f.chasers(3.0, 3, -1), 8.0)
-	# two trains round the edges from opposite corners
-	wave("core", f.racers(0.0, "bl", 1, 8, true) + f.racers(1.0, "tr", 1, 8, true), 14.0)
+	# two trains round the loop from both top corners
+	wave("core", f.racers(0.0, "tl", 1, 8) + f.racers(1.5, "tr", 1, 8), 14.0)
 	wave("core", f.sweep(0.0, -1, 8, 0.18) + f.sweep(0.4, 1, 8, 0.18) + f.col(1.5, -0.7, 6, 0.2, 1), 8.0)

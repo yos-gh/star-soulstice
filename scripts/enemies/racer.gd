@@ -1,27 +1,27 @@
 extends Enemy
-## Lap racer, after the GG Aleste 2 squadrons: a fast train in from a
-## corner on a curve, once or twice round an ellipse in the middle of the
-## screen, then out along a sine wave; every other one fires an aimed
-## shell from the top of the ellipse each lap. The path is a Curve2D on the
-## play plane built by Formations.racers and shared by the train; each
-## member flies it `i * gap` behind the leader.
+## Lap racer, after the GG Aleste 2 squadrons: a fast train of small
+## saucers in from a corner straight along a side, round a loop that fills
+## the screen (closing round the ship), then away on a wide sine wave;
+## every other one fires an aimed shell from the top of the loop each lap.
+## The path is a Curve2D on the play plane built by Formations.racers and
+## shared by the train; each member flies it `i * gap` behind the leader.
 ## params: curve, i, gap, fire (path distances where it fires)
 
 const INFO := {
 	"name": "RACER", "category": "small",
-	"desc": "周回機（GG アレスタ 2 の編隊から）：画面の隅から曲線で入り、画面中央の楕円を高速で 1〜2 周、サインカーブを描いて抜ける。周回ごとに楕円の上から狙いの物理弾",
+	"desc": "周回円盤（GG アレスタ 2 の編隊から）：画面の隅から縁沿いにまっすぐ入り、画面いっぱいのループで自機を囲んで 1〜2 周、振幅の大きいサインカーブで抜ける。周回ごとにループの上から狙いの物理弾",
 	"demos": [
 		["1 LAP FROM TOP LEFT", "racers", [0.0, "tl", 1, 8]],
-		["2 LAPS FROM BOTTOM RIGHT", "racers", [0.0, "br", 2, 8]],
-		["ALONG THE TOP FROM TOP RIGHT", "racers", [0.0, "tr", 1, 8, true]],
+		["2 LAPS FROM TOP RIGHT", "racers", [0.0, "tr", 2, 8]],
+		["FROM BOTTOM LEFT", "racers", [0.0, "bl", 1, 8]],
+		["ALONG THE TOP FROM TOP LEFT", "racers", [0.0, "tl", 1, 8, true]],
 	],
 }
 
-const SPEED := 27.0
+const SPEED := 26.0
 
 var s := 0.0
 var last := 0.0
-var head := 0.0
 
 
 func _init_kind() -> void:
@@ -37,18 +37,11 @@ func _behave(dt: float) -> void:
 		s = -int(p.get("i", 0)) * float(p.get("gap", 2.2))
 	last = s
 	s += SPEED * dt
+	var was := position
 	position = _at(c, s)
-	var d := _at(c, s + 0.5) - position
-	if d.length_squared() > 0.0001:
-		var h := atan2(-d.x, -d.z)
-		if t <= dt * 1.5:
-			head = h
-		# bank with the turn
-		var turn := wrapf(h - head, -PI, PI) / maxf(dt, 0.001)
-		head = h
-		rotation.y = h
-		model.rotation.z = lerpf(model.rotation.z, clampf(-turn * 0.08, -0.9, 0.9), 8.0 * dt)
-	vel = d.normalized() * SPEED
+	vel = (position - was) / maxf(dt, 0.001)
+	model.rotation.y += dt * 6.0
+	model.rotation.z = sin(t * 3.0) * 0.2
 	if int(p.get("i", 0)) % 2 == 0:
 		for f: float in p.get("fire", []):
 			if last < f and s >= f and game.can_fire(position):

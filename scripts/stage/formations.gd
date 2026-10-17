@@ -116,19 +116,20 @@ func pincer(at: float, count: int, left_up := true) -> Array:
 	return flankers(at, -1, count, -0.12, left_up) + flankers(at, 1, count, 0.12, not left_up)
 
 
-## A train of racers, after the GG Aleste 2 squadrons: in from a corner of
-## the screen on a curve, fast laps round an ellipse in the middle of it,
-## then off its top edge on a curve into a sine wave out across the screen.
-## Wherever the ship is, they pass somewhere easy to shoot; coming in from
-## a corner, they rarely surprise it.
-##   corner  where they come in: "bl", "br", "tl" or "tr"
-##   laps    laps round the ellipse (1 or 2)
-##   along   false: in up (or down) the side first; true: in along the
-##           bottom (or top) first, and out to the side
+## A train of racers, after the GG Aleste 2 squadrons: in from a corner
+## straight along a side, a big loop filling the screen round the ship (one
+## or two laps), then away on a wide sine wave from the far side. Wherever
+## the ship is, they pass somewhere easy to shoot; coming in from a corner,
+## they rarely surprise it.
+##   corner  where they come in: "bl", "br", "tl" or "tr" (from a top
+##           corner they leave upward, away from the ship)
+##   laps    laps round the loop (1 or 2)
+##   along   false: in along the left or right side; true: along the top
+##           or bottom
 func racers(at: float, corner: String, laps: int, count: int, along := false, gap := 2.2) -> Array:
 	var lap_at: Array = []
 	var path := _racer_path(clampi(laps, 1, 3), lap_at)
-	# mirror and turn (the ellipse is the unit circle here, so it stays put)
+	# mirror and turn (the loop is the unit circle here, so it stays put)
 	var pts := PackedVector2Array()
 	for q: Vector2 in path:
 		var a := Vector2(-q.y, -q.x) if along else q
@@ -144,7 +145,7 @@ func racers(at: float, corner: String, laps: int, count: int, along := false, ga
 		c.add_point(pts[k])
 		if k > 0:
 			dist.append(dist[k - 1] + pts[k].distance_to(pts[k - 1]))
-	# fire once a lap, from the highest point of the ellipse on screen
+	# fire once a lap, from the top of the loop
 	var fire := []
 	for r: Array in lap_at:
 		var j: int = r[0]
@@ -158,51 +159,40 @@ func racers(at: float, corner: String, laps: int, count: int, along := false, ga
 	return out
 
 
-## The racers' ellipse in screen fractions (see _screen): half axes and the
-## height of its centre (above the middle: the bottom of the ellipse passes
-## in front of a ship low on the screen).
-const RACE_A := 0.66
-const RACE_B := 0.55
-const RACE_V := -0.2
+## The racers' loop in screen fractions (see _screen): half axes and the
+## height of its centre. It fills the screen; its bottom runs along the
+## bottom edge just out of the ship's reach.
+const RACE_A := 0.85
+const RACE_B := 0.85
+const RACE_V := 0.05
 
 
-## The racers' path drawn once with the ellipse as the unit circle: in from
-## the bottom left corner, up onto the left of the circle, clockwise round
-## it, off the top on a quarter curve into a cosine wave down the screen.
-## `lap_at` gets [first, end) sample indices of each lap.
+## The racers' path drawn once with the loop as the unit circle: straight
+## up from below the bottom left onto the left of the circle, clockwise
+## round it, on to its right side and away down a cosine wave as wide as
+## the loop. `lap_at` gets [first, end) sample indices of each lap.
 func _racer_path(laps: int, lap_at: Array) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	var e := Vector2(-1.74, 2.37)
-	var l := Vector2(-1.0, 0.0)
-	out.append_array(_bezier(e, e + Vector2(0.25, -1.0).normalized() * 0.9, l + Vector2(0, 0.9), l, 40, true))
+	var out := PackedVector2Array([Vector2(-1.0, 2.6)])
+	var v := 2.6
+	while v > 0.05:
+		v -= 0.1
+		out.append(Vector2(-1.0, v))
 	var n := 120  # samples a lap
 	for k in laps:
 		lap_at.append([out.size(), out.size() + n])
 		for j in range(1, n + 1):
 			var th := PI + TAU * (k * n + j) / n
 			out.append(Vector2(cos(th), sin(th)))
-	for j in range(1, int(n * 0.25) + 1):
+	for j in range(1, int(n * 0.5) + 1):
 		var th := PI + TAU * (laps * n + j) / n
 		out.append(Vector2(cos(th), sin(th)))
-	# off the top (heading right) and round into the wave, heading down
-	var w := 0.6
-	var s := Vector2(w, -0.42)
-	out.append_array(_bezier(Vector2(0, -1), Vector2(0.4, -1), s + Vector2(0, -0.35), s, 16, false))
-	var kw := 3.4
-	var v := s.y
-	while v < 2.9:
+	# from the right of the circle (heading down) on its crest: three
+	# quarters of a wave before it is off the screen
+	var kw := 4.1
+	v = 0.0
+	while v < 2.7:
 		v += 0.04
-		out.append(Vector2(w * cos(kw * (v - s.y)), v))
-	return out
-
-
-## Points along a cubic Bezier from p0 (only if `first`) to p3.
-func _bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, steps: int, first: bool) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	for j in range(0 if first else 1, steps + 1):
-		var t := float(j) / steps
-		var u := 1.0 - t
-		out.append(p0 * u * u * u + p1 * 3.0 * u * u * t + p2 * 3.0 * u * t * t + p3 * t * t * t)
+		out.append(Vector2(cos(kw * v), v))
 	return out
 
 

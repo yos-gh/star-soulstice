@@ -55,22 +55,35 @@ static func _dart() -> ArrayMesh:
 
 ## Ring drone: a spinning gold-and-bronze wheel with a red core.
 static func _swirl() -> ArrayMesh:
-	var v := Vox.new(22, 6, 22)
-	for z in range(-11, 11):
-		for x in range(-11, 11):
+	return _saucer(10.5, GOLD, BRONZE)
+
+
+## Lap racer: a smaller ring drone, gold and crimson.
+static func _racer() -> ArrayMesh:
+	return _saucer(8.5, GOLD_L, CRIM)
+
+
+## A ring drone `rad` voxels across: an outer ring of alternating `a` / `b`
+## segments, a gunmetal deck with gold spokes, a red eye in the middle.
+static func _saucer(rad: float, a: Color, b: Color) -> ArrayMesh:
+	var n := int(ceil(rad))
+	var s := rad / 10.5
+	var v := Vox.new(n * 2, 6, n * 2)
+	for z in range(-n, n):
+		for x in range(-n, n):
 			var p := Vector2(x + 0.5, z + 0.5)
-			var r := p.length()
+			var r := p.length() / s
 			if r > 10.5:
 				continue
-			var a := atan2(p.y, p.x)
-			var seg := int(floor((a + PI) / TAU * 8.0)) % 2 == 0
+			var ang := atan2(p.y, p.x)
+			var seg := int(floor((ang + PI) / TAU * 8.0)) % 2 == 0
 			if r > 7.5:
-				v.fill(x, 1, z, x, 2, z, GOLD if seg else BRONZE)
+				v.fill(x, 1, z, x, 2, z, a if seg else b)
 				if r > 9.5:
 					v.put(x, 1, z, GUN_D)
 			elif r > 5.0:
 				v.put(x, 1, z, GUN)
-				if absf(wrapf(a * 4.0 / TAU, -0.5, 0.5)) < 0.12:
+				if absf(wrapf(ang * 4.0 / TAU, -0.5, 0.5)) < 0.12:
 					v.fill(x, 1, z, x, 2, z, GOLD_L)
 			elif r > 3.0:
 				v.fill(x, 0, z, x, 3, z, GUN_D)
@@ -119,23 +132,6 @@ static func _flanker() -> ArrayMesh:
 	v.fill_sym(1, 1, 3, 1, 2, 4, GUN_D)
 	v.fill_sym(1, 2, 5, 1, 2, 5, AMBER, true)
 	v.fill_sym(9, 2, 4, 9, 2, 5, CRIM)
-	return v.mesh(U, Vector3(0, 2.0, 0))
-
-
-## Lap racer: a slim arrowhead with chevron wings swept far back, a red
-## eye and a bright engine, built for speed.
-static func _racer() -> ArrayMesh:
-	var v := Vox.new(18, 6, 20)
-	v.fill_sym(0, 1, -9, 0, 2, 7, GOLD_L)
-	v.fill_sym(0, 0, -6, 1, 0, 6, GUN_D)
-	v.fill_sym(0, 3, -3, 0, 3, 4, GUN)
-	v.fill_sym(0, 3, -7, 0, 3, -5, EYE, true)
-	for k in range(1, 9):
-		var z0 := -3 + k
-		v.fill_sym(k, 1, z0, k, 1, z0 + 3 - k / 3, GOLD if k < 6 else BRONZE)
-	v.fill_sym(8, 1, 5, 8, 2, 6, CRIM)
-	v.fill_sym(1, 2, 3, 1, 2, 6, BRONZE)
-	v.fill_sym(0, 1, 8, 0, 2, 9, AMBER, true)
 	return v.mesh(U, Vector3(0, 2.0, 0))
 
 
