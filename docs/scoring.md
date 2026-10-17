@@ -12,7 +12,7 @@
 | 突進機雷（rammer） | 300 | 3 | `scripts/enemies/rammer.gd` 〃 |
 | 後方強襲機（chaser） | 200 | 1 | `scripts/enemies/chaser.gd` 〃 |
 | 側面強襲機（flanker） | 200 | 1 | `scripts/enemies/flanker.gd` 〃 |
-| 周回機（racer） | 150 | 1 | `scripts/enemies/racer.gd` 〃 |
+| 周回円盤（racer） | 150 | 1 | `scripts/enemies/racer.gd` 〃 |
 | 砲台（turret） | 400 | 5 | `scripts/enemies/turret.gd` 〃 |
 | 小惑星・小（rock） | 150 | 3 | `scripts/enemies/rock.gd` 〃 |
 | 小惑星・大（rock big） | 500 | 8 | 〃 |
@@ -78,4 +78,4 @@
 
 | 破壊 | アイテム | タイムボーナス | クリアタイム |
 |---:|---:|---:|---:|
-| 約 40 万 | 約 38 万（うちスター 43 個で約 33 万、パワーアップ 5 個） | 約 17 万 | 約 127 秒 |
+| 約 42 万 | 約 42 万（うちスター 43 個で約 33 万、パワーアップ 6 個） | 約 17 万 | 約 127 秒 |
