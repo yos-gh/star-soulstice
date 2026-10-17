@@ -45,6 +45,7 @@ Stages ──> StageDef（stage1.gd …）
    - `INFO`：`name`、`category`（`small` 小型 / `medium` 中型 / `ground` 地上 / `carrier` パワーアップ運搬 / `hazard` 漂流物）、`desc`、`demos`（閲覧モードでの見せ方：`[ラベル, Formations のメソッド名, 引数]`）。
    - `_init_kind()` で耐久・半径・スコア・エネルギー・爆発の大きさなど。モデル名が種類名と違うときは `mesh_name`。
    - `_behave(dt)` で動きと攻撃。出現時の指定は `p` に入っている。危険な攻撃の前は `game.warn` / `game.warn_then` で予兆を出す。
+   - 画面の外で待ってから来る敵（後ろの `chaser`、横の `flanker`）の予兆は、レティクルが画面の縁に出る。1 列の編隊で狙い（自機の位置）と予兆を 1 つにまとめるときは、`Formations.chasers` のように列の全員に同じ辞書（`group`）を渡し、先頭が書いて後続が読む。
 2. `scripts/enemies/enemy_kinds.gd` の `KINDS` に足す。
 3. モデルを `scripts/models/enemy_models.gd` に足す（`NAMES` と `make`）。
 4. 新しい編隊が要るなら `scripts/stage/formations.gd` に雛形を足す。

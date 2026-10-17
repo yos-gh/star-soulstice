@@ -65,10 +65,13 @@ func build_waves(f: Formations) -> void:
 	wave("debris", f.col(0.0, 0.45, 6, 0.2, -1) + f.rammers(1.6, [-0.3], 0.2))
 	wave("debris", f.swirls(0.0, -1, 5, 0.25) + f.swirls(1.2, 1, 5, 0.25), 8.0)
 	wave("debris", f.vform(0.0, 0.0) + f.rammers(1.2, [-0.5, 0.5], 0.4) + f.vform(2.2, -0.4))
+	# side strikers, one edge then the other
+	wave("debris", f.flankers(0.0, -1, 3) + f.flankers(1.5, 1, 3), 7.0)
 	# AREA 2: outer hull
 	wave("hull", f.bulwark(0.0, 0.0) + f.col(2.0, -0.8, 4, 0.2, 1) + f.col(4.0, 0.8, 4, 0.2, -1), 12.0)
 	wave("hull", f.sweep(0.0, -1, 6, 0.22) + f.sweep(1.0, 1, 6, 0.22))
-	wave("hull", f.vform(0.0, -0.5) + f.vform(0.8, 0.5) + f.vform(1.6, 0.0))
+	# then a train from behind
+	wave("hull", f.vform(0.0, -0.5) + f.vform(0.8, 0.5) + f.vform(1.6, 0.0) + f.chasers(2.6, 3))
 	wave("hull", f.bulwark(0.0, -0.5) + f.bulwark(1.5, 0.5), 12.0)
 	wave("hull", f.swirls(0.0, -1, 5, 0.22) + f.rammers(1.0, [-0.4, 0.4], 0.3) + f.swirls(1.5, 1, 5, 0.22), 8.0)
 	# open space between the hull and the core: Lazaro
@@ -78,4 +81,6 @@ func build_waves(f: Formations) -> void:
 	wave("core", f.bulwark(0.0, 0.0) + f.rammers(2.0, [-0.6, 0.6], 0.2) + f.rammers(4.0, [0.0], 0.2), 12.0)
 	wave("core", f.vform(0.0, -0.6) + f.vform(0.5, 0.6) + f.vform(1.2, 0.0) + f.vform(2.0, -0.3) + f.vform(2.5, 0.3))
 	wave("core", f.bulwark(0.0, -0.55) + f.bulwark(1.0, 0.55) + f.swirls(3.0, -1, 4, 0.25) + f.swirls(3.5, 1, 4, 0.25), 12.0)
-	wave("core", f.sweep(0.0, -1, 8, 0.18) + f.sweep(0.4, 1, 8, 0.18) + f.col(1.5, 0.0, 6, 0.2, 1), 8.0)
+	# from behind and both sides
+	wave("core", f.chasers(0.0, 3) + f.flankers(1.2, -1, 3) + f.flankers(2.0, 1, 3) + f.chasers(3.0, 4), 8.0)
+	wave("core", f.sweep(0.0, -1, 8, 0.18) + f.sweep(0.4, 1, 8, 0.18) + f.col(1.5, -0.4, 6, 0.2, 1), 8.0)

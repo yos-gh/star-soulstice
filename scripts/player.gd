@@ -200,8 +200,8 @@ func _volley() -> void:
 			game.shots.fire(p + Vector3(0, 0, 1.15), back, m)
 		_:
 			game.shots.fire(p + Vector3(0, 0, -0.85), fwd, m)
-			game.shots.fire(p + Vector3(-0.95, 0, -1.1), fwd.rotated(Vector3.UP, deg_to_rad(32.0)), m)
-			game.shots.fire(p + Vector3(0.95, 0, -1.1), fwd.rotated(Vector3.UP, deg_to_rad(-32.0)), m)
+			game.shots.fire(p + Vector3(-0.95, 0, -1.1), fwd.rotated(Vector3.UP, deg_to_rad(40.0)), m)
+			game.shots.fire(p + Vector3(0.95, 0, -1.1), fwd.rotated(Vector3.UP, deg_to_rad(-40.0)), m)
 			game.shots.fire(p + Vector3(-0.68, 0, 0.65), back.rotated(Vector3.UP, deg_to_rad(-30.0)), m)
 			game.shots.fire(p + Vector3(0.68, 0, 0.65), back.rotated(Vector3.UP, deg_to_rad(30.0)), m)
 	game.sfx.play("shot")

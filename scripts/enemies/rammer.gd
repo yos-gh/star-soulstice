@@ -15,7 +15,7 @@ const INFO := {
 
 func _init_kind() -> void:
 	hp = 3.0
-	radius = 0.85
+	radius = 1.25  # the model is 1.5x the other small units
 	score = 300
 	energy_drop = 3.0
 

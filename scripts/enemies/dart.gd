@@ -5,10 +5,11 @@ extends Enemy
 
 const INFO := {
 	"name": "DART", "category": "small",
-	"desc": "編隊機：曲線を描いて高速で入ってきて、狙いの物理弾を 1 発",
+	"desc": "編隊機：高速で入ってきて、早めに画面の中央線を横切る曲線を描く。狙いの物理弾を 1 発",
 	"demos": [
 		["COLUMN", "col", [0.0, -0.45, 6, 0.2, 1]],
 		["V", "vform", [0.0, 0.0]],
+		["V CROSS", "vform", [0.0, -0.5], "vform", [0.8, 0.5]],
 		["SWEEP", "sweep", [0.0, -1, 6, 0.22]],
 	],
 }

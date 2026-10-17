@@ -10,6 +10,8 @@
 | 編隊機（dart） | 100 | 1 | `scripts/enemies/dart.gd` `_init_kind` |
 | 円盤（swirl） | 200 | 2 | `scripts/enemies/swirl.gd` 〃 |
 | 突進機雷（rammer） | 300 | 3 | `scripts/enemies/rammer.gd` 〃 |
+| 後方強襲機（chaser） | 200 | 1 | `scripts/enemies/chaser.gd` 〃 |
+| 側面強襲機（flanker） | 200 | 1 | `scripts/enemies/flanker.gd` 〃 |
 | 砲台（turret） | 400 | 5 | `scripts/enemies/turret.gd` 〃 |
 | 小惑星・小（rock） | 150 | 3 | `scripts/enemies/rock.gd` 〃 |
 | 小惑星・大（rock big） | 500 | 8 | 〃 |
@@ -48,7 +50,7 @@
 
 | 発生元 | 量 | 場所 |
 |---|---:|---|
-| 編隊機 / 円盤 / 突進機雷 | 2 / 3 / 3 | `scripts/enemies/<種類>.gd` `energy_drop` |
+| 編隊機 / 円盤 / 突進機雷 / 後方強襲機 / 側面強襲機 | 2 / 3 / 3 / 2 / 2 | `scripts/enemies/<種類>.gd` `energy_drop` |
 | 砲台 / コンテナ | 4 / 4 | 〃 |
 | 小惑星 小 / 大 | 3 / 8 | 〃 |
 | 中型機 | 14 | 〃 |
@@ -75,4 +77,4 @@
 
 | 破壊 | アイテム | タイムボーナス | クリアタイム |
 |---:|---:|---:|---:|
-| 約 31 万 | 約 28 万（うちスター 31 個で約 23 万、パワーアップ 5 個） | 約 21 万 | 約 102 秒 |
+| 約 37 万 | 約 32 万（うちスター 36 個で約 27 万、パワーアップ 5 個） | 約 18 万 | 約 118 秒 |

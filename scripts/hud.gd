@@ -234,6 +234,11 @@ func _warnings() -> void:
 		var at: Vector3 = (nd as Enemy).hit_pos if nd is Enemy else (nd as Node3D).global_position
 		var sp := g.camera.unproject_position(at)
 		var rpx := g.camera.unproject_position(at + Vector3(float(w["r"]), 0, 0)).x - sp.x
+		# an attacker still off screen (from behind or a side): the lock-on
+		# waits on that edge, fuse bar included
+		var vs := size_v()
+		if not Rect2(Vector2.ZERO, vs).has_point(sp):
+			sp = Vector2(clampf(sp.x, 56.0, vs.x - 56.0), clampf(sp.y, 56.0, vs.y - 76.0))
 		var t: float = w["t"]
 		var f := 1.0 - t / maxf(float(w["dur"]), 0.01)
 		var e := 1.0 - pow(1.0 - f, 3.0)

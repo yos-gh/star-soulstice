@@ -3,7 +3,7 @@ extends Models
 ## Small and mid-size enemies, ground guns and drifting rocks: polished gold
 ## and bronze armour over gunmetal, red eyes.
 
-const NAMES := ["dart", "swirl", "rammer", "container", "turret_base", "turret_head", "bulwark", "rock_s", "rock_l"]
+const NAMES := ["dart", "swirl", "rammer", "chaser", "flanker", "container", "turret_base", "turret_head", "bulwark", "rock_s", "rock_l"]
 
 
 static func make(name: String) -> ArrayMesh:
@@ -14,6 +14,10 @@ static func make(name: String) -> ArrayMesh:
 			return _swirl()
 		"rammer":
 			return _rammer()
+		"chaser":
+			return _chaser()
+		"flanker":
+			return _flanker()
 		"container":
 			return _container()
 		"turret_base":
@@ -74,6 +78,48 @@ static func _swirl() -> ArrayMesh:
 	return v.mesh(U, Vector3(0, 2.0, 0))
 
 
+## Interceptor that strikes from behind: needle nose, swept delta wings,
+## twin glowing engines and a red eye up front.
+static func _chaser() -> ArrayMesh:
+	var v := Vox.new(18, 6, 22)
+	# spine and needle nose
+	v.fill_sym(0, 1, -10, 0, 2, 7, GOLD)
+	v.fill_sym(0, 3, -6, 0, 3, 5, GOLD_L)
+	v.fill_sym(0, 0, -7, 1, 0, 6, GUN_D)
+	v.fill_sym(0, 3, -9, 0, 3, -7, EYE, true)
+	# delta wings, swept back
+	for k in range(1, 9):
+		v.fill_sym(k, 1, -4 + k, k, 1, 6 - k / 3, GOLD if k < 6 else BRONZE)
+	v.fill_sym(8, 1, 3, 8, 2, 4, CRIM)
+	# twin engines
+	v.fill_sym(2, 1, 2, 3, 3, 8, GUN)
+	v.fill_sym(2, 4, 3, 3, 4, 6, BRONZE)
+	v.fill_sym(2, 2, 9, 3, 2, 9, AMBER, true)
+	return v.mesh(U, Vector3(0, 2.0, 0))
+
+
+## Side striker: a gold crescent blade opening backward around a bronze
+## pod with a red eye.
+static func _flanker() -> ArrayMesh:
+	var v := Vox.new(24, 6, 16)
+	for z in range(-8, 8):
+		for x in range(-12, 12):
+			var p := Vector2(x + 0.5, z + 0.5)
+			var d := p.distance_to(Vector2(0, 7.0))
+			if d > 7.5 and d < 11.2 and p.y < 5.5:
+				var edge := d > 10.2
+				v.fill(x, 1, z, x, 1 if edge else 2, z, GOLD_L if edge else GOLD)
+				if d < 8.4:
+					v.put(x, 1, z, BRONZE)
+	v.blob(0, 2, -1, 2.6, 1.6, 4.2, BRONZE)
+	v.blob(0, 3, -1, 1.6, 1.2, 2.8, GUN)
+	v.fill_sym(0, 4, -4, 0, 4, -3, EYE, true)
+	v.fill_sym(1, 1, 3, 1, 2, 4, GUN_D)
+	v.fill_sym(1, 2, 5, 1, 2, 5, AMBER, true)
+	v.fill_sym(9, 2, 4, 9, 2, 5, CRIM)
+	return v.mesh(U, Vector3(0, 2.0, 0))
+
+
 ## Star mine: four long spikes and four short ones around a red core.
 static func _rammer() -> ArrayMesh:
 	var v := Vox.new(22, 6, 22)
@@ -92,7 +138,8 @@ static func _rammer() -> ArrayMesh:
 			v.fill(dx * s, 2, dz * s, dx * s, 2, dz * s, BRONZE)
 	v.blob(0, 3, 0, 3.2, 2.6, 3.2, GUN)
 	v.blob(0, 4, 0, 1.8, 1.4, 1.8, EYE, true)
-	return v.mesh(U, Vector3(0, 3.0, 0))
+	# 1.5x the small-unit voxel so it stands out
+	return v.mesh(U * 1.5, Vector3(0, 3.0, 0))
 
 
 ## Cargo capsule: armoured gunmetal pod with gold bands and beacons.

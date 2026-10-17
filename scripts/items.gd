@@ -12,7 +12,7 @@ const MAX := 700
 const MAGNET := [6.8, 6.8, 6.8]  # pickup pull radius (everything, power-ups included)
 const CUBE := 0.42  # energy cube edge
 const BEAM := 0.03  # its edge thickness
-const DRIFT := [4.8, 3.0, 3.6]  # fall speed (units/s) at normal scroll
+const DRIFT := [9.6, 6.0, 3.6]  # fall speed (units/s) at normal scroll
 
 var game: Game
 var pos := PackedVector3Array()

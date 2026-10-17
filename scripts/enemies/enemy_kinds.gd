@@ -9,6 +9,8 @@ const KINDS := {
 	"dart": preload("res://scripts/enemies/dart.gd"),
 	"swirl": preload("res://scripts/enemies/swirl.gd"),
 	"rammer": preload("res://scripts/enemies/rammer.gd"),
+	"chaser": preload("res://scripts/enemies/chaser.gd"),
+	"flanker": preload("res://scripts/enemies/flanker.gd"),
 	"container": preload("res://scripts/enemies/container.gd"),
 	"turret": preload("res://scripts/enemies/turret.gd"),
 	"rock": preload("res://scripts/enemies/rock.gd"),
