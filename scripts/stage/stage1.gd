@@ -75,7 +75,7 @@ func build_waves(f: Formations) -> void:
 	# then a train from behind
 	wave("hull", f.vform(0.0, -1) + f.vform(0.8, 1) + f.vform(1.6, -1) + f.chasers(2.6, 3))
 	wave("hull", f.bulwark(0.0, -0.5) + f.bulwark(1.5, 0.5), 12.0)
-	wave("hull", f.racers(0.0, "tr", 2, 8), 14.0)
+	wave("hull", f.racers(0.0, "tr", 1, 8), 12.0)
 	wave("hull", f.swirls(0.0, -1, 5, 0.22) + f.rammers(1.0, [-0.4, 0.4], 0.3) + f.swirls(1.5, 1, 5, 0.22), 8.0)
 	# open space between the hull and the core: Lazaro
 	wave("open", [[0.0, "lazaro", {}]], 60.0, true)

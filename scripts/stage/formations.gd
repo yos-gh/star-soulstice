@@ -127,10 +127,9 @@ func pincer(at: float, count: int, left_up := true) -> Array:
 
 ## A train of racers, after the GG Aleste 2 squadrons: in from a corner
 ## straight along a side, a big loop filling the screen round the ship (one
-## or two laps), then away snaking: rows back and forth across the middle,
-## each crossing the centre line in front of the ship. Wherever the ship
-## is, they pass somewhere easy to shoot; coming in from a corner, they
-## rarely surprise it.
+## or two laps), then away on a wide sine wave from the far side. Wherever
+## the ship is, they pass somewhere easy to shoot; coming in from a corner,
+## they rarely surprise it.
 ##   corner  where they come in: "bl", "br", "tl" or "tr" (from a top
 ##           corner they leave upward, away from the ship)
 ##   laps    laps round the loop (1 or 2)
@@ -147,7 +146,7 @@ func racers(at: float, corner: String, laps: int, count: int, along := false, ga
 			a.x = -a.x
 		if corner.contains("t"):
 			a.y = -a.y
-		pts.append(_screen(Vector2(a.x * RACE_A, RACE_V + a.y * RACE_B)))
+		pts.append(_on_plane(RACE_C + a * RACE_R))
 	var c := Curve2D.new()
 	c.bake_interval = 0.2
 	var dist := PackedFloat32Array([0.0])
@@ -169,25 +168,23 @@ func racers(at: float, corner: String, laps: int, count: int, along := false, ga
 	return out
 
 
-## The racers' loop in screen fractions (see _screen): half axes and the
-## height of its centre. It fills the screen; its bottom runs along the
-## bottom edge just out of the ship's reach.
-const RACE_A := 0.85
-const RACE_B := 0.85
-const RACE_V := 0.05
+## The racers' loop on the 960 x 720 screen, in pixels: centre and half
+## axes. It fills the screen with the same margin above and below.
+const RACE_C := Vector2(480, 360)
+const RACE_R := Vector2(416, 312)
 
 
 ## The racers' path drawn once with the loop as the unit circle: straight
 ## up from below the bottom left onto the left of the circle, clockwise
-## round it, then off the left of it into a snake: four rows across the
-## middle (each one crossing the centre line, in front of the ship when
-## mirrored to come in from the top), joined by round hairpins, and out.
+## round it, on to its right side and away down a cosine wave as wide as
+## the loop (three quarters of a wave before it is off the screen). The
+## ends stop just off the screen; the racer carries on straight from them.
 ## `lap_at` gets [first, end) sample indices of each lap.
 func _racer_path(laps: int, lap_at: Array) -> PackedVector2Array:
-	var out := PackedVector2Array([Vector2(-1.0, 2.6)])
-	var v := 2.6
+	var out := PackedVector2Array([Vector2(-1.0, 1.4)])
+	var v := 1.4
 	while v > 0.05:
-		v -= 0.1
+		v -= 0.05
 		out.append(Vector2(-1.0, v))
 	var n := 120  # samples a lap
 	for k in laps:
@@ -195,50 +192,30 @@ func _racer_path(laps: int, lap_at: Array) -> PackedVector2Array:
 		for j in range(1, n + 1):
 			var th := PI + TAU * (k * n + j) / n
 			out.append(Vector2(cos(th), sin(th)))
-	# the snake: rows at v0, v0 + 2r, ... from -w to w
-	var w := 0.6
-	var r := 0.205
-	var v0 := -0.29
-	out.append_array(_arc(Vector2(-1.0 - v0, 0.0), -v0, PI, PI * 1.5))
-	for row in 4:
-		var y := v0 + row * 2.0 * r
-		var dir := 1.0 if row % 2 == 0 else -1.0
-		out.append_array(_line(Vector2(out[out.size() - 1].x, y), Vector2(dir * w, y)))
-		if row < 3:
-			# hairpin round the end, onto the next row
-			out.append_array(_arc(Vector2(dir * w, y + r), r, -PI / 2.0, PI / 2.0 if dir > 0.0 else -PI * 1.5))
-	# a quarter turn at the end of the last row, and straight out
-	var last := out[out.size() - 1]
-	out.append_array(_arc(last + Vector2(0, 0.2), 0.2, -PI / 2.0, -PI))
-	out.append_array(_line(out[out.size() - 1], Vector2(out[out.size() - 1].x, 3.0)))
+	for j in range(1, int(n * 0.5) + 1):
+		var th := PI + TAU * (laps * n + j) / n
+		out.append(Vector2(cos(th), sin(th)))
+	# from the right of the circle (heading down) on its crest
+	var kw := 4.1
+	v = 0.0
+	while v < 1.4:
+		v += 0.02
+		out.append(Vector2(cos(kw * v), v))
 	return out
 
 
-## Points along a circular arc (centre c, radius rad) from angle a0 to a1,
-## leaving out the first one.
-func _arc(c: Vector2, rad: float, a0: float, a1: float) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	var steps := maxi(4, int(absf(a1 - a0) * rad / 0.03))
-	for j in range(1, steps + 1):
-		var a := lerpf(a0, a1, float(j) / steps)
-		out.append(c + Vector2(cos(a), sin(a)) * rad)
-	return out
-
-
-## Points along a straight line from a to b, leaving out the first one.
-func _line(a: Vector2, b: Vector2) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	var steps := maxi(1, int(a.distance_to(b) / 0.05))
-	for j in range(1, steps + 1):
-		out.append(a.lerp(b, float(j) / steps))
-	return out
-
-
-## Screen fraction (u right, v down; +-0.9 is a little inside the edges)
-## to a point on the play plane.
-func _screen(q: Vector2) -> Vector2:
-	var z := lerpf(_top() + 2.0, game.field_bottom - 0.4, (q.y + 0.9) / 1.8)
-	return Vector2(q.x / 0.9 * (game.half_width_at(z) - 1.4), z)
+## A screen point (960 x 720 pixels) to the play plane (x, z), seen from
+## the play camera at rest (the live camera may be shaking, or be the
+## viewer's free camera, when formations are built).
+func _on_plane(px: Vector2) -> Vector2:
+	var o := game.cam_pos
+	var f := (Game.CAM_TARGET - o).normalized()
+	var right := Vector3(1, 0, 0)
+	var up := right.cross(f)
+	var th := tan(deg_to_rad(Game.CAM_FOV) * 0.5)  # vertical field of view
+	var d := f + right * ((px.x - 480.0) / 360.0 * th) - up * ((px.y - 360.0) / 360.0 * th)
+	var p := o + d * (-o.y / d.y)
+	return Vector2(p.x, p.z)
 
 
 func rammers(at: float, xs: Array, interval: float) -> Array:
