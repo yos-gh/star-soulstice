@@ -21,9 +21,9 @@ enum { ROUND, NEEDLE }
 
 const MAX := 1200
 const RADIUS := [0.27, 0.23, 0.5]  # round hit radius per kind
-const NEEDLE_RADIUS := 0.2
+const NEEDLE_RADIUS := 0.18
 const SIZE := [0.68, 0.62, 1.5]  # round sprite diameter per kind
-const NEEDLE_W := 0.36
+const NEEDLE_W := 0.3
 const NEEDLE_L := 1.1
 const COLOR := [Color(0.35, 0.78, 1.0), Color(1.0, 0.5, 0.22), Color(1.0, 0.28, 0.36)]
 const LIFT := 0.4  # seconds a launched bullet takes to climb to the flight level
@@ -39,6 +39,7 @@ var hp := PackedFloat32Array()
 var owner_id := PackedInt64Array()
 var lift := PackedFloat32Array()  # seconds left climbing (launched bullets)
 var lift_y := PackedFloat32Array()  # height it was launched from
+var size := PackedFloat32Array()  # x the kind's size (curtains vary it a little)
 var n := 0
 var bounds := Rect2(-30, -30, 60, 60)  # x, z
 
@@ -56,6 +57,7 @@ func _ready() -> void:
 	owner_id.resize(MAX)
 	lift.resize(MAX)
 	lift_y.resize(MAX)
+	size.resize(MAX)
 	sprites = MultiMeshInstance3D.new()
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -76,7 +78,7 @@ func _ready() -> void:
 	add_child(sprites)
 
 
-func fire(p: Vector3, ang: float, speed: float, k: int, owner: Object, shp := ROUND, accel := 0.0, to_speed := 0.0) -> void:
+func fire(p: Vector3, ang: float, speed: float, k: int, owner: Object, shp := ROUND, accel := 0.0, to_speed := 0.0, sz := 1.0) -> void:
 	if n >= MAX:
 		return
 	pos[n] = Vector3(p.x, 0.0, p.z)
@@ -88,6 +90,7 @@ func fire(p: Vector3, ang: float, speed: float, k: int, owner: Object, shp := RO
 	hp[n] = 1.0
 	owner_id[n] = owner.get_instance_id() if owner != null else 0
 	lift[n] = 0.0
+	size[n] = sz
 	n += 1
 
 
@@ -106,17 +109,20 @@ func aim(from: Vector3) -> float:
 	return atan2(d.z, d.x)
 
 
-## `count` bullets spread over `spread` degrees around `ang`.
+## `count` bullets spread over `spread` degrees around `ang`; the middle
+## ones a little bigger than the edges so the fan does not look flat.
 func fan(p: Vector3, ang: float, count: int, spread: float, speed: float, k: int, owner: Object, shp := ROUND) -> void:
 	if count == 1:
 		fire(p, ang, speed, k, owner, shp)
 		return
 	var s := deg_to_rad(spread)
 	for i in count:
-		fire(p, ang - s * 0.5 + s * i / (count - 1), speed, k, owner, shp)
+		var f := float(i) / (count - 1)
+		fire(p, ang - s * 0.5 + s * f, speed, k, owner, shp, 0.0, 0.0, lerpf(0.9, 1.12, sin(f * PI)))
 
 
-## A ring with a gap of `gap` bullets centred on `gap_ang` (gap 0 = full).
+## A ring with a gap of `gap` bullets centred on `gap_ang` (gap 0 = full);
+## big and small bullets take turns round it.
 func ring(p: Vector3, count: int, speed: float, k: int, owner: Object, offset := 0.0, gap := 0, gap_ang := 0.0, shp := ROUND) -> void:
 	for i in count:
 		var a := offset + TAU * i / count
@@ -124,11 +130,11 @@ func ring(p: Vector3, count: int, speed: float, k: int, owner: Object, offset :=
 			var d := absf(wrapf(a - gap_ang, -PI, PI))
 			if d < TAU / count * (gap * 0.5):
 				continue
-		fire(p, a, speed, k, owner, shp)
+		fire(p, a, speed, k, owner, shp, 0.0, 0.0, 1.08 if i % 2 == 0 else 0.9)
 
 
 func radius(i: int) -> float:
-	return NEEDLE_RADIUS if shape[i] == NEEDLE else RADIUS[kind[i]]
+	return (NEEDLE_RADIUS if shape[i] == NEEDLE else RADIUS[kind[i]]) * size[i]
 
 
 func _remove(i: int) -> void:
@@ -143,6 +149,7 @@ func _remove(i: int) -> void:
 	owner_id[i] = owner_id[n]
 	lift[i] = lift[n]
 	lift_y[i] = lift_y[n]
+	size[i] = size[n]
 
 
 ## Removes the bullets fired by `owner`; returns where they were.
@@ -264,6 +271,8 @@ func draw() -> void:
 		else:
 			var s: float = SIZE[k] * (pulse if k != SHELL else 1.0)
 			b = Basis.from_scale(Vector3(s, 1.0, s))
+		if size[i] != 1.0:
+			b = b.scaled(Vector3(size[i], 1.0, size[i]))
 		# drawn just above the ships, on the view ray through its plane point so
 		# what you see lines up with what hits
 		var y := 0.32
