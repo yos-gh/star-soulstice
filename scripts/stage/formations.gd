@@ -227,3 +227,9 @@ func rammers(at: float, xs: Array, interval: float) -> Array:
 
 func bulwark(at: float, xn: float, stay := 11.0) -> Array:
 	return [[at, "bulwark", {"x": xn * _hw(), "z": _top() - 3.0, "stay": stay}]]
+
+
+## A rail carriage down the wall on `side` (-1 = left) to hold `hold`
+## below the top of the screen (see railjack.gd).
+func railjack(at: float, side: int, hold := 5.5, stay := 12.0) -> Array:
+	return [[at, "railjack", {"side": side, "x": side * (_hw() - 2.4), "z": _top() - 3.0, "hold": _top() + hold, "stay": stay}]]

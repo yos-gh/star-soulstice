@@ -18,9 +18,15 @@
 | 小惑星・大（rock big） | 500 | 8 | 〃 |
 | コンテナ（container） | 1,000 | 14 | `scripts/enemies/container.gd` 〃 |
 | 中型機（bulwark） | 3,000 | 120 | `scripts/enemies/bulwark.gd` 〃 |
+| 中型機（railjack、ステージ 2） | 2,500 | 100 | `scripts/enemies/railjack.gd` 〃 |
 | 中ボス ラザロ（撃破ボーナス） | 20,000 | 240 | `scripts/bosses/lazaro.gd` `SCORE` / `HP` |
 | ボスのポッド（4基） | 5,000 | 90 | `scripts/bosses/star_cortex.gd` `POD_SCORE` / `POD_HP` |
 | ボス STAR CORTEX の目 | 50,000 | 800 | `scripts/bosses/star_cortex.gd` `EYE_SCORE` / `EYE_HP` |
+| 中ボス OUROBOROS の車両（8 両） | 1,500 | 30 | `scripts/bosses/ouroboros.gd` `CAR_SCORE` / `CAR_HP` |
+| 中ボス OUROBOROS の頭（撃破） | 25,000 | 560 | `scripts/bosses/ouroboros.gd` `SCORE` / `HEAD_HP` |
+| ボス VULCAN PRESS の砲塔（2 基） | 3,000 | 70 | `scripts/bosses/vulcan_press.gd` `VENT_SCORE` / `VENT_HP` |
+| ボス VULCAN PRESS のハンマー（2 基） | 8,000 | 280 | `scripts/bosses/vulcan_press.gd` `HAMMER_SCORE` / `HAMMER_HP` |
+| ボス VULCAN PRESS の核 | 60,000 | 1,400 | `scripts/bosses/vulcan_press.gd` `CORE_SCORE` / `CORE_HP` |
 
 撃破した敵の弾は消えてエネルギーになる（スコアはエネルギー取得分のみ）。
 
@@ -54,9 +60,11 @@
 | 編隊機 / 円盤 / 突進機雷 / 後方強襲機 / 側面強襲機 / 周回機 | 2 / 3 / 3 / 2 / 2 / 2 | `scripts/enemies/<種類>.gd` `energy_drop` |
 | 砲台 / コンテナ | 4 / 4 | 〃 |
 | 小惑星 小 / 大 | 3 / 8 | 〃 |
-| 中型機 | 14 | 〃 |
+| 中型機 bulwark / railjack | 14 / 12 | 〃 |
 | ボスのポッド | 12 | `scripts/bosses/star_cortex.gd` |
 | ラザロ撃破 | 40 | `scripts/bosses/lazaro.gd` |
+| OUROBOROS 車両 / 頭 / 最期 | 6 / 30 / 24 ＋車両ごとに 4 | `scripts/bosses/ouroboros.gd` |
+| VULCAN PRESS 砲塔 / ハンマー | 8 / 14 | `scripts/bosses/vulcan_press.gd` |
 | タイル 薄 / 十字 / 防爆扉 | 2 / 5 / 10 | `scripts/terrain/island.gd` `TILE_ENERGY` |
 | 消した弾（撃破・スピア） | 1 発につき 1 | `scripts/game.gd` |
 
@@ -76,6 +84,8 @@
 
 ショット・スピアだけで取れる配分の目安。人が稼ぐと変わる。
 
-| 破壊 | アイテム | タイムボーナス | クリアタイム |
-|---:|---:|---:|---:|
-| 約 42 万 | 約 42 万（うちスター 43 個で約 33 万、パワーアップ 6 個） | 約 17 万 | 約 127 秒 |
+| ステージ | 破壊 | アイテム | タイムボーナス | クリアタイム |
+|---|---:|---:|---:|---:|
+| 1 | 約 42 万 | 約 44 万（うちスター 46 個、パワーアップ 6 個） | 約 17 万 | 約 127 秒 |
+| 2（ステージ 1 から続けて） | 約 52 万 | 約 90 万（うちスター 82 個。速いスクロールでタイルが多く流れる） | 約 17 万 | 約 127 秒 |
+| 2（ステージ 2 から始めて、第 1 形態から） | 約 51 万 | 約 73 万（うちスター 77 個） | 約 17 万 | 約 130 秒 |

@@ -193,7 +193,7 @@ func _results(sz: Vector2) -> void:
 func _title(sz: Vector2) -> void:
 	draw_rect(Rect2(Vector2.ZERO, sz), Color(0, 0, 0.02, 0.35))
 	_center(sz.y * 0.3, "STAR SOULSTICE", 64, Color(0.75, 0.9, 1.0))
-	_center(sz.y * 0.3 + 34, "STAGE 1 PROTOTYPE", 18, Color(1.0, 0.75, 0.85))
+	_center(sz.y * 0.3 + 34, "PROTOTYPE  %d STAGES" % Stages.count(), 18, Color(1.0, 0.75, 0.85))
 	var y := sz.y * 0.52
 	var lines := [
 		["MOVE", Controls.label("move")],
@@ -206,11 +206,15 @@ func _title(sz: Vector2) -> void:
 		_text(Vector2(sz.x * 0.2, y + i * 26), l[0], 16, CYAN)
 		_text(Vector2(sz.x * 0.42, y + i * 26), l[1], 16, Color(1, 1, 1, 0.85))
 	var menu := ["GAME START", "VIEWER"]
+	var many := Stages.count() > 1
+	if many:
+		menu[0] = "GAME START   <  STAGE %d  >" % game.start_stage
 	for i in menu.size():
 		var sel := game.title_sel == i
 		var c := Color(1, 1, 1, 0.8 + 0.2 * sin(game.time * 4.0)) if sel else Color(0.75, 0.85, 1.0, 0.45)
 		_center(sz.y * 0.79 + i * 34, ("-  %s  -" % menu[i]) if sel else menu[i], 22 if sel else 18, c)
-	_center(sz.y * 0.79 + 64, "UP / DOWN : SELECT     %s : DECIDE" % Controls.label("confirm"), 13, DIM)
+	var keys := "UP / DOWN : SELECT     " + ("LEFT / RIGHT : STAGE     " if many else "") + "%s : DECIDE" % Controls.label("confirm")
+	_center(sz.y * 0.79 + 64, keys, 13, DIM)
 	if game.hi_score > 0:
 		_center(sz.y * 0.94, "HI %08d" % game.hi_score, 16, Color(1, 0.85, 0.6))
 

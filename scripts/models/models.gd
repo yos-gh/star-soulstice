@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## The models live in one script per group (each extends this one, so the
 ## colours below are at hand): ShipModels, EnemyModels, BossModels,
-## ItemModels, GroundModels. To add a model, add its name to the group's
+## ItemModels, GroundModels, TunnelModels. To add a model, add its name to the group's
 ## NAMES and build it in the group's make(); Vox.get_mesh(name) finds it
 ## and the viewer's MODELS list shows it.
 
@@ -47,7 +47,7 @@ const U := 0.09  # voxel size of small units
 
 ## [group label, script] in viewer order.
 static func groups() -> Array:
-	return [["SHIP", ShipModels], ["ENEMIES", EnemyModels], ["BOSSES", BossModels], ["ITEMS", ItemModels], ["GROUND", GroundModels]]
+	return [["SHIP", ShipModels], ["ENEMIES", EnemyModels], ["BOSSES", BossModels], ["ITEMS", ItemModels], ["GROUND", GroundModels], ["TUNNEL", TunnelModels]]
 
 
 static func build(name: String) -> ArrayMesh:

@@ -5,11 +5,15 @@ extends Node3D
 ## another from the current area's list. The layouts of a stage's areas are
 ## built once from its StageDef (`areas[*].sections`) and kept. The
 ## scenery further down is Backdrop.
+## In a tunnel (a stage whose backdrop has one) the sections stay between
+## its walls: a section marked "span" (every bridge) runs from wall to wall,
+## one marked "wall" sits against a wall, the rest anywhere between.
 
 var game: Game
-var layouts := {}  # area -> Array[Dictionary] (IslandGen.make results)
+var layouts := {}  # area -> Array[Dictionary] (IslandGen.make results + "anchor")
 var gaps := {}  # area -> [min, max]
-var _stage_layouts := {}  # stage number -> {layouts, gaps}
+var span_hw := 0.0  # half width between the tunnel walls (0 = open space)
+var _stage_layouts := {}  # stage number -> {layouts, gaps, span}
 var first_area := ""
 var title_area := ""
 var islands: Array[Island] = []
@@ -30,14 +34,18 @@ func use_stage(def: StageDef) -> void:
 		for a: String in def.areas:
 			var list: Array[Dictionary] = []
 			for l: Array in def.areas[a].get("sections", []):
-				list.append(IslandGen.make(s, l[0], l[1], l[2], l[3]))
+				var lay := IslandGen.make(s, l[0], l[1], l[2], l[3])
+				lay["anchor"] = l[4] if l.size() > 4 else ("span" if l[0] == "bridge" else "")
+				list.append(lay)
 				s += def.layout_seed_step
 			ls[a] = list
 			gs[a] = def.areas[a].get("gap", [2.0, 6.0])
-		_stage_layouts[def.number] = {"layouts": ls, "gaps": gs}
+		var span := TunnelModels.HW if def.backdrop.has("tunnel") else 0.0
+		_stage_layouts[def.number] = {"layouts": ls, "gaps": gs, "span": span}
 	var e: Dictionary = _stage_layouts[def.number]
 	layouts = e["layouts"]
 	gaps = e["gaps"]
+	span_hw = e["span"]
 	first_area = def.first_area
 	title_area = def.title_area
 
@@ -98,7 +106,17 @@ func _spawn_island() -> void:
 	var h: int = lay["h"]
 	var half := w * Island.CELL * 0.5
 	var x := 0.0
-	if half < hw:
+	var anchor: String = lay.get("anchor", "")
+	if span_hw > 0.0:
+		# between the tunnel walls
+		if anchor == "span":
+			x = 0.0
+		elif anchor == "wall":
+			x = (span_hw - half) * (1.0 if rng.randf() < 0.5 else -1.0)
+		else:
+			var room := maxf(0.0, span_hw - half - 1.0)
+			x = rng.randf_range(-room, room)
+	elif half < hw:
 		x = rng.randf_range(-hw + half * 0.6, hw - half * 0.6)
 	else:
 		x = rng.randf_range(-2.0, 2.0)

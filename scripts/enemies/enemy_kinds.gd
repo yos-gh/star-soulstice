@@ -16,6 +16,7 @@ const KINDS := {
 	"turret": preload("res://scripts/enemies/turret.gd"),
 	"rock": preload("res://scripts/enemies/rock.gd"),
 	"bulwark": preload("res://scripts/enemies/bulwark.gd"),
+	"railjack": preload("res://scripts/enemies/railjack.gd"),
 	"part": preload("res://scripts/enemies/part.gd"),
 }
 

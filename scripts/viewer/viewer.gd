@@ -169,12 +169,15 @@ func _begin() -> void:
 	loops = 0
 	emit_t = 0.0
 	var e := entry
+	var speed := Game.SCROLL
 	if e.has("stage"):
 		var d: StageDef = e["stage"]
 		game.terrain.use_stage(d)
 		game.backdrop.use(d.backdrop)
+		game.backdrop.set_area(e.get("area", d.first_area), true)
 		game.stage_def = d
-	game.scroll_speed = e.get("scroll", Game.SCROLL)
+		speed = d.scroll
+	game.scroll_speed = e.get("scroll", speed)
 	_reset_camera()
 	var tp: String = e["type"]
 	var want_player: bool = e.get("player", tp in ["spawns", "boss", "ground", "ship"])

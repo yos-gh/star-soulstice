@@ -137,6 +137,7 @@ func _set_area(a: String) -> void:
 		return
 	area = a
 	game.terrain.set_area(a)
+	game.backdrop.set_area(a)
 	var s: Dictionary = (def.areas.get(a, {}) as Dictionary).get("stream", {})
 	if not s.is_empty():
 		stream_t = float(s.get("first", s["every"]))

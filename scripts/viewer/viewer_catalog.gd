@@ -24,9 +24,9 @@ static func build(g: Game) -> Array:
 		stages.append(d)
 	return [
 		{"name": "SHIP", "jp": "自機", "items": _ship(f, stages[0])},
-		{"name": "SMALL", "jp": "小型機と編隊", "items": _enemies(f, ["small"], stages[0])},
-		{"name": "MEDIUM", "jp": "中型機・コンテナ・小惑星・砲台", "items": _enemies(f, MEDIUM_CATS, stages[0])},
-		{"name": "BOSS", "jp": "中ボス・ボス", "items": _bosses(stages[0])},
+		{"name": "SMALL", "jp": "小型機と編隊", "items": _enemies(f, ["small"], stages)},
+		{"name": "MEDIUM", "jp": "中型機・コンテナ・小惑星・砲台", "items": _enemies(f, MEDIUM_CATS, stages)},
+		{"name": "BOSS", "jp": "中ボス・ボス", "items": _bosses(stages)},
 		{"name": "WAVES", "jp": "ステージのウェーブ（地形・砲台つき）", "items": _waves(stages)},
 		{"name": "TERRAIN", "jp": "地形・区画", "items": _terrain(stages)},
 		{"name": "SCENERY", "jp": "背景", "items": _scenery(stages)},
@@ -64,12 +64,26 @@ static func _ship(f: Formations, d: StageDef) -> Array:
 	return out
 
 
-static func _enemies(f: Formations, cats: Array, d: StageDef) -> Array:
+## The first stage that uses `kind` (an enemy kind or a boss): its subject
+## is shown over that stage's ground and scenery. Stage 1 if none does.
+static func _home(kind: String, stages: Array[StageDef]) -> StageDef:
+	for d in stages:
+		if d.boss == kind:
+			return d
+		for w: Dictionary in d.waves:
+			for s: Array in w["spawns"]:
+				if s[1] == kind:
+					return d
+	return stages[0]
+
+
+static func _enemies(f: Formations, cats: Array, stages: Array[StageDef]) -> Array:
 	var out := []
 	for kind: String in EnemyKinds.KINDS:
 		var info := EnemyKinds.info(kind)
 		if not cats.has(info.get("category", "")):
 			continue
+		var d := _home(kind, stages)
 		var demos: Array = info.get("demos", [["ONE", "one", [0.0, kind, 0.0]]])
 		for demo: Array in demos:
 			var it := {"name": "%s  %s" % [info.get("name", kind), demo[0]], "kind": kind, "stage": d, "desc": info.get("desc", "")}
@@ -83,12 +97,20 @@ static func _enemies(f: Formations, cats: Array, d: StageDef) -> Array:
 	return out
 
 
-static func _bosses(d: StageDef) -> Array:
+static func _bosses(stages: Array[StageDef]) -> Array:
 	var out := []
 	for kind: String in Bosses.KINDS:
 		var info := Bosses.info(kind)
+		var d := _home(kind, stages)
+		# the area it is fought over sets the scenery (a tunnel's style)
+		var area := d.boss_area if d.boss == kind else d.first_area
+		for w: Dictionary in d.waves:
+			for s: Array in w["spawns"]:
+				if s[1] == kind:
+					area = w["area"]
 		for demo: Array in info.get("demos", [["FULL", ""]]):
-			out.append({"name": "%s  %s" % [info.get("name", kind), demo[0]], "type": "boss", "kind": kind, "skip": demo[1], "stage": d,
+			out.append({"name": "%s  %s" % [info.get("name", kind), demo[0]], "type": "boss", "kind": kind, "skip": demo[1], "stage": d, "area": area,
+				"scroll": d.boss_scroll if d.boss == kind else d.scroll,
 				"desc": "%s：%s" % [{"mid": "中ボス", "boss": "ボス"}.get(info.get("role", ""), ""), info.get("desc", "")]})
 	return out
 
@@ -134,8 +156,22 @@ static func _terrain(stages: Array[StageDef]) -> Array:
 static func _scenery(stages: Array[StageDef]) -> Array:
 	var out := []
 	for d in stages:
-		out.append({"name": "S%d SCENERY" % d.number, "type": "backdrop", "stage": d, "desc": "星雲・惑星・星・深層の構造物（地形なし）"})
-		out.append({"name": "S%d SCENERY  FAST" % d.number, "type": "backdrop", "stage": d, "scroll": Game.SCROLL * 4.0, "desc": "4 倍速スクロールで奥行きの流れ方を見る"})
+		var tunnel: Dictionary = d.backdrop.get("tunnel", {})
+		if tunnel.is_empty():
+			out.append({"name": "S%d SCENERY" % d.number, "type": "backdrop", "stage": d, "desc": "星雲・惑星・星・深層の構造物（地形なし）"})
+			out.append({"name": "S%d SCENERY  FAST" % d.number, "type": "backdrop", "stage": d, "scroll": Game.SCROLL * 4.0, "desc": "4 倍速スクロールで奥行きの流れ方を見る"})
+			continue
+		# a tunnel: each of its styles, at the stage's speed and slowed down
+		var seen := {}
+		for a: String in d.areas:
+			var style: String = (tunnel["styles"] as Dictionary).get(a, "")
+			if style == "" or seen.has(style):
+				continue
+			seen[style] = true
+			out.append({"name": "S%d TUNNEL  %s" % [d.number, style.to_upper()], "type": "backdrop", "stage": d, "area": a, "scroll": d.scroll,
+				"desc": "トンネル（%s）を本編の速さで。仕切りのリブ・目玉の区画・エリアの境のゲート（地形なし）" % style})
+			out.append({"name": "S%d TUNNEL  %s  SLOW" % [d.number, style.to_upper()], "type": "backdrop", "stage": d, "area": a, "scroll": d.scroll * 0.25,
+				"desc": "同じトンネルを 1/4 の速さで"})
 	return out
 
 
@@ -196,6 +232,24 @@ static func _models(d: StageDef) -> Array:
 		cortex.append(["boss_pod", o, 0.0, 1.0])
 	out.append({"name": "SET  STAR CORTEX", "type": "model", "stage": d, "scroll": 0.0, "spin": false, "parts": cortex,
 		"desc": "船体・目・ポッドを組んだ状態（シャッターなし）", "cam": {"target": Vector3.ZERO, "dist": 26.0, "pitch": 66.0}})
+	var train := [["ouro_head", Vector3(0, 0, -6.9), 0.0, 1.0]]
+	for k in 6:
+		train.append(["ouro_car", Vector3(0, 0, -4.6 + k * 2.3), 0.0, 1.0])
+	out.append({"name": "SET  OUROBOROS", "type": "model", "stage": d, "scroll": 0.0, "spin": false, "parts": train,
+		"desc": "機関車と車両を一列に連結した状態", "cam": {"target": Vector3.ZERO, "dist": 24.0, "pitch": 60.0}})
+	var vp = Bosses.KINDS["vulcan_press"]
+	var press := [["press_hull", Vector3.ZERO, 0.0, 1.0], ["press_core", vp.CORE_OFF, 0.0, 1.0]]
+	for k in 3:
+		var a := -PI / 2.0 + k * TAU / 3.0
+		press.append(["press_plate", vp.CORE_OFF + Vector3(cos(a), 0, sin(a)) * vp.PLATE_R, atan2(-cos(a), -sin(a)), 1.0])
+	for s in [-1, 1]:
+		press.append(["press_hammer", Vector3(s * 6.0, 0, vp.RAIL_Z + vp.HEAD_REST + 3.0), 0.0, 1.0])
+		for k in 3:
+			press.append(["press_tube%d" % k, Vector3(s * 6.0, 0, vp.RAIL_Z + 3.0 * (1.0 - k / 3.0) - vp.TUBE_LEN * 0.5), 0.0, 1.0])
+	for o: Vector3 in vp.VENT_OFF:
+		press.append(["press_vent", o, 0.0, 1.0])
+	out.append({"name": "SET  VULCAN PRESS", "type": "model", "stage": d, "scroll": 0.0, "spin": false, "parts": press,
+		"desc": "船体・核・装甲板・ハンマー（少し伸ばした状態）・砲塔を組んだ状態", "cam": {"target": Vector3(0, 0, 2.0), "dist": 34.0, "pitch": 62.0}})
 	for gr: Array in Models.groups():
 		for n: String in gr[1].NAMES:
 			out.append({"name": "%s  %s" % [gr[0], n], "type": "model", "stage": d, "scroll": 0.0, "parts": [[n, Vector3.ZERO, 0.0, 1.0]], "auto_cam": true})

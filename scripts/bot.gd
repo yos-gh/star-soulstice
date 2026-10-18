@@ -61,6 +61,24 @@ func think() -> Array:
 				if side.dot(d) < 0.0:
 					side = -side
 				push += side * (3.2 - dist) * 1.4 + d.normalized() * (3.2 - dist) * 0.4
+	# get out of a boss's marked strike line (a big move telegraphed toward
+	# a point: a press hammer, a train's strike)
+	for w: Dictionary in game.warnings:
+		if w["kind"] != Game.Warn.MOVE or not (w["to"] is Vector3) or not is_instance_valid(w["node"]):
+			continue
+		if not (w["node"] is Enemy) or (w["node"] as Enemy).controller == null:
+			continue
+		var nd: Enemy = w["node"]
+		var a: Vector3 = nd.hit_pos
+		var ab: Vector3 = w["to"] - a
+		ab.y = 0.0
+		var f := clampf((pp - a).dot(ab) / maxf(ab.length_squared(), 0.01), 0.0, 1.0)
+		var d := pp - (a + ab * f)
+		d.y = 0.0
+		var dist := d.length()
+		if dist < 3.6:
+			var away := d / dist if dist > 0.05 else Vector3(-ab.z, 0, ab.x).normalized()
+			push += away * (3.6 - dist) * 1.6
 	for e in enemies:
 		if e.dead or not e.ram or e.intangible:
 			continue

@@ -3,7 +3,7 @@ extends Models
 ## Small and mid-size enemies, ground guns and drifting rocks: polished gold
 ## and bronze armour over gunmetal, red eyes.
 
-const NAMES := ["dart", "swirl", "rammer", "chaser", "flanker", "racer", "container", "turret_base", "turret_head", "bulwark", "rock_s", "rock_l"]
+const NAMES := ["dart", "swirl", "rammer", "chaser", "flanker", "racer", "container", "turret_base", "turret_head", "bulwark", "railjack", "railjack_gun", "rock_s", "rock_l"]
 
 
 static func make(name: String) -> ArrayMesh:
@@ -28,6 +28,10 @@ static func make(name: String) -> ArrayMesh:
 			return _turret_head()
 		"bulwark":
 			return _bulwark()
+		"railjack":
+			return _railjack()
+		"railjack_gun":
+			return _railjack_gun()
 		"rock_s":
 			return _rock(5, 0.16, 7)
 		"rock_l":
@@ -240,6 +244,51 @@ static func _bulwark() -> ArrayMesh:
 	v.fill_sym(18, 2, -11, 21, 3, -11, AMBER, true)
 	v.fill_sym(1, 2, -16, 3, 3, -16, AMBER, true)
 	return v.mesh(U * 1.2, Vector3(0, 3.0, 0))
+
+
+## Rail carriage (faces -z, into the tunnel; it runs along x on the wall
+## rail behind it): a long gunmetal chassis on bronze wheel trucks gripping
+## a rail beam at the back, gold armour on top, a red sensor slit in the
+## front skirt, crimson ends with amber lamps. Its twin gun turns on top
+## (railjack_gun).
+static func _railjack() -> ArrayMesh:
+	var v := Vox.new(42, 9, 28)
+	# the rail beam at the back and the wheel trucks gripping it
+	v.fill(-21, 1, 10, 20, 2, 12, GUN_D)
+	for cx in [-16, -7, 5, 14]:
+		v.fill(cx, 0, 7, cx + 2, 3, 11, BRONZE)
+		v.fill(cx, 1, 6, cx + 2, 2, 6, BROWN)
+		v.fill(cx + 1, 3, 8, cx + 1, 3, 10, GOLD_L)
+	# chassis
+	v.fill(-18, 1, -8, 17, 3, 6, GUN)
+	v.fill(-17, 0, -7, 16, 0, 5, GUN_D)
+	# armour deck with seams, a raised spine
+	v.fill(-16, 4, -6, 15, 4, 5, GOLD)
+	v.fill(-12, 5, -4, 11, 5, 3, GOLD_L)
+	for x in [-11, -5, 4, 10]:
+		v.fill(x, 4, -6, x, 5, 5, BROWN)
+	# front skirt with the sensor slit
+	v.fill(-17, 1, -9, 16, 3, -9, BRONZE)
+	v.fill(-6, 2, -10, 5, 2, -10, EYE, true)
+	# crimson ends, amber lamps
+	v.fill(-19, 1, -7, -19, 3, 5, CRIM)
+	v.fill(18, 1, -7, 18, 3, 5, CRIM)
+	v.put(-19, 4, -7, AMBER, true)
+	v.put(18, 4, -7, AMBER, true)
+	# the turret ring
+	v.blob(0, 6, 0, 4.4, 0.8, 4.4, GUN_D)
+	return v.mesh(U * 1.2, Vector3(0, 2.5, 0))
+
+
+## The rail carriage's twin gun (turns on its ring; barrels toward -z).
+static func _railjack_gun() -> ArrayMesh:
+	var v := Vox.new(16, 6, 28)
+	v.blob(0, 1, 1, 4.2, 2.2, 4.2, BRONZE)
+	v.blob(0, 2, 1, 3.0, 2.2, 3.0, GOLD)
+	v.fill_sym(1, 2, -12, 2, 3, -3, GUN)
+	v.fill_sym(1, 2, -13, 2, 3, -13, AMBER, true)
+	v.fill_sym(0, 4, 1, 0, 4, 2, EYE, true)
+	return v.mesh(U * 1.2, Vector3(0, 0, 0))
 
 
 ## Drifting asteroid chunk (debris belt), lumpy and dark.

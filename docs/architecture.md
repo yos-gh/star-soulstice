@@ -9,11 +9,11 @@
 | 場所 | 中身 |
 |---|---|
 | `scripts/game.gd` | 世界（カメラ・地形・ユニット・弾・エフェクト）とルール（スコア・当たり・残機・状態遷移）。ステージの中身は持たない |
-| `scripts/stage/` | `stage_def.gd`（ステージ定義の基底）、`stage1.gd`（ステージ 1 の中身）、`stages.gd`（ステージの並び）、`stage.gd`（定義を実行する：ウェーブ・エリア・ボス戦）、`formations.gd`（編隊の雛形） |
+| `scripts/stage/` | `stage_def.gd`（ステージ定義の基底）、`stage1.gd` / `stage2.gd`（各ステージの中身）、`stages.gd`（ステージの並び）、`stage.gd`（定義を実行する：ウェーブ・エリア・ボス戦）、`formations.gd`（編隊の雛形） |
 | `scripts/enemies/` | `enemy.gd`（敵の共通部分）、種類ごとのスクリプト（`dart.gd` など）、`enemy_kinds.gd`（種類の登録表） |
-| `scripts/bosses/` | `boss_base.gd`（中ボス・ボスの共通部分）、`lazaro.gd`、`star_cortex.gd`、`bosses.gd`（登録表） |
-| `scripts/terrain/` | `terrain.gd`（地上の区画を流す）、`backdrop.gd`（星雲・惑星・星・深層の構造物）、`islandgen.gd`（区画の生成）、`island.gd`（区画とタイル） |
-| `scripts/models/` | `models.gd`（共通の色と振り分け）、`ship_models.gd` / `enemy_models.gd` / `boss_models.gd` / `item_models.gd` / `ground_models.gd` |
+| `scripts/bosses/` | `boss_base.gd`（中ボス・ボスの共通部分）、`lazaro.gd` / `star_cortex.gd`（ステージ 1）、`ouroboros.gd` / `vulcan_press.gd`（ステージ 2）、`bosses.gd`（登録表） |
+| `scripts/terrain/` | `terrain.gd`（地上の区画を流す）、`backdrop.gd`（星雲・惑星・星・深層の構造物・トンネル）、`tunnel.gd`（トンネルの区間を流す）、`islandgen.gd`（区画の生成）、`island.gd`（区画とタイル） |
+| `scripts/models/` | `models.gd`（共通の色と振り分け）、`ship_models.gd` / `enemy_models.gd` / `boss_models.gd` / `item_models.gd` / `ground_models.gd` / `tunnel_models.gd`（トンネルの区間） |
 | `scripts/viewer/` | 閲覧モード（`viewer.gd`）、一覧の組み立て（`viewer_catalog.gd`）、左の情報パネル（`viewer_panel.gd`） |
 | `scripts/bot.gd` | 自動操縦（`--autoplay` と閲覧モードの B） |
 | その他 `scripts/*.gd` | 自機・ショット・敵弾・アイテム・エフェクト・HUD・効果音・配色・入力・ボクセル |
@@ -36,8 +36,9 @@ Stages ──> StageDef（stage1.gd …）
 2. `_init()` で `title` / `subtitle` / `boss` / `areas` / `first_area` / `backdrop` などを決める。
    - `areas` はエリア名ごとに `label`（出だしの表示）、`sections`（区画の種類と大きさ）、`gap`（区画の間隔）、`stream`（漂流物、任意）。
    - `layout_seed` を変えると同じ指定でも区画の形が変わる。
+   - `scroll` / `boss_scroll` でスクロールの速さ（ステージ 2 は 18 / 10 と速い。ステージ 1 は 12 / 7）。
 3. `build_waves(f)` で `wave(エリア名, 出現リスト, 制限時間, 中ボスか)` を並べる。出現リストは `f.col(...) + f.vform(...)` のように `Formations` の雛形を足し合わせる。中ボスは `[[0.0, "lazaro", {}]]`。
-4. `scripts/stage/stages.gd` の `LIST` に足す。ステージ 1 をクリアすると次へ進む（形態・シールド・エネルギー・スコアは持ち越し）。`--stage=2` で直接始められる。
+4. `scripts/stage/stages.gd` の `LIST` に足す。ステージをクリアすると次へ進む（形態・シールド・エネルギー・スコアは持ち越し）。タイトルの GAME START で ← → を押すと始めるステージを選べる（`--stage=2` でも直接始められる）。
 
 ## 敵の種類を足す
 
@@ -60,6 +61,7 @@ Stages ──> StageDef（stage1.gd …）
    - `INFO`：`name`（警告と体力ゲージの名前）、`role`（`mid` / `boss`）、`desc`、`demos`（閲覧モードの途中から再生：`[ラベル, 合図]`、合図は `viewer_skip` に渡る）。
    - 部位は `game.spawn_part(self, モデル名, 半径)` で作る（当たり判定は敵と同じ）。部位への被弾は `on_hit`、部位の撃破は `on_part_killed` に来る。
    - `gauge()` で HUD の体力ゲージ、`force_defeat()` は閲覧モードの K（撃破）、`debug_state()` は閲覧モードの状態表示。
+   - 突進・打ち下ろしなどの大技は、`game.warn(部位, 秒, Game.Warn.MOVE, 半径, 狙う地点の Vector3)` で予兆を出すと、矢印がその地点へ流れ、自動操縦はその線から外れる（ボスの部位の予兆のみ）。
    - ステージのボス（`final`）は、倒れきったら `game.boss_destroyed(self)` を呼ぶとステージクリアになる。中ボスは去るときに `finished = true` にして `game.remove_boss(self)`。
 2. `scripts/bosses/bosses.gd` の `KINDS` に足す。
 3. モデルを `scripts/models/boss_models.gd` に足す。
@@ -67,12 +69,24 @@ Stages ──> StageDef（stage1.gd …）
 
 ## 地形（区画）を足す
 
-- 既存の種類（hull / trench / solar / reactor / fragment / asteroid）の組み合わせと大きさは、ステージ定義の `areas[*].sections` だけで変えられる。
+- 既存の種類（hull / trench / solar / reactor / fragment / asteroid / bridge）の組み合わせと大きさは、ステージ定義の `areas[*].sections` だけで変えられる。
+- `bridge` はトンネルの壁から壁へ渡る足場（タイルの列と網目の通路、下はトラス）。幅 16 マスでトンネルの幅いっぱいになる。
+- トンネルのあるステージでは、区画は壁の内側に置かれる。`sections` の 5 つ目に置き方を書ける：`"span"`（真ん中、壁から壁へ。`bridge` は書かなくてもこれ）、`"wall"`（左右どちらかの壁に寄せる）、なし（壁の内側のどこか）。例 `["hull", 6, 5, 2, "wall"]`。
 - 新しい種類は `scripts/terrain/islandgen.gd` に、外形（`make` の最初の match）・タイルの置き方（2 つ目の match）・表面（`_structure` か専用の関数）を足し、`KINDS` に加える。閲覧モードの TERRAIN に「KIND …」として標準サイズで出る。
 
 ## 背景を足す
 
-ステージ定義の `backdrop` に `nebula` / `planet` / `stars` / `deep` を書く（どれも省略可。中身は `scripts/terrain/backdrop.gd` の冒頭）。ステージが変わると作り直される。色合いは配色（`palette.gd`、F2）が決める。
+ステージ定義の `backdrop` に `nebula` / `planet` / `stars` / `deep` / `tunnel` を書く（どれも省略可。中身は `scripts/terrain/backdrop.gd` の冒頭）。ステージが変わると作り直される。色合いは配色（`palette.gd`、F2）が決める。
+
+### トンネル（ステージ 2）
+
+`backdrop.tunnel = {styles: {エリア名: 様式}, first: 最初の様式, seed}` で、工場・基地の中のトンネルを近くに置く（床は y = −9、壁の上端は y = −1 で、プレイ面より下なので敵や弾を隠さない）。
+
+- 中身は `scripts/terrain/tunnel.gd`：長さ 12 の区間（`TunnelModels` のモデル）を端から端へ並べて、スクロールと同じ速さで流す。1 つおきに仕切りのリブ、ときどき様式の目玉の区画（決まった種で並ぶので毎回同じ）。
+- エリアが変わると、境目に防爆扉の枠（ゲート）が来て、その後ろから新しいエリアの様式になる（`Stage` が `Backdrop.set_area` を呼ぶ）。
+- 様式は `scripts/models/tunnel_models.gd` の `STYLES`：`duct`（冷たい鋼・水色の灯・配管・床のファン）、`line`（ベルトコンベア・山形の通路・琥珀の灯・組立アーム）、`furnace`（暗い鉄板・溶けた鉄の溝・赤い熱の通気口・坩堝の穴）。新しい様式は `STYLES` と `NAMES`、`PALS` と様式の関数を足す。
+- 区間の型は `plain` / `rib` / `feature` / `gate` の 4 つ。回る部品（ファン）は `props()` に書く。
+- 背景の光は敵弾の色（橙のエネルギー弾・青の物理弾）とぶつからないよう、暗めに抑える。
 
 ## モデルを足す
 
@@ -87,11 +101,11 @@ Stages ──> StageDef（stage1.gd …）
 |---|---|
 | SHIP | 自機の 3 形態、並べた比較、形態ごとの武器（連射・スピア・ホーミング 8 発） |
 | SMALL | 小型機の編隊（`INFO.demos` の数だけ） |
-| MEDIUM | 中型機・コンテナ・小惑星・砲台 |
-| BOSS | 中ボス・ボス（STAR CORTEX は第 2 段階からも） |
+| MEDIUM | 中型機・コンテナ・小惑星・砲台（その敵が最初に出るステージの地形・背景の上で） |
+| BOSS | 中ボス・ボス（STAR CORTEX は第 2 段階から、OUROBOROS は突進から、VULCAN PRESS は暴走から、も。そのボスのステージの背景の上で） |
 | WAVES | 各ステージの全ウェーブを、そのエリアの地形と砲台つきで。最後にボス |
 | TERRAIN | エリアごとの地形の流れ、全区画を 1 つずつ静止で、IslandGen の全種類 |
-| SCENERY | 背景だけ（通常速度と 4 倍速） |
+| SCENERY | 背景だけ（ステージ 1 は通常速度と 4 倍速、トンネルのあるステージは様式ごとに本編の速さと 1/4 の速さ） |
 | FX | 爆発の大きさ別、ラザロ・ボスの最期、自機の爆発、シールド、タイル破壊、火花、衝撃波、得点表示、弾のエネルギー化、予兆 |
 | BULLETS | 敵弾の種類と形 |
 | ITEMS | エネルギー・パワーアップ・スター |

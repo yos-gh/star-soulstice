@@ -9,6 +9,8 @@ extends RefCounted
 ##   reactor   round platform with a glowing core and a ring of hatches
 ##   fragment  a broken-off hull plate (debris belt)
 ##   asteroid  a rock with hatches bolted on (debris belt)
+##   bridge    a gantry across a tunnel, wall to wall: rows of hatches with
+##             grated walkways between, on truss girders
 ## Voxels are R units; a cell (one 2 x 2 tile) is K x K voxels. Tiles sit
 ## in sockets half a voxel below the deck. Local y = 0 is the deck top.
 ## A stage picks kinds and sizes per area (StageDef.areas). A new kind
@@ -16,7 +18,7 @@ extends RefCounted
 ## and its surface (_structure, or a builder of its own like _asteroid);
 ## add it to KINDS so the viewer can show it.
 
-const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid"]
+const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid", "bridge"]
 
 const R := 0.5
 const K := 4
@@ -117,6 +119,11 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 				"asteroid":
 					if r.randf() < 0.45:
 						t = 1 if r.randf() < 0.6 else 2
+				"bridge":
+					# rows of hatches across (the ends rest in the walls), the
+					# heavy ones in the middle
+					if j % 2 == 0 and i >= 2 and i <= w - 3:
+						t = 2 if absf(i - (w - 1) * 0.5) < 1.0 else (1 if i % 4 == 1 else 0)
 			types[idx] = t
 			if t >= 0:
 				hidden[idx] = 1 if r.randf() < (0.06 if t == 2 else 0.02) else 0
@@ -224,7 +231,7 @@ static func _structure(v: Vox, info: Dictionary) -> void:
 			var idx := c2.y * w + c2.x if c2.x >= 0 else -1
 			var surf := top
 			var bottom := top - (2 + mini(ed, 4))
-			if kind == "solar":
+			if kind == "solar" or kind == "bridge":
 				bottom = top - 1
 			elif kind == "fragment":
 				bottom = top - (1 + mini(ed, 2))
@@ -232,7 +239,12 @@ static func _structure(v: Vox, info: Dictionary) -> void:
 			if m == 1:
 				var raised := kind != "solar" and kind != "fragment"
 				surf = top + (1 if raised else 0)
+				if kind == "bridge":
+					bottom = top - 4
 				for y in range(bottom, surf + 1):
+					# a bridge rests on truss girders: open lattice under the deck
+					if kind == "bridge" and y < top - 1 and posmod(vx + vz + y, 3) == 0:
+						continue
 					var hazard := posmod(vx + vz, 24) < 4 and (vx + vz) / 2 % 2 == 0
 					var c := SIDE if y < surf else (TRIM if hazard else RIM)
 					var glow := false
@@ -309,6 +321,10 @@ static func _structure(v: Vox, info: Dictionary) -> void:
 						v.put(x, surf + 2, z, CONDUIT, true)
 				elif c2.y % 4 == 0 and lz == 2:
 					v.put(x, surf + 1, z, SIDE)
+			elif kind == "bridge":
+				# grated walkway
+				if lx > 0 and lz % 2 == 1:
+					v.put(x, surf, z, SEAM)
 			else:
 				_greeble(v, x, surf, z, lx, lz, (c2.x * 31 + c2.y * 17 + w) % 7)
 

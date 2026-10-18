@@ -8,6 +8,8 @@ extends Node3D
 ##   planet  {x, y, screen_y, radius, rotation, ring}  ring = ring plane size (0 = none)
 ##   stars   [[height, count, size], ...]
 ##   deep    {y, meshes: [model names], count}       far-below blocks, cycling
+##   tunnel  {styles: {area: style}, first, seed}    a tunnel close below
+##           (see Tunnel); its style follows the stage's area (set_area)
 ## Palette sets the colours of the nebula, planet and ring.
 
 var game: Game
@@ -21,6 +23,7 @@ var planet: Node3D
 var star_layers: Array = []  # {mm: MultiMesh, pos: PackedVector3Array, rect: Rect2, size}
 var deep: Array[MeshInstance3D] = []
 var deep_rect := Rect2()
+var tunnel: Tunnel
 var scroll_total := 0.0
 
 
@@ -36,6 +39,7 @@ func use(cfg: Dictionary) -> void:
 	planet = null
 	star_layers.clear()
 	deep.clear()
+	tunnel = null
 	config = cfg
 	built = true
 	build(cfg)
@@ -143,10 +147,23 @@ func build(cfg: Dictionary) -> void:
 			m.position = Vector3(deep_rect.position.x + deep_rect.size.x * (0.25 + 0.5 * (i % 2)), dy - (i % 2) * 8.0, deep_rect.position.y + deep_rect.size.y * i / float(count))
 			add_child(m)
 			deep.append(m)
+	if cfg.has("tunnel"):
+		tunnel = Tunnel.new()
+		tunnel.game = game
+		add_child(tunnel)
+		tunnel.build(cfg["tunnel"])
+
+
+## The stage's area changed (a tunnel takes on its style); `now` = at once.
+func set_area(a: String, now := false) -> void:
+	if tunnel != null:
+		tunnel.set_area(a, now)
 
 
 func tick(dt: float, speed: float) -> void:
 	scroll_total += speed * dt
+	if tunnel != null:
+		tunnel.tick(dt, speed)
 	if nebula_mat != null:
 		nebula_mat.set_shader_parameter("scroll", scroll_total * 0.0035)
 	if planet != null:

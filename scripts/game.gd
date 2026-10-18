@@ -1,6 +1,6 @@
 class_name Game
 extends Node3D
-## STAR SOULSTICE — stage 1 prototype. A modern homage to Star Soldier:
+## STAR SOULSTICE — prototype. A modern homage to Star Soldier:
 ## no air/ground split, everything breakable, tap-fire Concentration, and an
 ## energy loop (collect energy -> release it as homing lasers with the Spear).
 ##
@@ -418,6 +418,7 @@ func _start_stage(n: int, new_game: bool) -> void:
 	stage_def = Stages.create(n)
 	terrain.use_stage(stage_def)
 	backdrop.use(stage_def.backdrop)
+	backdrop.set_area(stage_def.first_area, true)
 	terrain.reset(true)
 	stage = Stage.new(self, stage_def)
 	if start_at != "" and new_game:
@@ -543,6 +544,11 @@ func _physics_process(_delta: float) -> void:
 			if Input.is_action_just_pressed("up") or Input.is_action_just_pressed("down"):
 				title_sel = 1 - title_sel
 				sfx.play("cursor")
+			# left / right on GAME START picks the stage to begin at
+			var ds := int(Input.is_action_just_pressed("right")) - int(Input.is_action_just_pressed("left"))
+			if title_sel == 0 and ds != 0 and Stages.count() > 1:
+				start_stage = posmod(start_stage - 1 + ds, Stages.count()) + 1
+				sfx.play("cursor")
 			if Input.is_action_just_pressed("confirm") and state_t > 0.3:
 				if title_sel == 1:
 					_enter_viewer()
@@ -567,6 +573,7 @@ func _physics_process(_delta: float) -> void:
 				hi_score = maxi(hi_score, score)
 				if quit_on_clear:
 					get_tree().quit()
+					return
 				if stage_no < Stages.count():
 					_start_stage(stage_no + 1, false)
 				else:

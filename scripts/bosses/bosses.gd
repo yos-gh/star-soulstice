@@ -8,6 +8,8 @@ extends RefCounted
 const KINDS := {
 	"lazaro": preload("res://scripts/bosses/lazaro.gd"),
 	"star_cortex": preload("res://scripts/bosses/star_cortex.gd"),
+	"ouroboros": preload("res://scripts/bosses/ouroboros.gd"),
+	"vulcan_press": preload("res://scripts/bosses/vulcan_press.gd"),
 }
 
 
