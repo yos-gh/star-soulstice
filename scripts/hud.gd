@@ -131,8 +131,10 @@ func _conc(p: Vector2, pl: Player) -> void:
 	var r := Rect2(p.x, p.y + 18, 200, 14)
 	draw_rect(r, Color(0.05, 0.08, 0.15, 0.9))
 	draw_rect(Rect2(r.position, Vector2(r.size.x * f, r.size.y)), c)
-	for k in range(1, 3):
-		var x := r.position.x + r.size.x * k / 3.0
+	# a mark at each whole multiplier (x2, x3, x4)
+	var steps := int(Player.CONC_MAX_MUL - 1.0)
+	for k in range(1, steps):
+		var x := r.position.x + r.size.x * k / float(steps)
 		draw_line(Vector2(x, r.position.y), Vector2(x, r.end.y), Color(0, 0, 0, 0.6), 2.0)
 	draw_rect(r, Color(c.r, c.g, c.b, 0.6), false, 1.0)
 	_text(Vector2(r.end.x + 8, r.end.y), "x%.1f" % m, 18 if f < 0.99 else 20, c)
@@ -197,7 +199,7 @@ func _title(sz: Vector2) -> void:
 	var y := sz.y * 0.52
 	var lines := [
 		["MOVE", Controls.label("move")],
-		["SHOT", Controls.label("shot") + "   tap fast = power x4 / hold = auto"],
+		["SHOT", Controls.label("shot") + "   tap fast = power x%d / hold = auto" % int(Player.CONC_MAX_MUL)],
 		["SPEAR + HOMING", Controls.label("side") + "   erases nearby bullets, 4 s cooldown"],
 		["PAUSE", Controls.label("pause")],
 	]

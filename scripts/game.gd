@@ -81,6 +81,7 @@ var power_mul := 1  # Form III power-up chain, carried over, reset by a miss
 var homing_fired := 0
 var spears := 0
 var clear_t := -1.0
+var boss_dmg := {}  # boss name -> {shot, spear, homing}: damage dealt (for tuning, see log_tiles)
 
 var camera: Camera3D
 var ground_blur: MeshInstance3D
@@ -413,6 +414,7 @@ func _start_stage(n: int, new_game: bool) -> void:
 	homing_fired = 0
 	spears = 0
 	clear_t = -1.0
+	boss_dmg.clear()
 	clear_field()
 	stage_no = n
 	stage_def = Stages.create(n)
@@ -495,6 +497,25 @@ func boss_destroyed(b: BossBase) -> void:
 	show_msg("STAGE CLEAR", "", 3.0)
 	sfx.play("clear")
 	print("CLEAR t=%.1f destroy=%d items=%d bonus=%d deaths=%d kills=%d tiles=%d stars=%d power3=%d power_drop=%d power_taken=%d" % [stage_t, destroy_score, item_score, bonus, deaths, kills, tiles_broken, stars_got, powers_got, powers_dropped, powers_taken])
+	if log_status:
+		log_tiles()
+
+
+## Tile density for tuning: the tiles that came in per area and per second
+## (Terrain.tally), and for the whole stage.
+func log_tiles() -> void:
+	var n := 0
+	var secs := 0.0
+	for a: String in terrain.tally:
+		var tl: Array = terrain.tally[a]
+		n += int(tl[0])
+		secs += float(tl[1])
+		print("TILES area=%s in=%d t=%.1f per_s=%.1f" % [a, tl[0], tl[1], float(tl[0]) / maxf(float(tl[1]), 0.01)])
+	print("TILES stage=%d in=%d t=%.1f per_s=%.1f" % [stage_no, n, secs, float(n) / maxf(secs, 0.01)])
+	for who: String in boss_dmg:
+		var t: Dictionary = boss_dmg[who]
+		var sum := maxf(float(t["shot"]) + float(t["spear"]) + float(t["homing"]), 0.01)
+		print("DMG boss=%s total=%d shot=%d%% spear=%d%% homing=%d%%" % [who, int(sum), int(100.0 * t["shot"] / sum), int(100.0 * t["spear"] / sum), int(100.0 * t["homing"] / sum)])
 
 
 func show_msg(m: String, sub := "", t := 2.0, warning := false) -> void:
@@ -795,7 +816,7 @@ func _collide(dt: float) -> void:
 			else:
 				var e := _enemy_at(p, 0.25)
 				if e != null:
-					damage(e, dmg, p)
+					_tally("shot", e, damage(e, dmg, p))
 					used = true
 		if used:
 			shots.remove(i)
@@ -815,7 +836,7 @@ func _collide(dt: float) -> void:
 		var d := te.hit_pos - hp
 		d.y = 0.0
 		if d.length() < te.radius + 0.5:
-			damage(te, Shots.HOMING_DMG, hp)
+			_tally("homing", te, damage(te, Shots.HOMING_DMG, hp))
 			fx.sprite(hp + Vector3(0, 0.5, 0), Vector3.ZERO, 0.6, 2.2, 0.25, Color(0.5, 0.9, 1.0), 0.0)
 			shots.homing_hit(h)
 	# spear
@@ -855,23 +876,38 @@ func _enemy_at(p: Vector3, r: float) -> Enemy:
 	return null
 
 
-func damage(e: Enemy, dmg: float, at: Vector3) -> void:
+## Damages `e`; returns the damage that landed (0 on armour), before a
+## boss rescales it.
+func damage(e: Enemy, dmg: float, at: Vector3) -> float:
 	if e.dead:
-		return
+		return 0.0
 	if e.armored:
 		fx.spark(at + Vector3(0, 0.5, 0), Color(0.7, 0.8, 1.0), 1, 0.3)
 		sfx.play("deflect")
-		return
+		return 0.0
+	var landed := dmg
 	if e.controller != null:
 		dmg = e.controller.on_hit(e, dmg)
 	e.flash = 1.0
 	fx.spark(at + Vector3(0, 0.5, 0), Color(1.0, 0.8, 0.5), 1, 0.3)
 	sfx.play("hit")
 	if dmg <= 0.0:
-		return
+		return landed
 	e.hp -= dmg
 	if e.hp <= 0.0:
 		kill(e)
+	return landed
+
+
+## Tuning: damage dealt to bosses' parts by weapon (`src`: shot, spear,
+## homing), per boss (see log_tiles).
+func _tally(src: String, e: Enemy, dmg: float) -> void:
+	if dmg <= 0.0 or not (e.controller is BossBase):
+		return
+	var info: Dictionary = (e.controller as BossBase).get_script().get_script_constant_map().get("INFO", {})
+	var who := str(info.get("name", "?"))
+	var t: Dictionary = boss_dmg.get_or_add(who, {"shot": 0.0, "spear": 0.0, "homing": 0.0})
+	t[src] += dmg
 
 
 func kill(e: Enemy) -> void:
@@ -915,7 +951,7 @@ func _spear(dt: float) -> void:
 		var in_ring := Vector2(d.x, d.z).length() < Player.SPEAR_R + e.radius
 		var in_lance := absf(d.x) < Player.SPEAR_HW + e.radius and d.z < 0.0 and d.z > -Player.SPEAR_LEN - e.radius
 		if in_ring or in_lance:
-			damage(e, dmg, e.hit_pos)
+			_tally("spear", e, damage(e, dmg, e.hit_pos))
 	terrain.spear(pp, Player.SPEAR_R, Player.SPEAR_HW, Player.SPEAR_LEN, dmg)
 
 

@@ -23,25 +23,25 @@ func _init() -> void:
 		"duct": {
 			"label": ["AREA 1", "INTAKE DUCT"],
 			"sections": [["bridge", 16, 3, 1], ["hull", 6, 5, 2, "wall"], ["bridge", 16, 4, 0], ["solar", 10, 5, 0], ["hull", 7, 4, 1, "wall"]],
-			"gap": [5.0, 12.0],
+			"gap": [14.0, 22.0],
 		},
 		"line": {
 			"label": ["AREA 2", "ASSEMBLY LINE"],
 			"sections": [["trench", 12, 6, 2], ["bridge", 16, 3, 2], ["hull", 6, 7, 2, "wall"], ["solar", 12, 4, 0], ["bridge", 16, 5, 1]],
-			"gap": [3.0, 8.0],
+			"gap": [10.0, 16.0],
 		},
 		"hall": {
 			"sections": [["bridge", 16, 3, 0], ["solar", 10, 4, 0]],
-			"gap": [8.0, 14.0],
+			"gap": [18.0, 26.0],
 		},
 		"furnace": {
 			"label": ["AREA 3", "FURNACE ROW"],
 			"sections": [["reactor", 9, 9, 2], ["bridge", 16, 4, 2], ["hull", 7, 6, 2, "wall"], ["reactor", 8, 8, 2], ["trench", 13, 7, 3]],
-			"gap": [2.0, 6.0],
+			"gap": [9.0, 14.0],
 		},
 		"boss": {
 			"sections": [["bridge", 16, 3, 0], ["solar", 12, 4, 0]],
-			"gap": [10.0, 16.0],
+			"gap": [26.0, 36.0],
 		},
 	}
 	backdrop = {

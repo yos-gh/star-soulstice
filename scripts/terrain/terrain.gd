@@ -23,6 +23,9 @@ var area := ""
 var next_in := 0.0
 var rng := RandomNumberGenerator.new()
 var last_layout := -1
+## Tuning tally: per area, the tiles that came in and the seconds the area
+## was streaming (see Game.log_tiles: tiles per second is the density).
+var tally := {}  # area -> [tiles, seconds]
 
 
 ## Switches to the areas of `def`, building their layouts the first time.
@@ -35,6 +38,7 @@ func use_stage(def: StageDef) -> void:
 			var list: Array[Dictionary] = []
 			for l: Array in def.areas[a].get("sections", []):
 				var lay := IslandGen.make(s, l[0], l[1], l[2], l[3])
+				lay["tiles"] = (lay["types"] as PackedInt32Array).size() - (lay["types"] as PackedInt32Array).count(-1)
 				lay["anchor"] = l[4] if l.size() > 4 else ("span" if l[0] == "bridge" else "")
 				list.append(lay)
 				s += def.layout_seed_step
@@ -57,6 +61,7 @@ func reset(spawn: bool) -> void:
 	area = first_area if spawn else title_area
 	next_in = 4.0
 	rng.seed = 7
+	tally.clear()
 
 
 func clear() -> void:
@@ -89,6 +94,8 @@ func tick(dt: float, speed: float) -> void:
 			continue
 		i += 1
 	if spawning and layouts.has(area) and not (layouts[area] as Array).is_empty():
+		var tl: Array = tally.get_or_add(area, [0, 0.0])
+		tl[1] += dt
 		next_in -= speed * dt
 		if next_in <= 0.0:
 			_spawn_island()
@@ -121,6 +128,7 @@ func _spawn_island() -> void:
 	else:
 		x = rng.randf_range(-2.0, 2.0)
 	place(lay, Vector3(x, Game.GROUND_Y, game.ground_top - h * Island.CELL * 0.5 - 2.0), turrets)
+	(tally[area] as Array)[0] += int(lay["tiles"])
 	var gap: Array = gaps[area]
 	next_in = h * Island.CELL + rng.randf_range(gap[0], gap[1]) + IslandGen.MARGIN * IslandGen.R * 2.0
 
