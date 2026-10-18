@@ -3,7 +3,8 @@ extends Node3D
 ## Enemy bullets on the play plane (y = 0), in packed arrays.
 ## Angles: 0 = +x (right), PI/2 = +z (down-screen).
 ##
-## Kinds (every kind comes as a round ball or a needle):
+## Kinds (every kind comes as a round ball or a teardrop needle, round head
+## first):
 ##   SHELL  physical: shootable (blocks your shots, breaks after `hp`),
 ##          low threat: the curtains of mid-size enemies and bosses. Cool
 ##          blue, dark centre, bright outline.
@@ -23,8 +24,10 @@ const MAX := 1200
 const RADIUS := [0.27, 0.23, 0.5]  # round hit radius per kind
 const NEEDLE_RADIUS := 0.18
 const SIZE := [0.68, 0.62, 1.5]  # round sprite diameter per kind
-const NEEDLE_W := 0.3
-const NEEDLE_L := 1.1
+const NEEDLE_W := 0.38  # a needle is a teardrop: this wide round head, in front
+const NEEDLE_L := 1.05  # and this long with its tail
+const BIG := 1.22  # curtains mix big and small bullets side by side
+const SMALL := 0.82
 const COLOR := [Color(0.35, 0.78, 1.0), Color(1.0, 0.5, 0.22), Color(1.0, 0.28, 0.36)]
 const LIFT := 0.4  # seconds a launched bullet takes to climb to the flight level
 
@@ -109,16 +112,20 @@ func aim(from: Vector3) -> float:
 	return atan2(d.z, d.x)
 
 
-## `count` bullets spread over `spread` degrees around `ang`; the middle
-## ones a little bigger than the edges so the fan does not look flat.
-func fan(p: Vector3, ang: float, count: int, spread: float, speed: float, k: int, owner: Object, shp := ROUND) -> void:
+## `count` bullets spread over `spread` degrees around `ang`. Big and small
+## bullets take turns across it (the middle one big), so the curtain is
+## never uniform; `sz` > 0 makes the whole volley that size instead (to
+## pair a volley of BIG with one of SMALL fired just after it).
+func fan(p: Vector3, ang: float, count: int, spread: float, speed: float, k: int, owner: Object, shp := ROUND, sz := 0.0) -> void:
 	if count == 1:
-		fire(p, ang, speed, k, owner, shp)
+		fire(p, ang, speed, k, owner, shp, 0.0, 0.0, sz if sz > 0.0 else 1.0)
 		return
 	var s := deg_to_rad(spread)
+	var mid := (count - 1) / 2
 	for i in count:
 		var f := float(i) / (count - 1)
-		fire(p, ang - s * 0.5 + s * f, speed, k, owner, shp, 0.0, 0.0, lerpf(0.9, 1.12, sin(f * PI)))
+		var big := (i - mid) % 2 == 0
+		fire(p, ang - s * 0.5 + s * f, speed, k, owner, shp, 0.0, 0.0, sz if sz > 0.0 else (BIG if big else SMALL))
 
 
 ## A ring with a gap of `gap` bullets centred on `gap_ang` (gap 0 = full);
@@ -130,7 +137,7 @@ func ring(p: Vector3, count: int, speed: float, k: int, owner: Object, offset :=
 			var d := absf(wrapf(a - gap_ang, -PI, PI))
 			if d < TAU / count * (gap * 0.5):
 				continue
-		fire(p, a, speed, k, owner, shp, 0.0, 0.0, 1.08 if i % 2 == 0 else 0.9)
+		fire(p, a, speed, k, owner, shp, 0.0, 0.0, BIG if i % 2 == 0 else SMALL)
 
 
 func radius(i: int) -> float:
@@ -262,8 +269,9 @@ func draw() -> void:
 		var k := kind[i]
 		var b: Basis
 		var aspect := 1.0
+		var dir := Vector3.ZERO
 		if shape[i] == NEEDLE:
-			var dir := vel[i].normalized()
+			dir = vel[i].normalized()
 			if dir.length_squared() < 0.5:
 				dir = Vector3(0, 0, 1)
 			b = Basis(Vector3(-dir.z, 0, dir.x) * NEEDLE_W, Vector3.UP, dir * NEEDLE_L)
@@ -271,8 +279,7 @@ func draw() -> void:
 		else:
 			var s: float = SIZE[k] * (pulse if k != SHELL else 1.0)
 			b = Basis.from_scale(Vector3(s, 1.0, s))
-		if size[i] != 1.0:
-			b = b.scaled(Vector3(size[i], 1.0, size[i]))
+		var sc := size[i]
 		# drawn just above the ships, on the view ray through its plane point so
 		# what you see lines up with what hits
 		var y := 0.32
@@ -283,8 +290,12 @@ func draw() -> void:
 			var f := 1.0 - lift[i] / LIFT
 			f = f * f * (3.0 - 2.0 * f)
 			y = lerpf(lift_y[i], 0.32, f)
-			b = b.scaled(Vector3.ONE * lerpf(0.25, 1.0, f))
+			sc *= lerpf(0.25, 1.0, f)
 			c = Color(c.r, c.g, c.b).darkened(0.55 * (1.0 - f))
-		mm.set_instance_transform(i, Transform3D(b, game.from_plane(pos[i], y)))
+		if sc != 1.0:
+			b = b.scaled(Vector3(sc, 1.0, sc))
+		# a needle's round head sits on the hit point, its tail behind it
+		var at := pos[i] - dir * ((NEEDLE_L - NEEDLE_W) * 0.5 * sc)
+		mm.set_instance_transform(i, Transform3D(b, game.from_plane(at, y)))
 		mm.set_instance_color(i, c)
 		mm.set_instance_custom_data(i, Color(1.0 if k == SHELL else 0.0, aspect, 0.0, 0.0))

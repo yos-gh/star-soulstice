@@ -6,9 +6,9 @@ render_mode unshaded, cull_disabled, shadows_disabled, fog_disabled;
 // INSTANCE_CUSTOM.x = style: 0 unbreakable (warm, white-hot core, dark rim)
 //                            1 breakable   (cool, dark centre, bright outline)
 // INSTANCE_CUSTOM.y = length / width (1 = round, > 1 = needle).
-// A needle (UV.y = 0 is its head, the way it flies) is a spindle: a sharp
-// point in front, a shorter, blunter point behind, and its colour runs from
-// hot at the head to dark at the tail so you can tell which way it goes.
+// A needle (UV.y = 1 is its head, the way it flies) is a teardrop: a round
+// head in front tapering to a point behind, its colour running from hot at
+// the head to dark at the tail so you can tell which way it goes.
 
 varying vec4 cust;
 
@@ -22,11 +22,18 @@ void fragment() {
 	float r;
 	float head = 0.5;  // 0 at the tail, 1 at the head
 	if (aspect > 1.01) {
-		float t = -d.y;
-		// width along the needle: sharper toward the head
-		float w = 1.0 - pow(abs(t), t > 0.0 ? 1.45 : 2.4);
-		r = abs(d.x) / max(w, 0.001);
-		head = smoothstep(-0.95, 0.75, t);
+		float t = d.y;
+		// along the needle in half-widths: the head is a circle of radius 1
+		// touching the front, the tail narrows from its middle to a point
+		float y = t * aspect;
+		float yc = aspect - 1.0;
+		if (y >= yc) {
+			r = length(vec2(d.x, y - yc));
+		} else {
+			float w = pow(clamp((y + aspect) / (yc + aspect), 0.0, 1.0), 0.8);
+			r = abs(d.x) / max(w, 0.001);
+		}
+		head = smoothstep(-0.9, 0.8, t);
 	} else {
 		r = length(d);
 	}
