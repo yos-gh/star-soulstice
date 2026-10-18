@@ -4,7 +4,7 @@ extends Node3D
 ## Angles: 0 = +x (right), PI/2 = +z (down-screen).
 ##
 ## Kinds (every kind comes as a round ball or a needle, a rounded bar a
-## little narrower at the tail):
+## little brighter at the head):
 ##   SHELL  physical: shootable (blocks your shots, breaks after `hp`),
 ##          low threat: the curtains of mid-size enemies and bosses. Cool
 ##          blue, dark centre, bright outline.
@@ -22,9 +22,9 @@ enum { ROUND, NEEDLE }
 
 const MAX := 1200
 const RADIUS := [0.27, 0.23, 0.5]  # round hit radius per kind
-const NEEDLE_RADIUS := 0.19
+const NEEDLE_RADIUS := 0.2
 const SIZE := [0.68, 0.62, 1.5]  # round sprite diameter per kind
-const NEEDLE_W := 0.32  # a needle is a rounded bar, a little narrower at the tail
+const NEEDLE_W := 0.36
 const NEEDLE_L := 1.1
 const BIG := 1.22  # curtains mix big and small bullets side by side
 const SMALL := 0.82

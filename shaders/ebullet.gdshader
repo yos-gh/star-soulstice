@@ -5,10 +5,9 @@ render_mode unshaded, cull_disabled, shadows_disabled, fog_disabled;
 // depth; otherwise the background depth-of-field blurs it over empty space.
 // INSTANCE_CUSTOM.x = style: 0 unbreakable (warm, white-hot core, dark rim)
 //                            1 breakable   (cool, dark centre, bright outline)
-// INSTANCE_CUSTOM.y = length / width (1 = round, > 1 = needle).
-// A needle (UV.y = 1 is its head, the way it flies) is a rounded bar a
-// little narrower at the tail, its colour running from hot at the head to
-// dark at the tail so you can tell which way it goes.
+// INSTANCE_CUSTOM.y = length / width (1 = round, > 1 = needle/capsule).
+// A needle's colour shifts a little from head (UV.y = 1, the way it flies)
+// to tail: brighter and hotter in front, a little deeper behind.
 
 varying vec4 cust;
 
@@ -19,34 +18,25 @@ void vertex() {
 void fragment() {
 	float aspect = max(cust.y, 1.0);
 	vec2 d = (UV - 0.5) * 2.0;
-	float r;
-	float head = 0.5;  // 0 at the tail, 1 at the head
-	if (aspect > 1.01) {
-		float t = d.y;
-		// a rounded bar, narrowing a little toward the tail
-		float w = mix(0.78, 1.0, t * 0.5 + 0.5);
-		vec2 q = vec2(d.x / w, t * aspect);
-		r = length(vec2(q.x, max(abs(q.y) - (aspect - 1.0), 0.0)));
-		head = smoothstep(-0.9, 0.8, t);
-	} else {
-		r = length(d);
-	}
+	vec2 q = vec2(d.x, d.y * aspect);
+	float r = length(vec2(q.x, max(abs(q.y) - (aspect - 1.0), 0.0)));
+	// 0 at the tail, 1 at the head (0.5 all over a round bullet)
+	float head = aspect > 1.01 ? smoothstep(-0.9, 0.9, d.y) : 0.5;
 	vec3 c = pow(max(COLOR.rgb, vec3(0.0)), vec3(2.2));
 	vec3 col;
 	if (cust.x < 0.5) {
 		float core = smoothstep(0.58, 0.3, r);
 		float band = smoothstep(0.74, 0.88, r);
+		vec3 body = c * 1.7;
 		if (aspect > 1.01) {
-			// white-hot head, the colour deepening and darkening to the tail
-			vec3 body = mix(c * vec3(0.7, 0.38, 0.38), c * 1.8, head);
-			col = mix(body, vec3(1.8), core * mix(0.3, 1.0, head));
-		} else {
-			col = mix(c * 1.7, vec3(1.7), core);
+			body = mix(c * vec3(1.35, 0.95, 0.9), c * 1.9, head);
+			core *= mix(0.8, 1.0, head);
 		}
+		col = mix(body, vec3(1.7), core);
 		col = mix(col, c * 0.12, band);
 	} else {
 		float rim = smoothstep(0.42, 0.62, r) * (1.0 - smoothstep(0.8, 0.88, r));
-		float lit = aspect > 1.01 ? mix(0.55, 1.2, head) : 1.0;
+		float lit = aspect > 1.01 ? mix(0.8, 1.15, head) : 1.0;
 		col = mix(c * 0.1 + vec3(0.01, 0.015, 0.03), (c * 1.1 + vec3(0.08)) * lit, rim);
 		col = mix(col, vec3(0.01, 0.02, 0.04), smoothstep(0.86, 0.94, r));
 	}
