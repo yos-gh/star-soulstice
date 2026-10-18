@@ -12,6 +12,7 @@ const KINDS := {
 	"chaser": preload("res://scripts/enemies/chaser.gd"),
 	"flanker": preload("res://scripts/enemies/flanker.gd"),
 	"racer": preload("res://scripts/enemies/racer.gd"),
+	"courier": preload("res://scripts/enemies/courier.gd"),
 	"container": preload("res://scripts/enemies/container.gd"),
 	"turret": preload("res://scripts/enemies/turret.gd"),
 	"rock": preload("res://scripts/enemies/rock.gd"),

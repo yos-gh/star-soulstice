@@ -500,9 +500,23 @@ func _emit_bullets() -> void:
 	var k: int = entry["bkind"]
 	var shp: int = entry["shape"]
 	var at := Vector3(0, 0, -6.0)
+	loops += 1
+	if k == Bullets.IRON:
+		# three armoured balls weaving down
+		for i in 3:
+			game.bullets.fire(at, PI / 2.0 + deg_to_rad(18.0) * (i - 1), 4.6, k, self)
+			game.bullets.snake(2.2, 3.0)
+		emit_t = 2.6
+		return
+	if shp < 0:
+		# big shells that burst into rings
+		for s in [-1, 1]:
+			game.bullets.fire(at, PI / 2.0 + s * 0.5, 4.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, 1.6)
+			game.bullets.split(0.9, 10)
+		emit_t = 2.4
+		return
 	var n := 8 if k == Bullets.HEAVY else 16
 	game.bullets.ring(at, n, 3.2, k, self, loops * 0.2, 0, 0.0, shp)
-	loops += 1
 
 
 # ------------------------------------------------------------ input

@@ -207,9 +207,9 @@ static func _fx(d: StageDef) -> Array:
 static func _bullets(d: StageDef) -> Array:
 	var out := []
 	for e: Array in [["SHELL  ROUND", Bullets.SHELL, Bullets.ROUND], ["SHELL  NEEDLE", Bullets.SHELL, Bullets.NEEDLE],
-			["ORB  ROUND", Bullets.ORB, Bullets.ROUND], ["ORB  NEEDLE", Bullets.ORB, Bullets.NEEDLE], ["HEAVY", Bullets.HEAVY, Bullets.ROUND]]:
+			["ORB  ROUND", Bullets.ORB, Bullets.ROUND], ["ORB  NEEDLE", Bullets.ORB, Bullets.NEEDLE], ["HEAVY", Bullets.HEAVY, Bullets.ROUND], ["IRON  SNAKING", Bullets.IRON, Bullets.ROUND], ["SHELL  SPLITTING", Bullets.SHELL, -1]]:
 		out.append({"name": e[0], "type": "bullets", "bkind": e[1], "shape": e[2], "stage": d,
-			"desc": ["物理弾：撃ち落とせる。自機のショットを遮る", "エネルギー弾：スピアか撃破でしか消えない", "重エネルギー弾：スピアでも消えない"][e[1]]})
+			"desc": "大きな物理弾がはじけて物理弾の輪になる（ボス）" if e[2] == -1 else ["物理弾：撃ち落とせる。自機のショットを遮る", "エネルギー弾：スピアか撃破でしか消えない", "重エネルギー弾：スピアでも消えない", "鉄球弾（ボス）：蛇行して飛ぶ。撃ち落とせず、スピアでも消えず、自機のショットを遮る"][e[1]]})
 	return out
 
 

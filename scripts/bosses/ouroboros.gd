@@ -9,12 +9,13 @@ extends BossBase
 ## and the head strikes straight down it, brakes to a stop short of the
 ## bottom edge, swings round away from the ship and climbs back to coil
 ## again, the train behind it running the same line. Cars can be shot off
-## one by one (the train closes up); destroying the head ends it. It
-## leaves after a while.
+## one by one (the train closes up); destroying the head ends it. With all
+## its cars gone it goes berserk: faster, a tighter coil, rings of shells
+## from the head and quicker strikes. It leaves after a while.
 
 const INFO := {
 	"name": "OUROBOROS", "role": "mid",
-	"desc": "装甲列車：自機の前でとぐろを巻いて回り、車両が輪の外へ物理弾をまく。止まって予兆（線を示す）のあと、頭が一直線に突っ込み、下端の手前で止まって自機と反対側へ回り込み戻る。車両は 1 両ずつ壊せる。頭を壊すと撃破",
+	"desc": "装甲列車：自機の前でとぐろを巻いて回り、車両が輪の外へ物理弾をまく。止まって予兆（線を示す）のあと、頭が一直線に突っ込み、下端の手前で止まって自機と反対側へ回り込み戻る。車両は 1 両ずつ壊せる。車両を全部失うと発狂：速く小さくとぐろを巻き、頭から物理弾の輪、突進も早まる。頭を壊すと撃破",
 	"demos": [["FULL", ""], ["STRIKE", "strike"]],
 }
 const HEAD_HP := 560.0
@@ -51,6 +52,8 @@ var turn_sign := 1.0
 var cycle := 0
 var fired := {}
 var boom_t := 0.0
+var berserk := false  # all cars gone
+var ring_t := 0.0
 
 
 func setup(g: Game) -> void:
@@ -93,6 +96,9 @@ func on_part_killed(e: Enemy) -> void:
 		slots.remove_at(i)
 		car_t.remove_at(i)
 		game.shake(0.4)
+		if cars.is_empty() and not berserk:
+			berserk = true
+			game.show_msg("OUROBOROS BERSERK", "", 1.2, true)
 
 
 func _defeat() -> void:
@@ -154,14 +160,14 @@ func tick(dt: float) -> void:
 			_needles(3.4)
 			if life_t > LIFE:
 				_go("escape")
-			elif st > (FIRST_COIL if cycle == 0 else COIL_TIME):
+			elif st > (FIRST_COIL if cycle == 0 or berserk else COIL_TIME):
 				_begin_aim()
 		"aim":
 			# stop and turn to the marked line
 			spd = move_toward(spd, 0.0, 25.0 * dt)
 			hd = _turn(hd, _ang(lock - hpos), 4.0 * dt)
 			_move(dt)
-			if st > AIM_TIME:
+			if st > AIM_TIME * (0.8 if berserk else 1.0):
 				hd = _ang(lock - hpos)
 				_go("strike")
 		"strike":
@@ -227,7 +233,7 @@ func _go(s: String) -> void:
 func _begin_aim() -> void:
 	var pp := game.player.position
 	lock = Vector3(clampf(pp.x, -game.field_hw + 3.0, game.field_hw - 3.0), 0, minf(pp.z, game.field_bottom - 5.0))
-	game.warn(head, AIM_TIME, Game.Warn.MOVE, head.radius, lock)
+	game.warn(head, AIM_TIME * (0.8 if berserk else 1.0), Game.Warn.MOVE, head.radius, lock)
 	game.sfx.play("slam")
 	_go("aim")
 
@@ -237,9 +243,9 @@ func _coil_steer(dt: float) -> void:
 	var d := _flat(hpos - center)
 	var dist := maxf(d.length(), 0.01)
 	var tangent := Vector3(-d.z, 0, d.x) / dist
-	var radial := -d / dist * clampf((dist - RING_R) / 2.5, -1.0, 1.0)
-	hd = _turn(hd, _ang(tangent + radial * 1.3), COIL_TURN * dt)
-	spd = move_toward(spd, SPEED, 10.0 * dt)
+	var radial := -d / dist * clampf((dist - (RING_R * 0.7 if berserk else RING_R)) / 2.5, -1.0, 1.0)
+	hd = _turn(hd, _ang(tangent + radial * 1.3), COIL_TURN * (1.6 if berserk else 1.0) * dt)
+	spd = move_toward(spd, SPEED, 10.0 * dt) if not berserk else move_toward(spd, SPEED * 1.4, 10.0 * dt)
 	_move(dt)
 
 
@@ -254,6 +260,13 @@ func _move(dt: float) -> void:
 
 ## The cars spray shells out of the ring as it turns, big and small by turns.
 func _spray(dt: float) -> void:
+	if berserk:
+		# the head alone: rings of shells, big and small by turns
+		ring_t -= dt
+		if ring_t <= 0.0 and game.can_fire(hpos):
+			ring_t = 0.9
+			game.bullets.ring(hpos, 14, 4.6, Bullets.SHELL, self, life_t * 1.3)
+		return
 	for i in cars.size():
 		car_t[i] -= dt
 		if car_t[i] > 0.0:

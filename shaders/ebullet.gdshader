@@ -5,6 +5,7 @@ render_mode unshaded, cull_disabled, shadows_disabled, fog_disabled;
 // depth; otherwise the background depth-of-field blurs it over empty space.
 // INSTANCE_CUSTOM.x = style: 0 unbreakable (warm, white-hot core, dark rim)
 //                            1 breakable   (cool, dark centre, bright outline)
+//                            2 iron (shaded steel ball, lit rim, hot core)
 // INSTANCE_CUSTOM.y = length / width (1 = round, > 1 = needle/capsule).
 // A needle's colour shifts a little from head (UV.y = 1, the way it flies)
 // to tail: brighter and hotter in front, a little deeper behind.
@@ -34,6 +35,16 @@ void fragment() {
 		}
 		col = mix(body, vec3(1.7), core);
 		col = mix(col, c * 0.12, band);
+	} else if (cust.x > 1.5) {
+		// IRON: a shaded steel ball with a lit rim and a hot core
+		float z = sqrt(max(1.0 - r * r, 0.0));
+		float lit = clamp(dot(normalize(vec3(d.x, -d.y, z)), normalize(vec3(-0.5, 0.6, 0.65))), 0.0, 1.0);
+		col = mix(vec3(0.03, 0.025, 0.05), c * 0.55, lit);
+		float rim = smoothstep(0.66, 0.74, r) * (1.0 - smoothstep(0.84, 0.9, r));
+		col = mix(col, c * 1.6, rim);
+		float core = smoothstep(0.3, 0.12, r);
+		col = mix(col, c * 2.2 + vec3(0.3), core);
+		col = mix(col, vec3(0.02, 0.01, 0.04), smoothstep(0.9, 0.96, r));
 	} else {
 		float rim = smoothstep(0.42, 0.62, r) * (1.0 - smoothstep(0.8, 0.88, r));
 		float lit = aspect > 1.01 ? mix(0.8, 1.15, head) : 1.0;

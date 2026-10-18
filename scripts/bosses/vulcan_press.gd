@@ -7,18 +7,24 @@ extends BossBase
 ## the ship's lane, locks on (the lane is marked, chevrons down to the
 ## strike point), drives down the lane on its telescoping ram, throws up a
 ## spray of shells where it lands, holds the lane shut a moment and draws
-## back. Two vent guns at the corners fire shell fans (big, then small),
-## the core fires telegraphed needle bursts, and hatches let out darts.
-## Phase B (both hammers gone, or after a while): OVERDRIVE. The plates
-## spin faster; each round the whole press comes down the tunnel (marked
-## first), spins a shell spiral from the core while the hammers left
-## strike both sides of the ship at once, then draws back. Every round
-## ends in a quiet gap to come in with the Spear.
+## back. The ram runs right to the bottom of the screen: get out of the
+## lane. Two vent guns at the corners fire shell fans (big, then small),
+## the core fires telegraphed needle bursts, and before each quiet gap two
+## energy couriers fly out (shoot them for homing energy).
+## OVERDRIVE (after a while, hammers still up): each round the whole press
+## comes down the tunnel (marked first), spins a shell spiral from the core
+## while both hammers strike either side of the ship at once.
+## MELTDOWN (both hammers destroyed): the crucible boils over. The press
+## stays forward and sways; each round it sweeps a hose of shells across
+## the tunnel, fires armoured IRON slugs down the lanes either side of the
+## ship from the empty hammer sockets (marked; they stop your shots), lobs
+## shells that burst into rings and fires a wide needle burst, then rests
+## a moment. Every round ends in a quiet gap to come in with the Spear.
 
 const INFO := {
 	"name": "VULCAN PRESS", "role": "boss",
-	"desc": "核（坩堝）だけが弱点。核のまわりを回る 3 枚の装甲板の隙間を撃ち抜く。2 基のハンマーが自機の列に寄って予兆のあと打ち下ろし、着地点から物理弾が散る。角の砲塔は扇状の物理弾。ハンマーを失うか時間で暴走：本体ごと迫り出して渦巻き弾、残ったハンマーが自機の両脇を同時に叩く",
-	"demos": [["FULL", ""], ["OVERDRIVE", "B"]],
+	"desc": "核（坩堝）だけが弱点。核のまわりを回る 3 枚の装甲板の隙間を撃ち抜く。2 基のハンマーが自機の列に寄って予兆のあと画面の下端まで打ち下ろし、物理弾が上へ散る。角の砲塔は扇状の物理弾。静かな間の前に運び屋。時間で暴走：本体ごと迫り出して渦巻き弾、ハンマーが自機の両脇を同時に叩く。ハンマーを両方失うと発狂（MELTDOWN）：揺れながら物理弾を薙ぎ払い、空いた穴から破壊不能の大型弾を自機の両脇の列へ、はじけて輪になる弾、広い針弾",
+	"demos": [["FULL", ""], ["OVERDRIVE", "B"], ["MELTDOWN", "C"]],
 }
 const CORE_HP := 1400.0
 const CORE_SCORE := 60000
@@ -33,12 +39,16 @@ const HEAD_REST := 1.6  # hammer head below the rail when drawn back
 const VENT_OFF := [Vector3(-10.5, 0, 1.8), Vector3(10.5, 0, 1.8)]
 const ARMOUR := [[Vector3(-5.8, 0, -0.6), 3.0], [Vector3(5.8, 0, -0.6), 3.0], [Vector3(-10.5, 0, -1.2), 2.2], [Vector3(10.5, 0, -1.2), 2.2], [Vector3(0, 0, -2.2), 2.4]]
 const TUBE_LEN := 6.0
+const RODS := 6  # hit zones along a ram (they stop shots and ram; the lane is also checked whole)
+const RAM_HW := 0.7  # half width of a ram, for touching the ship
 const AIM_T := 1.0
 const DRIVE_T := 0.18
 const HOLD_T := 0.55
 const BACK_T := 1.1
 const CYCLE_A := 9.0
 const CYCLE_B := 10.0
+const CYCLE_C := 8.0
+const MELT_DOWN := 2.5  # how far forward the press stays in MELTDOWN
 const ADVANCE := 4.0  # how far the press comes down in OVERDRIVE
 const ENRAGE_T := 55.0
 
@@ -51,7 +61,7 @@ var armour: Array[Enemy] = []
 var hammers: Array[Dictionary] = []
 var center := Vector3.ZERO
 var rest_z := 0.0
-var phase := 0  # 0 enter, 1 A, 2 B (overdrive), 3 dying
+var phase := 0  # 0 enter, 1 A, 2 B (overdrive), 3 C (meltdown), 4 dying
 var st := 0.0
 var fight_t := 0.0
 var cycle_t := 0.0
@@ -60,7 +70,9 @@ var fired := {}
 var plate_a := 0.0
 var spiral_a := 0.0
 var spiral_t := 0.0
-var hatch_t := 6.0
+var muzzles: Array[Enemy] = []  # where MELTDOWN's slugs leave (marked by the lock-ons)
+var lanes := PackedFloat32Array()
+var hose_t := 0.0
 var dying_t := 0.0
 var destroyed := false
 
@@ -90,7 +102,7 @@ func setup(g: Game) -> void:
 		h.energy_drop = 14.0
 		h.blast = 3.0
 		var rods: Array[Enemy] = []
-		for k in 3:
+		for k in RODS:
 			var r := game.spawn_part(self, "", 0.55)
 			r.armored = true
 			r.intangible = true
@@ -119,6 +131,11 @@ func setup(g: Game) -> void:
 		e.armored = true
 		e.hp = 1e9
 		armour.append(e)
+	for k in 2:
+		var m := game.spawn_part(self, "", 0.8)
+		m.intangible = true
+		m.ram = false
+		muzzles.append(m)
 	hull = MeshInstance3D.new()
 	hull.mesh = Vox.get_mesh("press_hull")
 	add_child(hull)
@@ -147,14 +164,19 @@ func on_part_killed(e: Enemy) -> void:
 		return
 	for h in hammers:
 		if h["head"] == e:
-			h["dead"] = true
-			for r: Enemy in h["rods"]:
-				game.remove_enemy(r)
-			for m: MeshInstance3D in h["tubes"]:
-				m.visible = false
+			_drop_hammer(h)
 			game.shake(0.8)
 	if vents.has(e):
 		game.shake(0.5)
+
+
+## A hammer is gone: its ram goes with it.
+func _drop_hammer(h: Dictionary) -> void:
+	h["dead"] = true
+	for r: Enemy in h["rods"]:
+		game.remove_enemy(r)
+	for m: MeshInstance3D in h["tubes"]:
+		m.visible = false
 
 
 func hammers_alive() -> int:
@@ -181,19 +203,27 @@ func tick(dt: float) -> void:
 			fight_t += dt
 			cycle_t += dt
 			_round_a()
-			_hatches(dt)
 			if cycle_t >= CYCLE_A:
 				_next_round()
-			if hammers_alive() == 0 or fight_t > ENRAGE_T:
+			if hammers_alive() == 0:
+				_meltdown()
+			elif fight_t > ENRAGE_T:
 				_overdrive()
 		2:
 			fight_t += dt
 			cycle_t += dt
 			_round_b(dt)
-			_hatches(dt)
 			if cycle_t >= CYCLE_B:
 				_next_round()
+			if hammers_alive() == 0:
+				_meltdown()
 		3:
+			fight_t += dt
+			cycle_t += dt
+			_round_c(dt)
+			if cycle_t >= CYCLE_C:
+				_next_round()
+		4:
 			dying_t += dt
 			if int(dying_t * 8.0) != int((dying_t - dt) * 8.0):
 				var off := Vector3(randf_range(-11, 11), 0, randf_range(-3.5, 3.5))
@@ -215,7 +245,7 @@ func tick(dt: float) -> void:
 					q.visible = false
 				game.boss_destroyed(self)
 				return
-	plate_a += dt * (2.5 if phase == 2 else 1.5)
+	plate_a += dt * ([1.5, 1.5, 2.5, 3.2, 1.5][phase])
 	for i in hammers.size():
 		_hammer(i, dt)
 	_place(dt)
@@ -254,6 +284,8 @@ func _round_a() -> void:
 		_vents(Bullets.BIG)
 	if _once("v2s", 6.45):
 		_vents(Bullets.SMALL)
+	if _once("couriers", 5.6):
+		_couriers()
 
 
 ## Phase B: the press comes down (marked), spirals and strikes both sides
@@ -291,6 +323,8 @@ func _round_b(dt: float) -> void:
 		_vents(Bullets.BIG)
 	if _once("vs", 8.25):
 		_vents(Bullets.SMALL)
+	if _once("couriers", 6.6):
+		_couriers()
 
 
 func _overdrive() -> void:
@@ -299,6 +333,65 @@ func _overdrive() -> void:
 	cycle_t = 0.0
 	fired.clear()
 	game.show_msg("PRESS OVERDRIVE", "", 1.5)
+
+
+## Both hammers gone: MELTDOWN, the press's last stand.
+func _meltdown() -> void:
+	phase = 3
+	st = 0.0
+	cycle_t = 0.0
+	fired.clear()
+	hose_t = 0.0
+	game.show_msg("PRESS MELTDOWN", "", 1.5, true)
+	game.shake(1.0)
+
+
+## Phase C: the press stays forward and sways. A hose of shells sweeps
+## across, slugs fire down the lanes either side of the ship, shells burst
+## into rings, a wide needle burst, then a rest (couriers fly out).
+func _round_c(dt: float) -> void:
+	center.z = move_toward(center.z, rest_z + MELT_DOWN, 3.0 * dt)
+	center.x = sin(st * 0.5) * 3.0
+	var cp := center + CORE_OFF + Vector3(0, 0, 1.4)
+	# the hose: a stream of shells swinging from one side to the other
+	if cycle_t < 2.2 and game.can_fire(cp):
+		hose_t -= dt
+		if hose_t <= 0.0:
+			hose_t = 0.07
+			var a := PI / 2.0 + sin(cycle_t * 2.6) * 1.05
+			game.bullets.fire(cp, a, 6.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG)
+			game.bullets.fire(cp, a + 0.12, 6.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.SMALL)
+	# slugs from the empty hammer sockets down the lanes beside the ship
+	if _once("w_slug", 2.4):
+		var px := game.player.position.x
+		lanes = PackedFloat32Array([clampf(px - 3.2, -12.0, 12.0), clampf(px + 3.2, -12.0, 12.0)])
+		_place(0.0)
+		for k in 2:
+			game.warn(muzzles[k], 0.8, Game.Warn.MOVE, 0.9, Vector3(lanes[k], 0, game.field_bottom + 1.0))
+		game.sfx.play("slam")
+	if _once("slug", 3.2):
+		for k in 2:
+			var at: Vector3 = muzzles[k].position
+			if game.combat_on():
+				game.bullets.fire(at, PI / 2.0, 13.0, Bullets.IRON, self)
+		game.shake(0.4)
+	if _once("split", 3.6) and game.can_fire(cp):
+		# three big shells that burst into rings
+		for s in [-1, 0, 1]:
+			game.bullets.fire(cp, game.bullets.aim(cp) + s * deg_to_rad(25.0), 4.5, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, 1.6)
+			game.bullets.split(0.9, 10)
+	if _once("v", 4.4):
+		_vents(Bullets.BIG)
+	if _once("vs", 4.65):
+		_vents(Bullets.SMALL)
+	if _once("w_core", 5.0):
+		game.warn(core, Enemy.WINDUP_SHOT + 0.15, Game.Warn.SHOT, core.radius)
+	if _once("core", 5.0 + Enemy.WINDUP_SHOT + 0.15):
+		var at := core.position + Vector3(0, 0, 1.6)
+		if game.can_fire(at):
+			game.bullets.fan(at, game.bullets.aim(at), 7, 30.0, 9.5, Bullets.ORB, self, Bullets.NEEDLE)
+	if _once("couriers", 6.2):
+		_couriers()
 
 
 func _smooth(f: float) -> float:
@@ -316,7 +409,8 @@ func _strike(h: Dictionary, x: float, exact := false) -> void:
 		return
 	h["x"] = lx
 	var head_rest := center.z + RAIL_Z + HEAD_REST
-	var tz := clampf(game.player.position.z + 0.5, head_rest + 4.0, game.field_bottom - 1.0)
+	# right down to the bottom edge of the screen: the whole lane closes
+	var tz := game.field_bottom + 1.2
 	h["target"] = Vector3(lx, 0, tz)
 	h["to_ext"] = tz - head_rest
 	h["state"] = "aim"
@@ -373,6 +467,11 @@ func _hammer(i: int, dt: float) -> void:
 	var out: bool = h["ext"] > 2.0
 	for r: Enemy in h["rods"]:
 		r.intangible = not out
+	if out:
+		var pp := game.player.position
+		var rail := center.z + RAIL_Z
+		if absf(pp.x - float(h["x"])) < RAM_HW + Player.HIT_R and pp.z > rail and pp.z < rail + HEAD_REST + float(h["ext"]):
+			game.touch_player("press ram")
 
 
 ## Hammer k strikes, unless the ship is out of its reach (or it is gone)
@@ -399,8 +498,9 @@ func _tracker() -> int:
 	return -1
 
 
-## The hammer lands: a shake, a ring of dust and a spray of shells thrown
-## up and out from the strike point (not down: the ship is below).
+## The hammer lands at the bottom edge: a shake, a ring of dust and a spray
+## of shells thrown up the screen from it (not along the bottom, where the
+## ship is).
 func _impact(h: Dictionary) -> void:
 	var at: Vector3 = (h["head"] as Enemy).position
 	game.shake(0.6)
@@ -410,10 +510,10 @@ func _impact(h: Dictionary) -> void:
 	game.sfx.play("exp_s")
 	if not game.combat_on():
 		return
-	var n := 9
+	var n := 7
 	for i in n:
-		var a := -PI / 2.0 + deg_to_rad(-100.0 + 200.0 * i / (n - 1))
-		game.bullets.fire(at, a, 3.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if i % 2 == 0 else Bullets.SMALL)
+		var a := -PI / 2.0 + deg_to_rad(-60.0 + 120.0 * i / (n - 1))
+		game.bullets.fire(at - Vector3(0, 0, 1.0), a, 3.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if i % 2 == 0 else Bullets.SMALL)
 
 
 ## Both vent guns: a fan of shells toward the ship (`size` BIG leads, SMALL follows).
@@ -433,13 +533,15 @@ func _needles() -> void:
 		game.bullets.fan(at, game.bullets.aim(at), 5, 18.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 
 
-func _hatches(dt: float) -> void:
-	hatch_t -= dt
-	if hatch_t > 0.0:
-		return
-	hatch_t = 10.0
-	for s in [-1, 1]:
-		game.spawn_enemy("dart", {"x": center.x + s * 12.5, "z": center.z + 1.0, "vx": s * 4.0, "vz": 9.0, "turn_t": 0.5, "turn": -s * 1.6, "turn_dur": 1.0, "fire_at": 0.9, "counts": false})
+## Two energy couriers out of the hatches at the hull's ends: shot down,
+## they spill energy for homing lasers.
+func _couriers() -> void:
+	for s: Array in Formations.new(game).couriers(0.0, center + Vector3(0, 0, 0.5)):
+		var p: Dictionary = s[2]
+		p["p0"] = Vector3(signf(p["p0"].x) * 12.5 + center.x, 0, center.z + 1.0)
+		p["x"] = p["p0"].x
+		p["z"] = p["p0"].z
+		game.spawn_enemy(s[1], p)
 
 
 func _place(dt: float) -> void:
@@ -470,12 +572,15 @@ func _place(dt: float) -> void:
 			var front := rail + ext * (1.0 - k / 3.0)
 			(tubes[k] as MeshInstance3D).position = Vector3(x, 0.0, front - TUBE_LEN * 0.5)
 		var rods: Array = h["rods"]
-		for k in 3:
-			(rods[k] as Enemy).position = Vector3(x, 0, rail + ext * (0.2 + 0.27 * k))
+		for k in RODS:
+			(rods[k] as Enemy).position = Vector3(x, 0, rail + ext * (k + 0.5) / RODS)
+	for k in muzzles.size():
+		muzzles[k].position = Vector3(lanes[k] if lanes.size() > k else center.x, 0, center.z + RAIL_Z + 0.5)
+		muzzles[k].hit_pos = muzzles[k].position
 
 
 func _parts() -> Array:
-	var out: Array = [core] + plates + vents + armour
+	var out: Array = [core] + plates + vents + armour + muzzles
 	for h in hammers:
 		out.append(h["head"])
 		out += h["rods"]
@@ -483,18 +588,19 @@ func _parts() -> Array:
 
 
 func gauge() -> Dictionary:
-	if phase < 1 or phase >= 3:
+	if phase < 1 or phase >= 4:
 		return {}
 	return {"frac": core.hp / core.max_hp, "color": Color(1.0, 0.55, 0.2), "name": INFO["name"], "name_color": Color(1.0, 0.8, 0.6), "x": 0.2, "w": 0.6, "h": 8.0, "name_y": 72.0}
 
 
 func force_defeat() -> void:
-	if phase < 3:
+	if phase < 4:
 		core.armored = false
 		game.kill(core)
 
 
-## "B": straight into OVERDRIVE, hammers still up.
+## "B": straight into OVERDRIVE, hammers still up. "C": into MELTDOWN, the
+## hammers gone.
 func viewer_skip(to: String) -> void:
 	if to == "B":
 		center.z = rest_z
@@ -504,16 +610,23 @@ func viewer_skip(to: String) -> void:
 		fired.clear()
 		_arm(false)
 		_place(0.0)
-
+	elif to == "C":
+		center.z = rest_z
+		_arm(false)
+		for h in hammers:
+			game.remove_enemy(h["head"])
+			_drop_hammer(h)
+		_meltdown()
+		_place(0.0)
 
 func debug_state() -> String:
-	var names := ["enter", "A", "B (overdrive)", "dying"]
+	var names := ["enter", "A", "B (overdrive)", "C (meltdown)", "dying"]
 	return "phase %s %.1fs  core %d/%d  hammers %d  round %d %.1fs" % [names[phase], st, int(maxf(core.hp, 0.0)), int(CORE_HP), hammers_alive(), cycle, cycle_t]
 
 
 func _die() -> void:
 	defeated = true
-	phase = 3
+	phase = 4
 	dying_t = 0.0
 	for h in hammers:
 		if not h["dead"]:

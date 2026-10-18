@@ -810,7 +810,11 @@ func _collide(dt: float) -> void:
 			var sh := bullets.shoot_shell(p, 0.2, dmg)
 			if sh.x != INF:
 				used = true
-				if sh.y > 0.5:
+				if sh.y > 1.5:
+					# glanced off an armoured IRON ball
+					fx.spark(Vector3(sh.x, 0.4, sh.z), Color(0.8, 0.7, 1.0), 1, 0.3)
+					sfx.play("deflect")
+				elif sh.y > 0.5:
 					fx.spark(Vector3(sh.x, 0.4, sh.z), Color(0.45, 0.8, 1.0), 3, 0.35)
 					add_score(10, true)
 			else:
@@ -861,6 +865,17 @@ func _collide(dt: float) -> void:
 					break
 		if hit and not god:
 			_player_hit()
+
+
+## A boss's solid part that is not a round hit zone (a hammer's ram) touched
+## the ship: the same as being rammed.
+func touch_player(src: String) -> void:
+	if not player.alive or player.entering > 0.0 or player.invuln > 0.0 or state != State.PLAY:
+		return
+	if log_status:
+		print("HIT by %s t=%.1f" % [src, play_t])
+	if not god:
+		_player_hit()
 
 
 func _enemy_at(p: Vector3, r: float) -> Enemy:

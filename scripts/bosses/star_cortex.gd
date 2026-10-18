@@ -4,23 +4,35 @@ extends BossBase
 ## (two blocks on the flanks; a channel in front of the eye lets shots in);
 ## four pods at the corners fire shell fans; the eye is only vulnerable while
 ## its shutters are open, and then it answers with light energy patterns.
-## Phase A: pods + eye cycle, hatches release darts.
-## Phase B (pods gone or after a while): the fortress sways, spins shell
-## spirals while shut and adds heavy orbs (not erasable by the Spear) when
-## open. There are quiet gaps in every cycle to come in with the Spear.
+## Phase A: the pods fire shell fans; the eye opens for longer than it is
+## shut, and while open fires a needle shotgun, a pair of serpents (armoured
+## IRON balls that weave down at the ship and stop your shots, after the
+## NES Star Soldier's big bullets; announced) and a flower of shell rings.
+## Every other round two energy couriers fly out just before it opens.
+## Phase B, ENRAGED (pods gone or after a while): the fortress sways, the
+## eye opens even more, the empty pod sockets spin shell spirals while it
+## is shut, and each opening brings three serpents, a longer flower, a wide
+## needle shotgun and shells that burst into rings. There is a quiet moment
+## in every round to come in with the Spear.
 
 const INFO := {
 	"name": "STAR CORTEX", "role": "boss",
-	"desc": "目が開いた時だけ効く。ポッドは扇状の物理弾。ポッドを失うか時間で怒り状態に",
-	"demos": [["FULL", ""], ["PHASE B", "B"]],
+	"desc": "目が開いた時だけ効く（閉じている時間より長く開く）。開くと針弾・蛇行する大型弾（破壊不能でショットを防ぐ、予兆あり）・花びら状の物理弾。ポッドは扇状の物理弾。ポッドを失うか時間で発狂：揺れながら、閉じている間は空いた穴から渦巻き弾、開くと大型弾 3 つ・長い花びら・広い散弾・はじけて輪になる弾。開く前に運び屋を出す",
+	"demos": [["FULL", ""], ["ENRAGED", "B"]],
 }
-const EYE_HP := 800.0
+const EYE_HP := 1000.0
 const EYE_SCORE := 50000
 const POD_HP := 90.0
 const POD_SCORE := 5000
 const POD_OFF := [Vector3(-5.6, 0, -2.4), Vector3(5.6, 0, -2.4), Vector3(-4.3, 0, 3.3), Vector3(4.3, 0, 3.3)]
 const ARMOUR_OFF := [Vector3(-4.0, 0, 0.0), Vector3(4.0, 0, 0.0)]
 const ARMOUR_R := 2.7
+## the eye: seconds shut, then open, per round (phase A, ENRAGED)
+const CLOSED_A := 3.0
+const OPEN_A := 4.4
+const CLOSED_B := 2.0
+const OPEN_B := 4.6
+const ENRAGE_T := 45.0
 
 var hull: MeshInstance3D
 var armour: Array[Enemy] = []
@@ -38,7 +50,9 @@ var open_want := false
 var fired := {}
 var spiral_a := 0.0
 var spiral_t := 0.0
-var hatch_t := 5.0
+var rounds := 0
+var serpent_to := Vector3.ZERO
+var flower_a := 0.0
 var pod_t := 1.0
 var pod_k := 0
 var destroyed := false
@@ -143,31 +157,25 @@ func tick(dt: float) -> void:
 				game.boss_fight_started()
 		1:
 			fight_t += dt
-			_eye_cycle(dt, 4.6, 3.2)
+			_eye_cycle(dt, CLOSED_A, OPEN_A)
 			_pods(dt)
-			hatch_t -= dt
-			if hatch_t <= 0.0:
-				hatch_t = 8.0
-				for s in [-1, 1]:
-					game.spawn_enemy("dart", {"x": center.x + s * 6.0, "z": center.z + 1.0, "vx": s * 4.0, "vz": 9.0, "turn_t": 0.5, "turn": -s * 1.6, "turn_dur": 1.0, "fire_at": 0.9, "counts": false})
-			if pods_alive() == 0 or fight_t > 45.0:
-				phase = 2
-				st = 0.0
-				cycle_t = 0.0
-				fired.clear()
-				game.show_msg("CORTEX ENRAGED", "", 1.5)
+			if pods_alive() == 0 or fight_t > ENRAGE_T:
+				_enrage()
 		2:
 			fight_t += dt
-			center.x = sin(st * 0.45) * 4.0
-			_eye_cycle(dt, 3.2, 3.4)
+			center.x = sin(st * 0.6) * 5.0
+			_eye_cycle(dt, CLOSED_B, OPEN_B)
 			_pods(dt)
-			if not open_want and cycle_t > 0.6 and cycle_t < 2.8:
+			if not open_want and cycle_t > 0.2 and cycle_t < CLOSED_B - 0.1:
+				# the pod sockets bleed fire while the eye is shut
 				spiral_t -= dt
 				if spiral_t <= 0.0:
 					spiral_t = 0.16
-					spiral_a += 0.42
-					for arm in 3:
-						game.bullets.fire(center + Vector3(0, 0, 0.5), spiral_a + arm * TAU / 3.0, 5.5, Bullets.SHELL, self)
+					spiral_a += 0.33
+					for k in 4:
+						var at: Vector3 = center + POD_OFF[k]
+						if game.can_fire(at):
+							game.bullets.fire(at, spiral_a + k * PI / 2.0, 4.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if k % 2 == 0 else Bullets.SMALL)
 		3:
 			dying_t += dt
 			if int(dying_t * 8.0) != int((dying_t - dt) * 8.0):
@@ -192,33 +200,79 @@ func tick(dt: float) -> void:
 				return
 	open = move_toward(open, 1.0 if open_want else 0.0, dt * 2.5)
 	eye.armored = open < 0.7 or phase == 3
-	eye.model.rotation.y += dt * 0.6
+	eye.model.rotation.y += dt * (1.8 if phase == 2 else 0.6)
 	_place()
 
 
+## Pods gone (or time up): the fortress rages. It sways, the eye opens more
+## often, the empty sockets spin shell spirals while it is shut, and every
+## opening brings three serpents, a longer flower and a wider shotgun.
+func _enrage() -> void:
+	phase = 2
+	st = 0.0
+	cycle_t = 0.0
+	fired.clear()
+	game.show_msg("CORTEX ENRAGED", "", 1.5, true)
+	game.shake(0.8)
+
+
+## One round of the eye: shut for `closed_time`, then open for `open_time`
+## with its attacks, each energy shot announced on the eye.
 func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
+	if cycle_t == 0.0:
+		rounds += 1
+		if rounds % 2 == 1:
+			# couriers out just before the eye opens: their energy feeds a
+			# Spear + homing salvo into it
+			for s: Array in Formations.new(game).couriers(0.0, center + Vector3(0, 0, 1.0)):
+				game.spawn_enemy(s[1], s[2])
 	cycle_t += dt
 	open_want = cycle_t > closed_time and cycle_t < closed_time + open_time
 	var c := closed_time
+	var w := Enemy.WINDUP_SHOT
 	if open_want:
-		# each energy volley is telegraphed on the eye (heavy orbs in red)
-		var w := Enemy.WINDUP_SHOT
-		_warn_at("shotgun1", c + 0.6, w, Game.Warn.SHOT)
-		if _fire_once("shotgun1", c + 0.6):
-			game.bullets.fan(eye.position, game.bullets.aim(eye.position), 5, 14.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
-		if phase == 2:
-			_warn_at("heavy", c + 1.4, 0.7, Game.Warn.MOVE)
-			if _fire_once("heavy", c + 1.4):
-				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 3, 30.0, 4.6, Bullets.HEAVY, self)
-		_warn_at("ring", c + 2.0, w, Game.Warn.SHOT)
-		if _fire_once("ring", c + 2.0):
-			game.bullets.ring(eye.position, 14, 4.8, Bullets.ORB, self, 0.0, 3, game.bullets.aim(eye.position))
-		_warn_at("shotgun2", c + 2.7, w, Game.Warn.SHOT)
-		if _fire_once("shotgun2", c + 2.7):
-			game.bullets.fan(eye.position, game.bullets.aim(eye.position), 5, 16.0, 9.5, Bullets.ORB, self)
+		if phase == 1:
+			_warn_at("shotgun1", c + 0.3 + w, w, Game.Warn.SHOT)
+			if _fire_once("shotgun1", c + 0.3 + w):
+				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 5, 14.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
+			_serpents(c + 1.2, 2, 14.0)
+			_flower(c + 2.4, 3, 16, 4.0)
+			_warn_at("shotgun2", c + 3.6 + w, w, Game.Warn.SHOT)
+			if _fire_once("shotgun2", c + 3.6 + w):
+				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 5, 16.0, 9.5, Bullets.ORB, self)
+		else:
+			_serpents(c + 0.2, 3, 22.0)
+			_flower(c + 1.4, 4, 20, 4.6)
+			_warn_at("shotgun1", c + 2.9 + w, w, Game.Warn.SHOT)
+			if _fire_once("shotgun1", c + 2.9 + w):
+				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 7, 28.0, 9.5, Bullets.ORB, self, Bullets.NEEDLE)
+			if _fire_once("split", c + 3.8):
+				# two big shells that burst into rings
+				for s in [-1, 1]:
+					game.bullets.fire(eye.position, game.bullets.aim(eye.position) + s * deg_to_rad(30.0), 4.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, 1.6)
+					game.bullets.split(0.8, 10)
 	if cycle_t > closed_time + open_time + 0.3:
 		cycle_t = 0.0
 		fired.clear()
+
+
+## The boss's own attack (after the big bullets of the NES Star Soldier):
+## `count` armoured IRON balls that cannot be shot down or erased and stop
+## your shots, weaving down toward where the ship was. A lock-on marks the
+## line first.
+func _serpents(at: float, count: int, spread: float) -> void:
+	var dur := 0.8
+	if cycle_t >= at - dur and not fired.has("w_serpent"):
+		fired["w_serpent"] = true
+		serpent_to = game.player.position
+		game.warn(eye, dur, Game.Warn.MOVE, eye.radius, serpent_to)
+	if _fire_once("serpent", at):
+		var d := serpent_to - eye.position
+		var base := atan2(d.z, d.x)
+		for i in count:
+			var a := base + deg_to_rad(spread) * (i - (count - 1) * 0.5)
+			game.bullets.fire(eye.position + Vector3(0, 0, 1.2), a, 4.6 if phase == 1 else 5.0, Bullets.IRON, self)
+			game.bullets.snake(2.2 if phase == 1 else 2.6, 3.0 if phase == 1 else 3.4)
 
 
 func _pods(dt: float) -> void:
@@ -233,6 +287,16 @@ func _pods(dt: float) -> void:
 			var at := q.position + Vector3(0, 0, 1.0)
 			game.bullets.fan(at, game.bullets.aim(at), 5, 44.0, 6.0, Bullets.SHELL, self)
 			break
+
+
+## A flower from the eye: `waves` rings of breakable shells, each turned a
+## little from the last, big and small by turns (no lock-on: shells can be
+## shot down).
+func _flower(at: float, waves: int, count: int, speed: float) -> void:
+	for k in waves:
+		if _fire_once("flower%d" % k, at + k * 0.33):
+			flower_a += 0.21
+			game.bullets.ring(eye.position, count, speed, Bullets.SHELL, self, flower_a)
 
 
 func gauge() -> Dictionary:

@@ -12,23 +12,28 @@ extends Node3D
 ##          shooter removes it. The small fighters' and turrets' aimed shots,
 ##          always announced (Game.warn). Warm orange, white-hot centre.
 ##   HEAVY  big energy ball (boss): not even the Spear erases it. Warm red.
+##   IRON   big armoured ball (boss): cannot be shot or erased by the Spear,
+##          and it stops your shots (after the big bullets of the NES Star
+##          Soldier). Always announced. Violet steel, lit rim, hot core.
+## A bullet can also `snake` (weave across its line of flight) or `split`
+## (burst into a ring of shells after a while).
 ## Every bullet remembers its shooter so a kill can turn them into energy.
 ## Ground guns `launch` theirs: for LIFT seconds the bullet climbs from the
 ## gun up to the flight level (drawn small and dim, rising along the view
 ## ray) and cannot hit the ship yet.
 
-enum { SHELL, ORB, HEAVY }
+enum { SHELL, ORB, HEAVY, IRON }
 enum { ROUND, NEEDLE }
 
 const MAX := 1200
-const RADIUS := [0.27, 0.23, 0.5]  # round hit radius per kind
+const RADIUS := [0.27, 0.23, 0.5, 0.62]  # round hit radius per kind
 const NEEDLE_RADIUS := 0.2
-const SIZE := [0.68, 0.62, 1.5]  # round sprite diameter per kind
+const SIZE := [0.68, 0.62, 1.5, 1.75]  # round sprite diameter per kind
 const NEEDLE_W := 0.36
 const NEEDLE_L := 1.1
 const BIG := 1.22  # curtains mix big and small bullets side by side
 const SMALL := 0.82
-const COLOR := [Color(0.35, 0.78, 1.0), Color(1.0, 0.5, 0.22), Color(1.0, 0.28, 0.36)]
+const COLOR := [Color(0.35, 0.78, 1.0), Color(1.0, 0.5, 0.22), Color(1.0, 0.28, 0.36), Color(0.72, 0.52, 1.0)]
 const LIFT := 0.4  # seconds a launched bullet takes to climb to the flight level
 
 var game: Game
@@ -43,6 +48,11 @@ var owner_id := PackedInt64Array()
 var lift := PackedFloat32Array()  # seconds left climbing (launched bullets)
 var lift_y := PackedFloat32Array()  # height it was launched from
 var size := PackedFloat32Array()  # x the kind's size (curtains vary it a little)
+var age := PackedFloat32Array()
+var wamp := PackedFloat32Array()  # snaking: how far it weaves either side of its line
+var wfreq := PackedFloat32Array()  # snaking: rad/s
+var split_t := PackedFloat32Array()  # seconds until it splits (0 = never)
+var split_n := PackedInt32Array()  # shells in the ring it splits into
 var n := 0
 var bounds := Rect2(-30, -30, 60, 60)  # x, z
 
@@ -61,6 +71,11 @@ func _ready() -> void:
 	lift.resize(MAX)
 	lift_y.resize(MAX)
 	size.resize(MAX)
+	age.resize(MAX)
+	wamp.resize(MAX)
+	wfreq.resize(MAX)
+	split_t.resize(MAX)
+	split_n.resize(MAX)
 	sprites = MultiMeshInstance3D.new()
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -89,11 +104,16 @@ func fire(p: Vector3, ang: float, speed: float, k: int, owner: Object, shp := RO
 	acc[n] = accel
 	tspd[n] = to_speed
 	kind[n] = k
-	shape[n] = NEEDLE if (shp == NEEDLE and k != HEAVY) else ROUND
+	shape[n] = NEEDLE if (shp == NEEDLE and k != HEAVY and k != IRON) else ROUND
 	hp[n] = 1.0
 	owner_id[n] = owner.get_instance_id() if owner != null else 0
 	lift[n] = 0.0
 	size[n] = sz
+	age[n] = 0.0
+	wamp[n] = 0.0
+	wfreq[n] = 0.0
+	split_t[n] = 0.0
+	split_n[n] = 0
 	n += 1
 
 
@@ -105,6 +125,20 @@ func launch(muzzle: Vector3, ang: float, speed: float, k: int, owner: Object, sh
 	fire(game.to_plane(muzzle), ang, speed, k, owner, shp)
 	lift[n - 1] = LIFT
 	lift_y[n - 1] = muzzle.y
+
+
+## The bullet fired last weaves `amp` either side of its line, `freq` rad/s.
+func snake(amp: float, freq: float) -> void:
+	if n > 0:
+		wamp[n - 1] = amp
+		wfreq[n - 1] = freq
+
+
+## The bullet fired last bursts into a ring of `count` shells after `after` s.
+func split(after: float, count: int) -> void:
+	if n > 0:
+		split_t[n - 1] = after
+		split_n[n - 1] = count
 
 
 func aim(from: Vector3) -> float:
@@ -157,6 +191,11 @@ func _remove(i: int) -> void:
 	lift[i] = lift[n]
 	lift_y[i] = lift_y[n]
 	size[i] = size[n]
+	age[i] = age[n]
+	wamp[i] = wamp[n]
+	wfreq[i] = wfreq[n]
+	split_t[i] = split_t[n]
+	split_n[i] = split_n[n]
 
 
 ## Removes the bullets fired by `owner`; returns where they were.
@@ -179,13 +218,13 @@ func cancel_all() -> PackedVector3Array:
 	return out
 
 
-## Spear: erases shells and orbs (not HEAVY) within r of p, and inside the
+## Spear: erases shells and orbs (not HEAVY or IRON) within r of p, and inside the
 ## lance rectangle; returns where they were.
 func cancel_spear(p: Vector3, r: float, hw: float, length: float) -> PackedVector3Array:
 	var out := PackedVector3Array()
 	var i := 0
 	while i < n:
-		if kind[i] != HEAVY:
+		if kind[i] != HEAVY and kind[i] != IRON:
 			var d := pos[i] - p
 			var in_ring := d.x * d.x + d.z * d.z < r * r
 			var in_lance := absf(d.x) < hw and d.z < 0.0 and d.z > -length
@@ -199,14 +238,16 @@ func cancel_spear(p: Vector3, r: float, hw: float, length: float) -> PackedVecto
 
 ## A player shot at p hits a shell: the shell takes the damage. Returns
 ## Vector3(INF, ...) for no hit, else the shell's position with y = 1 if it
-## broke and y = 0 if it held.
+## broke, y = 0 if it held, y = 2 if the shot glanced off an IRON ball.
 func shoot_shell(p: Vector3, r: float, dmg: float) -> Vector3:
 	for i in n:
-		if kind[i] != SHELL:
+		if kind[i] != SHELL and kind[i] != IRON:
 			continue
 		var d := pos[i] - p
 		var rr := r + radius(i) + 0.12
 		if d.x * d.x + d.z * d.z < rr * rr:
+			if kind[i] == IRON:
+				return Vector3(pos[i].x, 2.0, pos[i].z)
 			hp[i] -= dmg
 			var at := pos[i]
 			if hp[i] <= 0.0:
@@ -230,12 +271,35 @@ func tick(dt: float) -> void:
 				acc[i] = 0.0
 		if lift[i] > 0.0:
 			lift[i] = maxf(0.0, lift[i] - dt)
+		age[i] += dt
 		var p := pos[i] + vel[i] * dt
+		if wamp[i] != 0.0:
+			# weave across the line of flight
+			var dir := vel[i].normalized()
+			p += Vector3(-dir.z, 0.0, dir.x) * (wamp[i] * wfreq[i] * cos(wfreq[i] * age[i]) * dt)
+		if split_t[i] > 0.0:
+			split_t[i] -= dt
+			if split_t[i] <= 0.0:
+				_split(i, p)
+				continue
 		pos[i] = p
 		if p.x < bounds.position.x or p.x > bounds.end.x or p.z < bounds.position.y or p.z > bounds.end.y:
 			_remove(i)
 			continue
 		i += 1
+
+
+## Bullet i bursts at p into a ring of shells (they keep its shooter).
+func _split(i: int, p: Vector3) -> void:
+	var count := split_n[i]
+	var who := owner_id[i]
+	var off := age[i] * 1.7
+	_remove(i)
+	for k in count:
+		if n >= MAX:
+			return
+		fire(p, off + TAU * k / count, 3.6, SHELL, null, ROUND, 0.0, 0.0, BIG if k % 2 == 0 else SMALL)
+		owner_id[n - 1] = who
 
 
 ## True if a bullet touches the circle (p, r); that bullet is removed.
@@ -276,7 +340,7 @@ func draw() -> void:
 			b = Basis(Vector3(-dir.z, 0, dir.x) * NEEDLE_W, Vector3.UP, dir * NEEDLE_L)
 			aspect = NEEDLE_L / NEEDLE_W
 		else:
-			var s: float = SIZE[k] * (pulse if k != SHELL else 1.0)
+			var s: float = SIZE[k] * (pulse if k != SHELL and k != IRON else 1.0)
 			b = Basis.from_scale(Vector3(s, 1.0, s))
 		var sc := size[i]
 		# drawn just above the ships, on the view ray through its plane point so
@@ -295,4 +359,4 @@ func draw() -> void:
 			b = b.scaled(Vector3(sc, 1.0, sc))
 		mm.set_instance_transform(i, Transform3D(b, game.from_plane(pos[i], y)))
 		mm.set_instance_color(i, c)
-		mm.set_instance_custom_data(i, Color(1.0 if k == SHELL else 0.0, aspect, 0.0, 0.0))
+		mm.set_instance_custom_data(i, Color(1.0 if k == SHELL else (2.0 if k == IRON else 0.0), aspect, 0.0, 0.0))
