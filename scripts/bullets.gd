@@ -3,8 +3,8 @@ extends Node3D
 ## Enemy bullets on the play plane (y = 0), in packed arrays.
 ## Angles: 0 = +x (right), PI/2 = +z (down-screen).
 ##
-## Kinds (every kind comes as a round ball or a teardrop needle, round head
-## first):
+## Kinds (every kind comes as a round ball or a needle, a rounded bar a
+## little narrower at the tail):
 ##   SHELL  physical: shootable (blocks your shots, breaks after `hp`),
 ##          low threat: the curtains of mid-size enemies and bosses. Cool
 ##          blue, dark centre, bright outline.
@@ -22,10 +22,10 @@ enum { ROUND, NEEDLE }
 
 const MAX := 1200
 const RADIUS := [0.27, 0.23, 0.5]  # round hit radius per kind
-const NEEDLE_RADIUS := 0.18
+const NEEDLE_RADIUS := 0.19
 const SIZE := [0.68, 0.62, 1.5]  # round sprite diameter per kind
-const NEEDLE_W := 0.38  # a needle is a teardrop: this wide round head, in front
-const NEEDLE_L := 1.05  # and this long with its tail
+const NEEDLE_W := 0.32  # a needle is a rounded bar, a little narrower at the tail
+const NEEDLE_L := 1.1
 const BIG := 1.22  # curtains mix big and small bullets side by side
 const SMALL := 0.82
 const COLOR := [Color(0.35, 0.78, 1.0), Color(1.0, 0.5, 0.22), Color(1.0, 0.28, 0.36)]
@@ -269,9 +269,8 @@ func draw() -> void:
 		var k := kind[i]
 		var b: Basis
 		var aspect := 1.0
-		var dir := Vector3.ZERO
 		if shape[i] == NEEDLE:
-			dir = vel[i].normalized()
+			var dir := vel[i].normalized()
 			if dir.length_squared() < 0.5:
 				dir = Vector3(0, 0, 1)
 			b = Basis(Vector3(-dir.z, 0, dir.x) * NEEDLE_W, Vector3.UP, dir * NEEDLE_L)
@@ -294,8 +293,6 @@ func draw() -> void:
 			c = Color(c.r, c.g, c.b).darkened(0.55 * (1.0 - f))
 		if sc != 1.0:
 			b = b.scaled(Vector3(sc, 1.0, sc))
-		# a needle's round head sits on the hit point, its tail behind it
-		var at := pos[i] - dir * ((NEEDLE_L - NEEDLE_W) * 0.5 * sc)
-		mm.set_instance_transform(i, Transform3D(b, game.from_plane(at, y)))
+		mm.set_instance_transform(i, Transform3D(b, game.from_plane(pos[i], y)))
 		mm.set_instance_color(i, c)
 		mm.set_instance_custom_data(i, Color(1.0 if k == SHELL else 0.0, aspect, 0.0, 0.0))

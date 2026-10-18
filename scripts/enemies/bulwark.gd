@@ -34,11 +34,11 @@ func _behave(dt: float) -> void:
 			var down := PI / 2.0
 			match step % 5:
 				0:
-					game.bullets.fan(position + Vector3(0, 0, 1.2), down, 11, 110.0, 5.0, Bullets.SHELL, self, Bullets.ROUND, Bullets.SMALL)
+					game.bullets.fan(position + Vector3(0, 0, 1.2), down, 11, 110.0, 5.0, Bullets.SHELL, self, Bullets.ROUND, Bullets.BIG)
 					fire_t = 0.4
 				1:
-					# the second, faster volley big, between the small ones
-					game.bullets.fan(position + Vector3(0, 0, 1.2), down + deg_to_rad(5.5), 10, 99.0, 5.5, Bullets.SHELL, self, Bullets.ROUND, Bullets.BIG)
+					# the second volley small, between the big ones that lead
+					game.bullets.fan(position + Vector3(0, 0, 1.2), down + deg_to_rad(5.5), 10, 99.0, 5.5, Bullets.SHELL, self, Bullets.ROUND, Bullets.SMALL)
 					fire_t = 1.2
 				2:
 					# announce the energy shotguns

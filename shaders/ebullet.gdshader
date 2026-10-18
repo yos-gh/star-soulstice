@@ -6,9 +6,9 @@ render_mode unshaded, cull_disabled, shadows_disabled, fog_disabled;
 // INSTANCE_CUSTOM.x = style: 0 unbreakable (warm, white-hot core, dark rim)
 //                            1 breakable   (cool, dark centre, bright outline)
 // INSTANCE_CUSTOM.y = length / width (1 = round, > 1 = needle).
-// A needle (UV.y = 1 is its head, the way it flies) is a teardrop: a round
-// head in front tapering to a point behind, its colour running from hot at
-// the head to dark at the tail so you can tell which way it goes.
+// A needle (UV.y = 1 is its head, the way it flies) is a rounded bar a
+// little narrower at the tail, its colour running from hot at the head to
+// dark at the tail so you can tell which way it goes.
 
 varying vec4 cust;
 
@@ -23,16 +23,10 @@ void fragment() {
 	float head = 0.5;  // 0 at the tail, 1 at the head
 	if (aspect > 1.01) {
 		float t = d.y;
-		// along the needle in half-widths: the head is a circle of radius 1
-		// touching the front, the tail narrows from its middle to a point
-		float y = t * aspect;
-		float yc = aspect - 1.0;
-		if (y >= yc) {
-			r = length(vec2(d.x, y - yc));
-		} else {
-			float w = pow(clamp((y + aspect) / (yc + aspect), 0.0, 1.0), 0.8);
-			r = abs(d.x) / max(w, 0.001);
-		}
+		// a rounded bar, narrowing a little toward the tail
+		float w = mix(0.78, 1.0, t * 0.5 + 0.5);
+		vec2 q = vec2(d.x / w, t * aspect);
+		r = length(vec2(q.x, max(abs(q.y) - (aspect - 1.0), 0.0)));
 		head = smoothstep(-0.9, 0.8, t);
 	} else {
 		r = length(d);
@@ -44,8 +38,8 @@ void fragment() {
 		float band = smoothstep(0.74, 0.88, r);
 		if (aspect > 1.01) {
 			// white-hot head, the colour deepening and darkening to the tail
-			vec3 body = mix(c * vec3(0.55, 0.26, 0.26), c * 1.8, head);
-			col = mix(body, vec3(1.8), core * mix(0.12, 1.0, head));
+			vec3 body = mix(c * vec3(0.7, 0.38, 0.38), c * 1.8, head);
+			col = mix(body, vec3(1.8), core * mix(0.3, 1.0, head));
 		} else {
 			col = mix(c * 1.7, vec3(1.7), core);
 		}
