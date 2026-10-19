@@ -62,6 +62,11 @@ const STEEL_L := Color(0.52, 0.55, 0.58)  # light machine grey
 const STEEL_M := Color(0.4, 0.43, 0.46)
 const ORANGE := Color(0.88, 0.42, 0.1)  # construction-machine paint (matte, not a glow)
 const HAZARD := Color(0.86, 0.68, 0.16)  # hazard-stripe yellow
+# dark greys for what was near-black on small enemies: between black and
+# the machine greys, so they read against space without going pale (yos)
+const DUSK_D := Color(0.22, 0.225, 0.26)
+const DUSK := Color(0.26, 0.27, 0.3)
+const DUSK_L := Color(0.31, 0.32, 0.35)
 const SKY := Color(0.48, 0.7, 0.86)  # light blue (softer than cobalt)
 const SKY_L := Color(0.74, 0.86, 0.94)
 const PINK := Color(0.92, 0.4, 0.64)

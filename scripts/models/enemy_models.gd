@@ -1,12 +1,13 @@
 class_name EnemyModels
 extends Models
 ## Small and mid-size enemies, ground guns and drifting rocks, each family
-## in its own livery, red eyes (see Models): crimson fighters on grey, a
-## light grey interceptor with pink wings, a jade ring drone, yellow-and-grey
+## in its own livery, red eyes (see Models): crimson fighters on dark grey,
+## a grey interceptor with pink wings, a jade ring drone, yellow-and-grey
 ## racers, a sky-blue blade, a white star mine, a pearl carrier banded in
 ## gold, grey guns with crimson domes, a grey cruiser in gold armour, a jade
-## rail carriage. Nothing near-black on the bodies: space behind them is
-## black, so the darkest body colour is a mid grey (yos).
+## rail carriage. Nothing near-black on the bodies (space behind them is
+## black) but nothing pale either: what was black is a dark grey between
+## the two (DUSK; yos).
 
 const NAMES := ["dart", "swirl", "rammer", "chaser", "flanker", "racer", "container", "turret_base", "turret_head", "bulwark", "railjack", "railjack_gun", "rock_s", "rock_l"]
 
@@ -48,16 +49,16 @@ static func make(name: String) -> ArrayMesh:
 ## spine, red sensor eye.
 static func _dart() -> ArrayMesh:
 	var v := Vox.new(18, 6, 20)
-	v.fill_sym(0, 1, -9, 0, 3, 6, STEEL_M)
-	v.fill_sym(1, 1, -6, 1, 2, 6, GUN)
-	v.fill_sym(0, 0, -7, 1, 0, 5, GUN)
+	v.fill_sym(0, 1, -9, 0, 3, 6, DUSK)
+	v.fill_sym(1, 1, -6, 1, 2, 6, DUSK_D)
+	v.fill_sym(0, 0, -7, 1, 0, 5, DUSK_D)
 	v.fill_sym(0, 4, -5, 0, 4, -2, EYE, true)
-	v.fill_sym(0, 4, -1, 0, 4, 4, STEEL_L)
+	v.fill_sym(0, 4, -1, 0, 4, 4, STEEL_M)
 	for k in range(2, 8):
 		var c := CRIM if k < 6 else CRIM.lightened(0.15)
 		v.fill_sym(k, 1, -k + 1, k, 1, -k + 5, c)
 		v.fill_sym(k, 1, -k + 1, k, 1, -k + 1, GOLD_L)
-	v.fill_sym(2, 2, -1, 4, 2, 2, STEEL_M)
+	v.fill_sym(2, 2, -1, 4, 2, 2, DUSK)
 	v.fill_sym(7, 1, -7, 7, 2, -6, GOLD_L)
 	v.fill_sym(0, 1, 7, 1, 2, 7, GUN)
 	v.fill_sym(0, 2, 8, 0, 2, 8, AMBER, true)
@@ -67,12 +68,12 @@ static func _dart() -> ArrayMesh:
 ## Ring drone: a spinning wheel of jade and light grey segments with a red
 ## core.
 static func _swirl() -> ArrayMesh:
-	return _saucer(10.5, JADE, STEEL_L, JADE_L)
+	return _saucer(10.5, JADE, DUSK_L, JADE_L)
 
 
 ## Lap racer: a smaller ring drone in hornet yellow and grey.
 static func _racer() -> ArrayMesh:
-	return _saucer(8.5, HAZARD, STEEL_M, GOLD_L)
+	return _saucer(8.5, HAZARD, DUSK, GOLD_L)
 
 
 ## A ring drone `rad` voxels across: an outer ring of alternating `a` / `b`
@@ -92,13 +93,13 @@ static func _saucer(rad: float, a: Color, b: Color, spoke := GOLD_L) -> ArrayMes
 			if r > 7.5:
 				v.fill(x, 1, z, x, 2, z, a if seg else b)
 				if r > 9.5:
-					v.put(x, 1, z, GUN)
+					v.put(x, 1, z, DUSK_D)
 			elif r > 5.0:
-				v.put(x, 1, z, STEEL_M)
+				v.put(x, 1, z, GUN)
 				if absf(wrapf(ang * 4.0 / TAU, -0.5, 0.5)) < 0.12:
 					v.fill(x, 1, z, x, 2, z, spoke)
 			elif r > 3.0:
-				v.fill(x, 0, z, x, 3, z, GUN)
+				v.fill(x, 0, z, x, 3, z, DUSK_D)
 			else:
 				v.fill(x, 0, z, x, 3, z, a.darkened(0.35))
 				v.put(x, 4, z, EYE if r < 2.0 else CRIM, r < 2.0)
@@ -106,14 +107,14 @@ static func _saucer(rad: float, a: Color, b: Color, spoke := GOLD_L) -> ArrayMes
 
 
 ## Interceptor that strikes from behind (so it has to catch the eye): a
-## light grey needle with swept delta wings in bright pink edged in white,
+## grey needle with swept delta wings in bright pink edged in white,
 ## twin glowing engines and a red eye up front.
 static func _chaser() -> ArrayMesh:
 	var v := Vox.new(18, 6, 22)
 	# spine and needle nose
-	v.fill_sym(0, 1, -10, 0, 2, 7, STEEL_L)
+	v.fill_sym(0, 1, -10, 0, 2, 7, DUSK_L)
 	v.fill_sym(0, 3, -6, 0, 3, 5, PEARL)
-	v.fill_sym(0, 0, -7, 1, 0, 6, GUN)
+	v.fill_sym(0, 0, -7, 1, 0, 6, DUSK_D)
 	v.fill_sym(0, 3, -9, 0, 3, -7, EYE, true)
 	# delta wings, swept back
 	for k in range(1, 9):
@@ -128,7 +129,7 @@ static func _chaser() -> ArrayMesh:
 
 
 ## Side striker: a sky-blue crescent blade with a pale edge opening backward
-## around a grey pod with a red eye.
+## around a dark grey pod with a red eye.
 static func _flanker() -> ArrayMesh:
 	var v := Vox.new(24, 6, 16)
 	for z in range(-8, 8):
@@ -139,11 +140,11 @@ static func _flanker() -> ArrayMesh:
 				var edge := d > 10.2
 				v.fill(x, 1, z, x, 1 if edge else 2, z, SKY_L if edge else SKY)
 				if d < 8.4:
-					v.put(x, 1, z, STEEL_M)
-	v.blob(0, 2, -1, 2.6, 1.6, 4.2, GUN)
-	v.blob(0, 3, -1, 1.6, 1.2, 2.8, STEEL_M)
+					v.put(x, 1, z, DUSK)
+	v.blob(0, 2, -1, 2.6, 1.6, 4.2, DUSK_D)
+	v.blob(0, 3, -1, 1.6, 1.2, 2.8, DUSK)
 	v.fill_sym(0, 4, -4, 0, 4, -3, EYE, true)
-	v.fill_sym(1, 1, 3, 1, 2, 4, GUN)
+	v.fill_sym(1, 1, 3, 1, 2, 4, DUSK_D)
 	v.fill_sym(1, 2, 5, 1, 2, 5, AMBER, true)
 	v.fill_sym(9, 2, 4, 9, 2, 5, GOLD_L)
 	return v.mesh(U, Vector3(0, 2.0, 0))
@@ -206,9 +207,9 @@ static func _turret_base() -> ArrayMesh:
 			var p := Vector2(x + 0.5, z + 0.5)
 			var hexd := maxf(absf(p.x) * 0.866 + absf(p.y) * 0.5, absf(p.y))
 			if hexd < 8.4:
-				v.put(x, 0, z, GUN)
+				v.put(x, 0, z, DUSK_D)
 			if hexd < 7.0:
-				v.put(x, 1, z, STEEL_M if hexd > 5.5 else GUN)
+				v.put(x, 1, z, GUN if hexd > 5.5 else DUSK_D)
 			if hexd > 7.0 and hexd < 8.4 and (x + z) % 4 == 0:
 				v.put(x, 1, z, LAMP, true)
 	return v.mesh(U)
@@ -219,7 +220,7 @@ static func _turret_base() -> ArrayMesh:
 static func _turret_head() -> ArrayMesh:
 	var v := Vox.new(14, 6, 22)
 	v.blob(0, 1, 2, 4.4, 2.6, 4.4, CRIM)
-	v.blob(0, 2, 2, 3.0, 2.4, 3.0, STEEL_M)
+	v.blob(0, 2, 2, 3.0, 2.4, 3.0, DUSK)
 	v.fill_sym(1, 2, -9, 1, 2, -1, GUN)
 	v.fill_sym(1, 2, -10, 1, 2, -10, AMBER, true)
 	v.fill_sym(1, 1, -4, 2, 3, -2, GUN_D)
