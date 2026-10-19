@@ -56,7 +56,7 @@ static func _lazaro_piece() -> ArrayMesh:
 				var lat := asin(clampf(p.y / d, -1.0, 1.0)) / 0.55
 				var lon := atan2(p.z, p.x) / 0.5
 				var seam := absf(lat - round(lat)) < 0.1 or absf(lon - round(lon)) < 0.1
-				var c := GUN_D
+				var c := GUN
 				var glow := false
 				if d > r - 1.2:
 					c = BROWN if seam else (GOLD if int(floor(lat) + floor(lon)) % 2 == 0 else BRONZE)
@@ -64,7 +64,7 @@ static func _lazaro_piece() -> ArrayMesh:
 					c = EYE
 					glow = true
 				if x == 0 or z == 0:
-					c = GUN_D
+					c = STEEL_M
 					glow = false
 				v.put(x, y + 8, z, c, glow)
 	return v.mesh(0.18, Vector3(4.0, 8.0, 4.0))
