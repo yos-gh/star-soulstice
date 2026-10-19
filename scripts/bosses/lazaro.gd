@@ -207,15 +207,15 @@ func tick(dt: float) -> void:
 			core.intangible = true
 			if int(st * 10.0) != int((st - dt) * 10.0) and st < 1.6:
 				var q := pieces[randi() % 4]
-				game.fx.explode(q.position + Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)), 1.6, Vector3.ZERO, Models.PEARL)
+				game.fx.explode(q.position + Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)), 1.6, Vector3.ZERO, Models.VIOLET)
 				game.sfx.play("exp_s")
 			if st > 1.6:
 				var conv := game.bullets.cancel_owner(self)
 				for b in conv:
 					game.items.spawn(b, Items.ENERGY, 1.0)
-				game.big_blast(center, 0.7, Models.PEARL)
+				game.big_blast(center, 0.7, Models.VIOLET)
 				for q in pieces:
-					game.fx.explode(q.position, 2.5, Vector3.ZERO, Models.COBALT)
+					game.fx.explode(q.position, 2.5, Vector3.ZERO, Models.GOLD)
 				game.items.burst_energy(center, 40.0, 9.0)
 				game.sfx.play("exp_l")
 				game.shake(1.2)

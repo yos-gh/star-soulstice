@@ -41,7 +41,7 @@ static func make(name: String) -> ArrayMesh:
 
 
 ## One quarter of Lazaro's shell: the +x/+z quadrant of a hollow sphere of
-## pearl-white and cobalt armour plates with navy seams and a red equator,
+## violet and black armour plates with gold seams and a red equator,
 ## re-centred on its own centroid so the pieces can fly apart.
 static func _lazaro_piece() -> ArrayMesh:
 	var v := Vox.new(26, 16, 26)
@@ -59,7 +59,7 @@ static func _lazaro_piece() -> ArrayMesh:
 				var c := GUN_D
 				var glow := false
 				if d > r - 1.2:
-					c = COBALT_D if seam else (PEARL if int(floor(lat) + floor(lon)) % 2 == 0 else COBALT)
+					c = GOLD if seam else (VIOLET if int(floor(lat) + floor(lon)) % 2 == 0 else BLACK)
 				if y == -1 or y == 0:
 					c = EYE
 					glow = true
@@ -83,12 +83,14 @@ static func _lazaro_core() -> ArrayMesh:
 
 # ------------------------------------------------------------ boss
 
-## STAR CORTEX hull (Star Brain homage): an octagonal fortress (faces
-## down-screen) with stepped armour rings, pearl-white inside, cobalt then
-## navy further out, gunmetal at the rim, pearl flank gun decks and a channel in
-## front of the brain, so shots from below reach it.
+## STAR CORTEX hull (Star Brain homage, after the NES art: a grey machine
+## fortress with cool lamps): an octagonal fortress (faces down-screen)
+## with stepped armour rings in machine greys, light inside, darker out to
+## a black-lined rim, blocks of machinery raised here and there, grey flank
+## gun decks, a ring of cool lamps and a channel in front of the eye, so
+## shots from below reach it.
 static func _boss_hull() -> ArrayMesh:
-	var v := Vox.new(120, 12, 88)
+	var v := Vox.new(120, 13, 88)
 	for z in range(-44, 44):
 		for x in range(-60, 60):
 			var ax := absf(x + 0.5)
@@ -102,31 +104,41 @@ static func _boss_hull() -> ArrayMesh:
 			var top := GUN
 			if oct < 0.5:
 				h = 9
-				top = PEARL
+				top = STEEL_L
 			elif oct < 0.66:
 				h = 7
-				top = COBALT
+				top = STEEL_M
 			elif oct < 0.84:
 				h = 6
-				top = COBALT.lerp(COBALT_D, 0.55)
+				top = GUN
 			if oct > 0.94:
 				h = 3
 				top = GUN_D
-			if absf(oct - 0.5) < 0.012 or absf(oct - 0.66) < 0.012 or absf(oct - 0.84) < 0.012:
-				top = COBALT_D
-			if (int(ax) % 10 == 0 or int(az) % 8 == 0) and oct >= 0.5 and oct < 0.94:
-				top = top.darkened(0.25)
+			var ring := absf(oct - 0.5) < 0.012 or absf(oct - 0.66) < 0.012 or absf(oct - 0.84) < 0.012
+			if ring:
+				top = BLACK
+			elif oct >= 0.5 and oct < 0.94:
+				if int(ax) % 10 == 0 or int(az) % 8 == 0:
+					top = top.darkened(0.3)
+				else:
+					# machinery: blocks raised a step (mirrored, like the rest)
+					var n := Vox._hash(int(ax) / 3, 5, int(z + 44) / 3)
+					if n > 0.8:
+						h += 1
+						top = top.lightened(0.12)
+					elif n < 0.12:
+						top = top.darkened(0.2)
 			for y in h:
 				v.put(x, y, z, top if y == h - 1 else (GUN if y > 1 else GUN_D))
 	for z in range(1, 34):
 		if z % 4 == 0:
-			v.put(-12, 5, z, EYE, true)
-			v.put(11, 5, z, EYE, true)
+			v.put(-12, 5, z, CYAN, true)
+			v.put(11, 5, z, CYAN, true)
 	for s in [-1, 1]:
 		v.fill(s * 30, 7, -10, s * 44, 8, 8, GUN)
-		v.fill(s * 31, 9, -8, s * 43, 9, 6, PEARL)
+		v.fill(s * 31, 9, -8, s * 43, 9, 6, STEEL_L)
 		for z in [-6, -1, 4]:
-			v.fill(s * 34, 9, z, s * 40, 9, z, COBALT_D)
+			v.fill(s * 34, 9, z, s * 40, 9, z, BLACK)
 		v.fill(s * 45, 6, -3, s * 52, 6, 2, GUN_D)
 		v.fill(s * 52, 6, -3, s * 52, 6, 2, AMBER, true)
 	for a in 24:
@@ -135,12 +147,14 @@ static func _boss_hull() -> ArrayMesh:
 		var z := int(round(sin(ang) * 17.0))
 		if absf(x) < 12 and z > 0:
 			continue
-		v.put(x, 9, z, EYE, true)
+		v.put(x, 9, z, LAMP, true)
 	v.fill(-3, 9, -43, 2, 10, -30, GUN)
 	v.fill(-1, 11, -43, 0, 11, -36, AMBER, true)
 	return v.mesh(U * 1.2, Vector3(0.5, 6.0, 0.5))
 
 
+## A corner gun pod: grey rings round a cyan lamp, a cyan muzzle (it fires
+## the cool shell fans).
 static func _boss_pod() -> ArrayMesh:
 	var v := Vox.new(28, 9, 32)
 	for z in range(-13, 14):
@@ -152,47 +166,54 @@ static func _boss_pod() -> ArrayMesh:
 			for y in h:
 				var c := GUN
 				if y == h - 1:
-					c = GUN_D if r > 11.5 else (COBALT if r > 7.0 else PEARL)
+					c = GUN_D if r > 11.5 else (STEEL_M if r > 7.0 else STEEL_L)
 					if absf(r - 9.2) < 0.6:
-						c = COBALT_D
+						c = BLACK
 				v.put(x, y, z, c)
 	v.fill_sym(1, 3, 6, 2, 4, 15, GUN_D)
-	v.fill_sym(1, 4, 15, 2, 4, 15, EYE, true)
+	v.fill_sym(1, 4, 15, 2, 4, 15, CYAN, true)
 	v.fill(-2, 6, -2, 2, 7, 2, GUN_D)
-	v.fill(-1, 8, -1, 1, 8, 1, EYE, true)
+	v.fill(-1, 8, -1, 1, 8, 1, CYAN, true)
 	return v.mesh(U * 1.2, Vector3(0.5, 3.0, 0.5))
 
 
-## The brain: a ridged pink dome (grooves from a noise field) around a red
-## iris.
+## The great eye (after Star Brain): a ribbed steel dome round a black lens
+## ring, a glowing iris of white and cyan crossed by four dark spokes, a
+## white-hot core.
 static func _boss_eye() -> ArrayMesh:
-	var v := Vox.new(36, 14, 36)
+	var v := Vox.new(36, 15, 36)
 	for z in range(-17, 18):
 		for x in range(-17, 18):
 			var r := Vector2(x, z).length()
 			if r > 17.0:
 				continue
 			var h := int(round(sqrt(maxf(0.0, 17.5 * 17.5 - r * r)) * 0.55))
-			var groove := absf(sin(x * 0.55 + sin(z * 0.4) * 1.8)) < 0.22 and r > 8.0
+			var rib := absf(wrapf(atan2(z, x) * 16.0 / TAU, -0.5, 0.5)) < 0.12 and r > 8.0
+			var spoke := (absf(x) < 1.2 or absf(z) < 1.2) and r > 2.6 and r < 8.0
 			for y in h:
-				var c := Color(0.86, 0.6, 0.66)
+				var c := GUN if r > 12.0 else STEEL_M
 				var glow := false
 				if y == h - 1:
-					if r < 3.5:
-						c = Color(0.06, 0.0, 0.02)
+					if spoke:
+						c = GUN_D
+					elif r < 2.6:
+						c = Color(1.0, 0.98, 0.94)
+						glow = true
 					elif r < 7.0:
-						c = EYE if int(r * 1.5) % 2 == 0 else MAGENTA
+						c = LAMP if int(r * 1.5) % 2 == 0 else CYAN
 						glow = true
 					elif r < 8.0:
-						c = Color(0.25, 0.05, 0.08)
-					elif groove:
-						c = Color(0.5, 0.22, 0.3)
+						c = BLACK
+					elif rib:
+						c = GUN
 				v.put(x, y, z, c, glow)
+			if spoke:
+				v.put(x, h, z, STEEL_M)
 	return v.mesh(U * 1.2, Vector3(0.5, 5.0, 0.5))
 
 
-## One half of the brain's armoured shutter (the left half; mirrored):
-## pearl-white slats, a magenta seam glowing where the halves meet.
+## One half of the eye's armoured shutter (the left half; mirrored): grey
+## steel slats, a cyan seam glowing where the halves meet.
 static func _boss_shutter() -> ArrayMesh:
 	var v := Vox.new(40, 4, 40)
 	for z in range(-19, 20):
@@ -200,23 +221,23 @@ static func _boss_shutter() -> ArrayMesh:
 			var d := Vector2(x + 0.5, z).length()
 			if d >= 19.5:
 				continue
-			var c := PEARL if (z + 20) % 6 > 1 else PEARL_D
+			var c := STEEL_L if (z + 20) % 6 > 1 else STEEL_M
 			var glow := false
 			if x == -1:
-				c = MAGENTA
+				c = CYAN
 				glow = true
 			elif d > 17.5:
 				c = GUN_D
 			v.put(x, 0, z, c, glow)
 			if d < 15.0 and x < -2:
-				v.put(x, 1, z, PEARL_D if (z + 20) % 6 > 1 else COBALT_D)
+				v.put(x, 1, z, STEEL_M if (z + 20) % 6 > 1 else BLACK)
 	return v.mesh(U * 1.2, Vector3(0, 0, 0.5))
 
 
 
 # ------------------------------------------------------------ stage 2
 
-## OUROBOROS's locomotive (faces -z): a pearl-white wedge plough, a furnace
+## OUROBOROS's locomotive (faces -z): a brass wedge plough, a furnace
 ## grille glowing behind it with two red eyes, a jade body in dark jade
 ## side armour, a domed cab with a stack, gold stripes, a coupler at the
 ## back.
@@ -233,7 +254,7 @@ static func _ouro_head() -> ArrayMesh:
 			var c := GUN
 			if z < -8:
 				h = 2 + int((half - ax) * 0.35)
-				c = PEARL if int(ax + z) % 4 != 0 else PEARL_D
+				c = GOLD if int(ax + z) % 4 != 0 else BRONZE
 			elif ax > 11.0:
 				h = 5
 				c = JADE_D if (z + 18) % 6 > 0 else GUN_D
@@ -247,7 +268,7 @@ static func _ouro_head() -> ArrayMesh:
 		v.fill(x, 4, -8, x, 6, -8, AMBER if x % 2 == 0 else GUN_D, x % 2 == 0)
 	v.fill_sym(8, 5, -8, 9, 6, -7, EYE, true)
 	# cab dome and stack
-	v.blob(0, 7, 4, 4.5, 2.5, 5.0, PEARL)
+	v.blob(0, 7, 4, 4.5, 2.5, 5.0, BLACK)
 	v.blob(0, 8, 4, 3.0, 2.2, 3.5, JADE)
 	v.fill(-1, 8, -2, 0, 10, -1, GUN_D)
 	v.fill(-1, 10, -2, 0, 10, -1, EYE, true)
@@ -257,7 +278,7 @@ static func _ouro_head() -> ArrayMesh:
 	return v.mesh(U * 1.2, Vector3(0.5, 3.0, 0.5))
 
 
-## OUROBOROS's car (faces -z): an armoured hopper, jade and pearl-white
+## OUROBOROS's car (faces -z): an armoured hopper, jade and black
 ## plates over gunmetal, gold stripes, a little turret dome with a red eye
 ## on top, couplers fore and aft, amber lamps at the corners.
 static func _ouro_car() -> ArrayMesh:
@@ -269,7 +290,7 @@ static func _ouro_car() -> ArrayMesh:
 			if ax + az > 18.0:
 				continue
 			var h := 5 if ax < 8.0 and az < 8.0 else 3
-			var top := JADE if ((x + 11) / 4 + (z + 11) / 4) % 2 == 0 else PEARL
+			var top := JADE if ((x + 11) / 4 + (z + 11) / 4) % 2 == 0 else BLACK
 			if h == 3:
 				top = JADE_D
 			for y in h:
@@ -285,9 +306,9 @@ static func _ouro_car() -> ArrayMesh:
 
 
 ## VULCAN PRESS's hull (faces down-screen, +z): as wide as the tunnel. A
-## gunmetal base, a deck of cobalt armour plates trimmed in pearl-white in
-## the middle, heavy navy furnace housings at the sides with glowing
-## grilles, a back ridge with smoke stacks, the hammers' rail along the
+## gunmetal base, a deck of grey steel plates lined in black in the middle,
+## heavy furnace housings in construction-machine orange at the sides with
+## glowing grilles, a back ridge with smoke stacks, the hammers' rail along the
 ## front edge (hazard-striped, amber lamps), and in the middle of the front
 ## a round bay where the crucible core burns on a molten bed inside a lit
 ## rim.
@@ -316,7 +337,7 @@ static func _press_hull() -> ArrayMesh:
 				if bay > 3.25:
 					h = 6
 					var seg := int(floor((atan2(uz - 1.4, ux) + PI) * 12.0 / PI))
-					top = COBALT_D if seg % 2 == 0 else GUN
+					top = BLACK if seg % 2 == 0 else GUN
 					if seg % 4 == 1 and bay > 3.45:
 						top = AMBER
 						glow = true
@@ -332,7 +353,7 @@ static func _press_hull() -> ArrayMesh:
 				top = GUN_D if int(ax / 0.8) % 2 == 0 else GUN
 			elif ax > 8.8 and uz < 1.0:
 				h = 9
-				top = COBALT_D
+				top = ORANGE
 				# furnace grilles, dark, one lit slit in each
 				if int((uz + 4.0) / 0.4) % 2 == 0 and ax > 9.4 and ax < 11.6:
 					top = GUN_D
@@ -340,15 +361,15 @@ static func _press_hull() -> ArrayMesh:
 						top = Color(0.7, 0.25, 0.08)
 						glow = true
 			elif ax < 8.8 and uz < 0.6:
-				# cobalt armour plates with pearl-white trim
+				# grey steel plates lined in black
 				h = 8
-				top = COBALT if (int((ux + 12.0) / 1.6) + int((uz + 4.0) / 1.6)) % 2 == 0 else COBALT_D
+				top = STEEL_L if (int((ux + 12.0) / 1.6) + int((uz + 4.0) / 1.6)) % 2 == 0 else STEEL_M
 				if absf(fmod(ux + 12.0, 1.6)) < u or absf(fmod(uz + 4.0, 1.6)) < u:
-					top = PEARL
+					top = BLACK
 			elif uz > 2.6:
 				# the hammers' rail, hazard-striped, with amber lamps
 				h = 6
-				top = GOLD if int((x + z) / 3) % 2 == 0 else BROWN
+				top = HAZARD if int((x + z) / 3) % 2 == 0 else BLACK
 				if x % 10 == 0 and uz > 2.95:
 					top = AMBER
 					glow = true
@@ -391,7 +412,7 @@ static func _press_core() -> ArrayMesh:
 
 ## One of the three armour plates that turn round the core: a curved slab
 ## on a circle of radius PLATE_R (its centre is +z of the plate), light
-## cobalt outside with seams, gunmetal inside, a lit line along the outer
+## grey steel outside with seams, gunmetal inside, a lit line along the outer
 ## face.
 static func _press_plate() -> ArrayMesh:
 	var v := Vox.new(24, 9, 14)
@@ -405,29 +426,29 @@ static func _press_plate() -> ArrayMesh:
 				var c := GUN
 				var glow := false
 				if r > 25.8:
-					c = COBALT_L if (x + 12) % 4 != 0 else COBALT_D
+					c = STEEL_L if (x + 12) % 4 != 0 else GUN_D
 					if y == 3:
 						c = LAMP
 						glow = true
 				elif r < 22.0:
 					c = GUN_D
 				if y == 7:
-					c = COBALT if r > 22.0 else GUN_D
+					c = STEEL_M if r > 22.0 else GUN_D
 				v.put(x, y, z, c, glow)
 	return v.mesh(U * 1.2, Vector3(0, 1.5, 0))
 
 
-## A hammer head (strikes toward +z): a navy block with a pearl-white top,
-## cobalt sides, a row of teeth on the striking face, a red eye on top,
+## A hammer head (strikes toward +z): an orange block with a steel top,
+## grey sides, a row of teeth on the striking face, a red eye on top,
 ## amber lamps, and the ram's socket at the back.
 static func _press_hammer() -> ArrayMesh:
 	var v := Vox.new(24, 12, 24)
-	v.fill(-11, 0, -9, 10, 7, 8, COBALT_D)
+	v.fill(-11, 0, -9, 10, 7, 8, ORANGE.darkened(0.15))
 	v.fill(-11, 0, -9, 10, 0, 8, GUN_D)
-	v.fill(-10, 8, -8, 9, 8, 7, PEARL_D)
-	v.fill(-7, 9, -6, 6, 9, 5, PEARL)
-	v.fill(-12, 1, -8, -12, 6, 7, COBALT)
-	v.fill(11, 1, -8, 11, 6, 7, COBALT)
+	v.fill(-10, 8, -8, 9, 8, 7, ORANGE)
+	v.fill(-7, 9, -6, 6, 9, 5, STEEL_L)
+	v.fill(-12, 1, -8, -12, 6, 7, STEEL_M)
+	v.fill(11, 1, -8, 11, 6, 7, STEEL_M)
 	for x in range(-10, 10, 4):
 		v.fill(x, 2, 9, x + 1, 5, 10, GUN_D)
 		v.fill(x, 3, 11, x + 1, 4, 11, GUN_D.lightened(0.15))
@@ -455,13 +476,13 @@ static func _press_tube(k: int) -> ArrayMesh:
 	return v.mesh(U * 1.5, Vector3(0, n, 0))
 
 
-## A corner vent gun (fires toward +z): a navy housing, a pearl-white
+## A corner vent gun (fires toward +z): an orange housing, a steel
 ## dome, three barrels with glowing muzzles, a lit grille on top.
 static func _press_vent() -> ArrayMesh:
 	var v := Vox.new(20, 10, 22)
-	v.fill(-8, 0, -8, 7, 3, 7, COBALT_D)
+	v.fill(-8, 0, -8, 7, 3, 7, ORANGE)
 	v.fill(-8, 0, -8, 7, 0, 7, GUN_D)
-	v.blob(0, 4, -1, 6.0, 3.0, 6.0, PEARL)
+	v.blob(0, 4, -1, 6.0, 3.0, 6.0, STEEL_L)
 	for x in [-4, 0, 4]:
 		v.fill(x - 1, 3, 4, x, 4, 10, GUN)
 		v.fill(x - 1, 3, 11, x, 4, 11, AMBER, true)

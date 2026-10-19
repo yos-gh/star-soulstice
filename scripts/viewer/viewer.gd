@@ -438,15 +438,15 @@ func _emit_fx(what: String) -> void:
 			if s >= 2.5:
 				game.shake(0.5 + s * 0.1)
 		"lazaro_end":
-			game.big_blast(at, 0.7, Models.PEARL)
+			game.big_blast(at, 0.7, Models.VIOLET)
 			for k in 4:
-				fx.explode(at + Vector3(0.95, 0, 0.95).rotated(Vector3.UP, -k * PI / 2.0) * 2.5, 2.5, Vector3.ZERO, Models.COBALT)
+				fx.explode(at + Vector3(0.95, 0, 0.95).rotated(Vector3.UP, -k * PI / 2.0) * 2.5, 2.5, Vector3.ZERO, Models.GOLD)
 			game.sfx.play("exp_l")
 			game.shake(1.2)
 		"finale":
-			game.big_blast(at, 1.0, Models.PEARL)
+			game.big_blast(at, 1.0, Models.STEEL_L)
 			for k in 5:
-				fx.explode(at + Vector3(randf_range(-5, 5), 0, randf_range(-3, 3)), 4.0, Vector3.ZERO, Models.COBALT)
+				fx.explode(at + Vector3(randf_range(-5, 5), 0, randf_range(-3, 3)), 4.0, Vector3.ZERO, Models.GUN)
 			game.sfx.play("exp_l")
 			game.shake(2.0)
 		"player_die":

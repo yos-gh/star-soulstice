@@ -3,11 +3,15 @@ extends RefCounted
 ## Every voxel model in the game, built in code. Art direction: Star
 ## Soldier-style space opera. Model space: x right, y up, -z forward.
 ##   player   white hull, red stripes, blue canopy and fins (after Caesar)
-##   enemies  each family in its own livery over gunmetal, red eyes: cobalt
-##            and pearl-white fighters, jade and violet drones, white mines,
-##            gold kept for trim and the carriers; bosses the same way
-##            (Lazaro and STAR CORTEX pearl and cobalt, OUROBOROS jade,
-##            VULCAN PRESS navy steel round its molten core)
+##   enemies  each family in its own livery, warm, cool, black and white
+##            spread across the cast (white-and-blue is the player's, so
+##            enemies don't pair them): crimson-and-black fighters, jade
+##            drones, yellow-and-black racers, a black interceptor, cobalt
+##            blades, white mines, a white carrier banded in gold, a navy
+##            cruiser in gold; bosses after their concept (Lazaro violet,
+##            STAR CORTEX mechanical grey with a glowing eye after Star
+##            Brain, OUROBOROS a jade train, VULCAN PRESS grey and
+##            construction-machine orange round its molten core)
 ##   ground   teal-grey fortress steel (see IslandGen); its tiles are
 ##            coloured storehouses (GroundModels)
 ## Ships are built from stacked, bevelled plates so the baked AO and the
@@ -51,6 +55,11 @@ const JADE_D := Color(0.05, 0.25, 0.22)
 const VIOLET := Color(0.42, 0.24, 0.68)
 const VIOLET_L := Color(0.64, 0.48, 0.9)
 const LAMP := Color(0.8, 0.95, 1.0)  # a cool white lamp (ground units: never orange)
+const BLACK := Color(0.1, 0.1, 0.12)
+const STEEL_L := Color(0.52, 0.55, 0.58)  # light machine grey
+const STEEL_M := Color(0.4, 0.43, 0.46)
+const ORANGE := Color(0.88, 0.42, 0.1)  # construction-machine paint (matte, not a glow)
+const HAZARD := Color(0.86, 0.68, 0.16)  # hazard-stripe yellow
 # kept for callers
 const STEEL := GUN
 const CRIMSON := CRIM
@@ -63,12 +72,12 @@ const U := 0.09  # voxel size of small units
 
 ## Main armour colour of a model: its wreckage when it blows up.
 const BODY := {
-	"dart": COBALT, "swirl": JADE, "racer": VIOLET, "chaser": PEARL, "flanker": JADE, "rammer": PEARL,
-	"container": PEARL, "turret_base": COBALT, "bulwark": COBALT_D, "railjack": JADE,
+	"dart": CRIM, "swirl": JADE, "racer": GOLD, "chaser": GUN, "flanker": COBALT, "rammer": PEARL,
+	"container": PEARL, "turret_base": CRIM, "bulwark": COBALT_D, "railjack": JADE,
 	"rock_s": Color(0.33, 0.3, 0.27), "rock_l": Color(0.33, 0.3, 0.27),
-	"lazaro_piece": PEARL, "boss_pod": COBALT, "boss_shutter": PEARL, "boss_eye": Color(0.86, 0.6, 0.66),
-	"ouro_head": JADE, "ouro_car": JADE, "press_core": GUN, "press_plate": COBALT_L,
-	"press_hammer": PEARL, "press_vent": COBALT_D,
+	"lazaro_piece": VIOLET, "boss_pod": STEEL_M, "boss_shutter": STEEL_L, "boss_eye": STEEL_M,
+	"ouro_head": JADE, "ouro_car": JADE, "press_core": GUN, "press_plate": STEEL_L,
+	"press_hammer": ORANGE, "press_vent": ORANGE,
 }
 
 
