@@ -4,11 +4,12 @@ extends BossBase
 ## (two blocks on the flanks; a channel in front of the eye lets shots in);
 ## four pods at the corners fire shell fans; the eye is only vulnerable while
 ## its shutters are open, and then it answers with light energy patterns.
+## The two shutter halves can be shot off: with one gone, shots get in on
+## that side even while the eye is shut.
 ## Phase A: the pods fire shell fans; the eye opens for longer than it is
 ## shut, and while open fires a needle shotgun, a pair of serpents (armoured
 ## IRON balls that weave down at the ship and stop your shots, after the
 ## NES Star Soldier's big bullets; announced) and a flower of shell rings.
-## Every other round two energy couriers fly out just before it opens.
 ## Phase B, ENRAGED (pods gone or after a while): the fortress sways, the
 ## eye opens even more, the empty pod sockets spin shell spirals while it
 ## is shut, and each opening brings three serpents, a longer flower, a wide
@@ -17,7 +18,7 @@ extends BossBase
 
 const INFO := {
 	"name": "STAR CORTEX", "role": "boss",
-	"desc": "目が開いた時だけ効く（閉じている時間より長く開く）。開くと針弾・蛇行する大型弾（破壊不能でショットを防ぐ、予兆あり）・花びら状の物理弾。ポッドは扇状の物理弾。ポッドを失うか時間で発狂：揺れながら、閉じている間は空いた穴から渦巻き弾、開くと大型弾 3 つ・長い花びら・広い散弾・はじけて輪になる弾。開く前に運び屋を出す",
+	"desc": "目が開いた時だけ効く（閉じている時間より長く開く）。目を覆うシャッター（左右 2 枚）は壊せて、壊した側からは閉じていても撃ち込める。開くと針弾・蛇行する大型弾（破壊不能でショットを防ぐ、予兆あり）・花びら状の物理弾。ポッドは扇状の物理弾。ポッドを失うか時間で発狂：揺れながら、閉じている間は空いた穴から渦巻き弾、開くと大型弾 3 つ・長い花びら・広い散弾・はじけて輪になる弾",
 	"demos": [["FULL", ""], ["ENRAGED", "B"]],
 }
 const EYE_HP := 1000.0
@@ -27,6 +28,10 @@ const POD_SCORE := 5000
 const POD_OFF := [Vector3(-5.6, 0, -2.4), Vector3(5.6, 0, -2.4), Vector3(-4.3, 0, 3.3), Vector3(4.3, 0, 3.3)]
 const ARMOUR_OFF := [Vector3(-4.0, 0, 0.0), Vector3(4.0, 0, 0.0)]
 const ARMOUR_R := 2.7
+const SHUTTER_HP := 220.0
+const SHUTTER_SCORE := 5000
+const SHUTTER_R := 1.35
+const SHUTTER_X := 1.05  # hit zone centre from the shutter's inner edge
 ## the eye: seconds shut, then open, per round (phase A, ENRAGED)
 const CLOSED_A := 3.0
 const OPEN_A := 4.4
@@ -38,8 +43,7 @@ var hull: MeshInstance3D
 var armour: Array[Enemy] = []
 var eye: Enemy
 var pods: Array[Enemy] = []
-var shutter_l: MeshInstance3D
-var shutter_r: MeshInstance3D
+var shutters: Array[Enemy] = []  # left, right: they can be shot off
 var center := Vector3.ZERO
 var phase := 0  # 0 enter, 1 A, 2 B, 3 dying
 var st := 0.0
@@ -50,7 +54,6 @@ var open_want := false
 var fired := {}
 var spiral_a := 0.0
 var spiral_t := 0.0
-var rounds := 0
 var serpent_to := Vector3.ZERO
 var flower_a := 0.0
 var pod_t := 1.0
@@ -62,8 +65,22 @@ var dying_t := 0.0
 func setup(g: Game) -> void:
 	game = g
 	center = Vector3(0, 0, game.field_top - 9.0)
-	# order matters: shots test enemies in list order, so the eye and pods
-	# come before the hull armour that would otherwise swallow them.
+	# order matters: shots test enemies in list order, so the shutters come
+	# before the eye they cover, and the eye and pods before the hull armour
+	# that would otherwise swallow them.
+	for s in [-1, 1]:
+		var sh := game.spawn_part(self, "boss_shutter", SHUTTER_R)
+		sh.hp = SHUTTER_HP
+		sh.max_hp = SHUTTER_HP
+		sh.score = SHUTTER_SCORE
+		sh.energy_drop = 10.0
+		sh.blast = 2.5
+		sh.armored = true
+		sh.ram = false
+		# the mesh is the left half; its inner edge sits SHUTTER_X from the part
+		sh.model.position = Vector3(-s * SHUTTER_X, 1.25, 0)
+		sh.model.scale = Vector3(-s, 1, 1)
+		shutters.append(sh)
 	eye = game.spawn_part(self, "boss_eye", 1.9)
 	eye.hp = EYE_HP
 	eye.max_hp = EYE_HP
@@ -87,13 +104,6 @@ func setup(g: Game) -> void:
 		a.armored = true
 		a.hp = 1e9
 		armour.append(a)
-	shutter_l = MeshInstance3D.new()
-	shutter_l.mesh = Vox.get_mesh("boss_shutter")
-	add_child(shutter_l)
-	shutter_r = MeshInstance3D.new()
-	shutter_r.mesh = shutter_l.mesh
-	shutter_r.scale = Vector3(-1, 1, 1)
-	add_child(shutter_r)
 	_place()
 
 
@@ -104,8 +114,16 @@ func on_hit(e: Enemy, dmg: float) -> float:
 func on_part_killed(e: Enemy) -> void:
 	if e == eye:
 		_die()
-	elif pods.has(e):
+	elif pods.has(e) or shutters.has(e):
 		game.shake(0.8)
+
+
+func shutters_alive() -> int:
+	var c := 0
+	for q in shutters:
+		if not q.dead:
+			c += 1
+	return c
 
 
 func pods_alive() -> int:
@@ -125,8 +143,10 @@ func _place() -> void:
 		if not pods[k].dead:
 			pods[k].position = center + POD_OFF[k]
 	var gap := open * 2.2
-	shutter_l.position = center + Vector3(-gap, 1.25, 0)
-	shutter_r.position = center + Vector3(gap, 1.25, 0)
+	for k in 2:
+		if not shutters[k].dead:
+			var s := -1.0 if k == 0 else 1.0
+			shutters[k].position = center + Vector3(s * (gap + SHUTTER_X), 0, 0)
 
 
 func _warn_at(key: String, at: float, dur: float, kind: int) -> void:
@@ -152,7 +172,7 @@ func tick(dt: float) -> void:
 			if st > 4.0:
 				phase = 1
 				st = 0.0
-				for q in pods:
+				for q in pods + shutters:
 					q.armored = false
 				game.boss_fight_started()
 		1:
@@ -193,13 +213,15 @@ func tick(dt: float) -> void:
 				destroyed = true
 				finished = true
 				visible = false
-				for q in [eye] + armour + pods:
+				for q in [eye] + armour + pods + shutters:
 					game.remove_enemy(q)
 					q.visible = false
 				game.boss_destroyed(self)
 				return
 	open = move_toward(open, 1.0 if open_want else 0.0, dt * 2.5)
-	eye.armored = open < 0.7 or phase == 3
+	# shut, the eye is armoured while both shutters hold; with one shot off,
+	# shots get in on that side
+	eye.armored = phase == 0 or phase == 3 or (open < 0.7 and shutters_alive() == 2)
 	eye.model.rotation.y += dt * (1.8 if phase == 2 else 0.6)
 	_place()
 
@@ -219,13 +241,6 @@ func _enrage() -> void:
 ## One round of the eye: shut for `closed_time`, then open for `open_time`
 ## with its attacks, each energy shot announced on the eye.
 func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
-	if cycle_t == 0.0:
-		rounds += 1
-		if rounds % 2 == 1:
-			# couriers out just before the eye opens: their energy feeds a
-			# Spear + homing salvo into it
-			for s: Array in Formations.new(game).couriers(0.0, center + Vector3(0, 0, 1.0)):
-				game.spawn_enemy(s[1], s[2])
 	cycle_t += dt
 	open_want = cycle_t > closed_time and cycle_t < closed_time + open_time
 	var c := closed_time
@@ -318,7 +333,7 @@ func viewer_skip(to: String) -> void:
 		st = 0.0
 		cycle_t = 0.0
 		fired.clear()
-		for q in pods:
+		for q in pods + shutters:
 			q.armored = false
 		_place()
 
@@ -333,7 +348,7 @@ func _die() -> void:
 	phase = 3
 	dying_t = 0.0
 	open_want = true
-	for q in pods:
+	for q in pods + shutters:
 		if not q.dead:
 			game.kill(q)
 	var conv := game.bullets.cancel_all()

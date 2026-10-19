@@ -4,10 +4,11 @@ extends Node3D
 ##
 ## Main shot: every press fires a volley at once; holding fires 12 volleys/s
 ## automatically. Pressing fast builds Concentration, which multiplies shot
-## damage up to x5: each press per second above CONC_MIN_RATE is worth
-## CONC_PER_RATE (about 6 presses/s hold x4, 7.5 hold x5); auto fire never
-## builds it, and it drains when you stop tapping. It rises and falls by
-## the same amount of multiplier per second whatever the cap.
+## damage up to x8. The gauge (conc, 0..1) follows the presses per second:
+## empty at CONC_MIN_RATE (1.5), full at CONC_FULL_RATE (7.5); it fills and
+## drains at fixed rates, so holding it full is as hard as it always was.
+## The multiplier runs linearly from x1 (empty) to CONC_MAX_MUL (full).
+## Auto fire never builds it, and it drains when you stop tapping.
 ##
 ## Forms (Star Soldier style, the ship rearranges its parts): 0 = 2 forward
 ## shots from the pod tips; 1 = faster fire, +1 rear
@@ -21,20 +22,17 @@ const HIT_R := 0.2  # centre of the core only
 const ENERGY_MAX := 80.0
 const ENERGY_PER_HOMING := 10.0
 const MAX_HOMING := 8
-const CONC_MAX_MUL := 5.0
+const CONC_MAX_MUL := 8.0
 const CONC_MIN_RATE := 1.5  # presses per second below which it does not build
-const CONC_PER_RATE := 2.0 / 3.0  # multiplier per press per second above that
-const CONC_FULL_RATE := CONC_MIN_RATE + (CONC_MAX_MUL - 1.0) / CONC_PER_RATE  # 7.5: x5
-## rise and fall in multiplier per second (conc, the 0..1 gauge, moves by
-## these over CONC_MAX_MUL - 1)
-const CONC_RISE := 9.0 / (CONC_MAX_MUL - 1.0)
-const CONC_FALL := 2.7 / (CONC_MAX_MUL - 1.0)
+const CONC_FULL_RATE := 7.5  # presses per second that hold it full
+const CONC_RISE := 2.25  # gauge per second, filling
+const CONC_FALL := 0.675  # gauge per second, draining
 const TAP_GAP := 0.045
 const AUTO_RATE := [9.0, 12.0, 12.0]
 const SPEED := [17.0, 21.0, 21.0]
 const SPEAR_CD := 4.0
 const SPEAR_TIME := 0.42
-const SPEAR_LEN := 17.0
+const SPEAR_LEN := 15.0  # about a ship shorter than it was (17)
 const SPEAR_HW := 1.5
 const SPEAR_R := 3.6
 const SPEAR_DPS := 140.0

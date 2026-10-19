@@ -13,7 +13,6 @@
 | 後方強襲機（chaser） | 200 | 1 | `scripts/enemies/chaser.gd` 〃 |
 | 側面強襲機（flanker） | 200 | 1 | `scripts/enemies/flanker.gd` 〃 |
 | 周回円盤（racer） | 150 | 1 | `scripts/enemies/racer.gd` 〃 |
-| 運び屋（courier、ボスが出す。攻撃しない） | 500 | 4 | `scripts/enemies/courier.gd` 〃 |
 | 砲台（turret） | 400 | 5 | `scripts/enemies/turret.gd` 〃 |
 | 小惑星・小（rock） | 150 | 3 | `scripts/enemies/rock.gd` 〃 |
 | 小惑星・大（rock big） | 500 | 8 | 〃 |
@@ -22,11 +21,13 @@
 | 中型機（railjack、ステージ 2） | 2,500 | 100 | `scripts/enemies/railjack.gd` 〃 |
 | 中ボス ラザロ（撃破ボーナス） | 20,000 | 240 | `scripts/bosses/lazaro.gd` `SCORE` / `HP` |
 | ボスのポッド（4基） | 5,000 | 90 | `scripts/bosses/star_cortex.gd` `POD_SCORE` / `POD_HP` |
+| ボス STAR CORTEX のシャッター（2 枚） | 5,000 | 220 | `scripts/bosses/star_cortex.gd` `SHUTTER_SCORE` / `SHUTTER_HP` |
 | ボス STAR CORTEX の目 | 50,000 | 1,000 | `scripts/bosses/star_cortex.gd` `EYE_SCORE` / `EYE_HP` |
 | 中ボス OUROBOROS の車両（8 両） | 1,500 | 30 | `scripts/bosses/ouroboros.gd` `CAR_SCORE` / `CAR_HP` |
 | 中ボス OUROBOROS の頭（撃破） | 25,000 | 560 | `scripts/bosses/ouroboros.gd` `SCORE` / `HEAD_HP` |
 | ボス VULCAN PRESS の砲塔（2 基） | 3,000 | 70 | `scripts/bosses/vulcan_press.gd` `VENT_SCORE` / `VENT_HP` |
-| ボス VULCAN PRESS のハンマー（2 基） | 8,000 | 280 | `scripts/bosses/vulcan_press.gd` `HAMMER_SCORE` / `HAMMER_HP` |
+| ボス VULCAN PRESS の装甲板（3 枚） | 2,500 | 160 | `scripts/bosses/vulcan_press.gd` `PLATE_SCORE` / `PLATE_HP` |
+| ボス VULCAN PRESS のハンマー（2 基） | 8,000 | 560 | `scripts/bosses/vulcan_press.gd` `HAMMER_SCORE` / `HAMMER_HP` |
 | ボス VULCAN PRESS の核 | 60,000 | 1,400 | `scripts/bosses/vulcan_press.gd` `CORE_SCORE` / `CORE_HP` |
 
 撃破した敵の弾は消えてエネルギーになる（スコアはエネルギー取得分のみ）。
@@ -60,14 +61,13 @@
 | 発生元 | 量 | 場所 |
 |---|---:|---|
 | 編隊機 / 円盤 / 突進機雷 / 後方強襲機 / 側面強襲機 / 周回機 | 2 / 3 / 3 / 2 / 2 / 2 | `scripts/enemies/<種類>.gd` `energy_drop` |
-| 運び屋（ボスが弱点の開く前に 2 機ずつ出す） | 40（ホーミング 2 発ぶん） | `scripts/enemies/courier.gd` |
 | 砲台 / コンテナ | 4 / 4 | 〃 |
 | 小惑星 小 / 大 | 3 / 8 | 〃 |
 | 中型機 bulwark / railjack | 14 / 12 | 〃 |
-| ボスのポッド | 12 | `scripts/bosses/star_cortex.gd` |
+| ボスのポッド / シャッター | 12 / 10 | `scripts/bosses/star_cortex.gd` |
 | ラザロ撃破 | 40 | `scripts/bosses/lazaro.gd` |
 | OUROBOROS 車両 / 頭 / 最期 | 6 / 30 / 24 ＋車両ごとに 4 | `scripts/bosses/ouroboros.gd` |
-| VULCAN PRESS 砲塔 / ハンマー | 8 / 14 | `scripts/bosses/vulcan_press.gd` |
+| VULCAN PRESS 砲塔 / ハンマー / 装甲板 | 8 / 14 / 6 | `scripts/bosses/vulcan_press.gd` |
 | タイル 薄 / 十字 / 防爆扉 | 2 / 5 / 10 | `scripts/terrain/island.gd` `TILE_ENERGY` |
 | 消した弾（撃破・スピア） | 1 発につき 1 | `scripts/game.gd` |
 
@@ -89,11 +89,11 @@
 
 | ステージ | 破壊 | アイテム | タイムボーナス | クリアタイム |
 |---|---:|---:|---:|---:|
-| 1 | 約 41 万 | 約 42 万（うちスター 44 個、パワーアップ 6 個） | 約 18 万 | 約 125 秒 |
-| 2（ステージ 1 から続けて） | 約 40 万 | 約 67 万（うちスター 55 個） | 約 18 万 | 約 124 秒 |
-| 2（ステージ 2 から始めて、第 1 形態から） | 約 41 万 | 約 54 万（うちスター 58 個） | 約 17 万 | 約 132 秒 |
+| 1 | 約 41 万 | 約 38 万（うちスター 39 個、パワーアップ 6 個） | 約 18 万 | 約 118 秒 |
+| 2（ステージ 1 から続けて） | 約 41 万 | 約 64 万（うちスター 51 個） | 約 18 万 | 約 125 秒 |
+| 2（ステージ 2 から始めて、第 1 形態から） | 約 39 万 | 約 51 万（うちスター 55 個） | 約 18 万 | 約 119 秒 |
 
-自動操縦はほぼ秒間 7.5 回連打するので、ショットはおおむね ×5。
+自動操縦はほぼ秒間 7.5 回連打するので、ショットはおおむね ×8（最大）。
 
 ## タイルの密度（1 秒あたりに流れてくるタイルの数）
 

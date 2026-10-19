@@ -131,7 +131,7 @@ func _conc(p: Vector2, pl: Player) -> void:
 	var r := Rect2(p.x, p.y + 18, 200, 14)
 	draw_rect(r, Color(0.05, 0.08, 0.15, 0.9))
 	draw_rect(Rect2(r.position, Vector2(r.size.x * f, r.size.y)), c)
-	# a mark at each whole multiplier (x2, x3, x4)
+	# a mark at each whole multiplier (x2 ... x7)
 	var steps := int(Player.CONC_MAX_MUL - 1.0)
 	for k in range(1, steps):
 		var x := r.position.x + r.size.x * k / float(steps)

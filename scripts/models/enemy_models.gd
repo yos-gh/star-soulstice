@@ -3,7 +3,7 @@ extends Models
 ## Small and mid-size enemies, ground guns and drifting rocks: polished gold
 ## and bronze armour over gunmetal, red eyes.
 
-const NAMES := ["dart", "swirl", "rammer", "chaser", "flanker", "racer", "container", "turret_base", "turret_head", "bulwark", "railjack", "railjack_gun", "courier", "rock_s", "rock_l"]
+const NAMES := ["dart", "swirl", "rammer", "chaser", "flanker", "racer", "container", "turret_base", "turret_head", "bulwark", "railjack", "railjack_gun", "rock_s", "rock_l"]
 
 
 static func make(name: String) -> ArrayMesh:
@@ -32,8 +32,6 @@ static func make(name: String) -> ArrayMesh:
 			return _railjack()
 		"railjack_gun":
 			return _railjack_gun()
-		"courier":
-			return _courier()
 		"rock_s":
 			return _rock(5, 0.16, 7)
 		"rock_l":
@@ -291,31 +289,6 @@ static func _railjack_gun() -> ArrayMesh:
 	v.fill_sym(1, 2, -13, 2, 3, -13, AMBER, true)
 	v.fill_sym(0, 4, 1, 0, 4, 2, EYE, true)
 	return v.mesh(U * 1.2, Vector3(0, 0, 0))
-
-
-## Energy courier: a little gold-and-gunmetal frame (nose toward -z) round a
-## big glowing energy canister, the colour of the energy gauge, so it reads
-## as something to collect.
-static func _courier() -> ArrayMesh:
-	var v := Vox.new(18, 9, 20)
-	var can := Color(0.55, 1.0, 0.45)
-	for z in range(-9, 9):
-		for x in range(-8, 8):
-			var r := Vector2(x + 0.5, (z + 0.5) * 0.9).length()
-			if r < 7.6 and r > 5.6:
-				v.fill(x, 1, z, x, 2, z, GOLD if int(atan2(z + 0.5, x + 0.5) * 3.0) % 2 == 0 else GUN)
-			elif r <= 5.6 and r > 3.6:
-				v.put(x, 1, z, GUN_D)
-			elif r <= 3.6:
-				v.fill(x, 1, z, x, 6, z, can, true)
-				if r > 2.8:
-					for y in [2, 4]:
-						v.put(x, y, z, GUN_D)
-	v.fill(-1, 7, -1, 0, 7, 0, GOLD_L)
-	v.fill_sym(0, 1, -10, 0, 2, -8, GOLD)
-	v.fill_sym(6, 1, 7, 7, 2, 9, BRONZE)
-	v.fill_sym(0, 2, -10, 0, 2, -10, EYE, true)
-	return v.mesh(U, Vector3(0, 2.0, 0))
 
 
 ## Drifting asteroid chunk (debris belt), lumpy and dark.

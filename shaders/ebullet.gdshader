@@ -7,8 +7,10 @@ render_mode unshaded, cull_disabled, shadows_disabled, fog_disabled;
 //                            1 breakable   (cool, dark centre, bright outline)
 //                            2 iron (shaded steel ball, lit rim, hot core)
 // INSTANCE_CUSTOM.y = length / width (1 = round, > 1 = needle/capsule).
-// A needle's colour shifts a little from head (UV.y = 1, the way it flies)
-// to tail: brighter and hotter in front, a little deeper behind.
+// An unbreakable needle keeps the round bullet's coloured outline all
+// along; inside, its head (UV.y = 1, the way it flies) glows white-hot like
+// a round one and the glow fades through the bullet colour to dark at the
+// tail. A breakable needle is only a little brighter at the head.
 
 varying vec4 cust;
 
@@ -29,11 +31,14 @@ void fragment() {
 		float core = smoothstep(0.58, 0.3, r);
 		float band = smoothstep(0.74, 0.88, r);
 		vec3 body = c * 1.7;
-		if (aspect > 1.01) {
-			body = mix(c * vec3(1.35, 0.95, 0.9), c * 1.9, head);
-			core *= mix(0.8, 1.0, head);
-		}
 		col = mix(body, vec3(1.7), core);
+		if (aspect > 1.01) {
+			// outline all along, the inside white-hot at the head, dark at the tail
+			float inner = smoothstep(0.62, 0.48, r);
+			vec3 inside = mix(c * 0.14, c * 1.6, smoothstep(0.05, 0.55, head));
+			inside = mix(inside, vec3(1.7), smoothstep(0.55, 0.92, head));
+			col = mix(body, inside, inner);
+		}
 		col = mix(col, c * 0.12, band);
 	} else if (cust.x > 1.5) {
 		// IRON: a shaded steel ball with a lit rim and a hot core

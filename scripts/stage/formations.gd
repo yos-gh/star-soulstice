@@ -218,21 +218,6 @@ func _on_plane(px: Vector2) -> Vector2:
 	return Vector2(p.x, p.z)
 
 
-## A pair of energy couriers from a boss at `from` (default: where a boss
-## sits): each swings down round the middle of the screen on its side and
-## away up the other side (see courier.gd).
-func couriers(at: float, from := Vector3.INF) -> Array:
-	if from == Vector3.INF:
-		from = Vector3(0, 0, _top() + 6.0)
-	var out := []
-	for s in [-1, 1]:
-		var p0 := from + Vector3(s * 6.5, 0, 1.0)
-		var p1 := Vector3(s * 3.5 + from.x * 0.3, 0, _top() + 22.0)
-		var p2 := Vector3(-s * 10.0, 0, _top() - 4.0)
-		out.append([at + (0.0 if s < 0 else 0.02), "courier", {"x": p0.x, "z": p0.z, "p0": p0, "p1": p1, "p2": p2, "counts": false}])
-	return out
-
-
 func rammers(at: float, xs: Array, interval: float) -> Array:
 	var out := []
 	for i in xs.size():

@@ -189,14 +189,14 @@ func draw() -> void:
 	for i in n:
 		var m := mul[i]
 		var f := (m - 1.0) / 3.0
-		# thickness follows the multiplier: x1 = 1.0, x4 = 2.0, x5 = 2.33
-		# (length fixed); cyan to gold by x4, then hotter toward x5
-		var w := SHOT_W * (1.0 + f)
+		# thickness follows the multiplier: x1 = 1.0, x4 = 2.0, x8 = 2.6
+		# (length fixed); cyan to gold by x4, then white-hot toward x8
+		var w := SHOT_W * (1.0 + minf(f, 1.0) + maxf(m - 4.0, 0.0) * 0.15)
 		var dir := vel[i].normalized()
 		var side := Vector3(-dir.z, 0, dir.x)
 		var c := Color(0.4, 0.85, 1.0).lerp(Color(1.0, 0.78, 0.3), minf(f, 1.0))
 		if m > 4.0:
-			c = c.lerp(Color(1.0, 0.95, 0.78), (m - 4.0) * 0.7)
+			c = c.lerp(Color(1.0, 0.97, 0.85), (m - 4.0) / 4.0)
 		var at := pos[i] + Vector3(0, 0.4, 0)
 		# local -z (UV.y = 0) is the head
 		mm.set_instance_transform(k, Transform3D(Basis(side * w, Vector3.UP, -dir * SHOT_LEN), at))

@@ -3,32 +3,32 @@ extends BossBase
 ## tunnel, at the end of the furnace row. Its crucible core (the only weak
 ## point, the gauge) burns in a bay in the front of the hull behind a
 ## ring of three armour plates that turn round it: shots get through the
-## gaps. Two hammers ride a gantry rail across its front: one slides over
+## gaps, and the plates can be shot off one by one. Two hammers ride a gantry rail across its front: one slides over
 ## the ship's lane, locks on (the lane is marked, chevrons down to the
 ## strike point), drives down the lane on its telescoping ram, throws up a
 ## spray of shells where it lands, holds the lane shut a moment and draws
 ## back. The ram runs right to the bottom of the screen: get out of the
-## lane. Two vent guns at the corners fire shell fans (big, then small),
-## the core fires telegraphed needle bursts, and before each quiet gap two
-## energy couriers fly out (shoot them for homing energy).
+## lane. Two vent guns at the corners fire shell fans (big, then small)
+## and the core fires telegraphed needle bursts.
 ## OVERDRIVE (after a while, hammers still up): each round the whole press
 ## comes down the tunnel (marked first), spins a shell spiral from the core
 ## while both hammers strike either side of the ship at once.
-## MELTDOWN (both hammers destroyed): the crucible boils over. The press
-## stays forward and sways; each round it sweeps a hose of shells across
-## the tunnel, fires armoured IRON slugs down the lanes either side of the
-## ship from the empty hammer sockets (marked; they stop your shots), lobs
-## shells that burst into rings and fires a wide needle burst, then rests
-## a moment. Every round ends in a quiet gap to come in with the Spear.
+## MELTDOWN (both hammers destroyed; they are tough, and breaking them is
+## the player's choice): the crucible boils over. The press stays forward
+## and sways wide; each round it sweeps twin hoses of shells, sends two
+## serpents weaving down at the ship, fires armoured IRON slugs down the
+## ship's lane and one either side from the empty hammer sockets (marked;
+## they stop your shots) twice, lobs shells that burst into rings and
+## fires a wide needle burst. Every round ends in a quiet gap to come in with the Spear.
 
 const INFO := {
 	"name": "VULCAN PRESS", "role": "boss",
-	"desc": "核（坩堝）だけが弱点。核のまわりを回る 3 枚の装甲板の隙間を撃ち抜く。2 基のハンマーが自機の列に寄って予兆のあと画面の下端まで打ち下ろし、物理弾が上へ散る。角の砲塔は扇状の物理弾。静かな間の前に運び屋。時間で暴走：本体ごと迫り出して渦巻き弾、ハンマーが自機の両脇を同時に叩く。ハンマーを両方失うと発狂（MELTDOWN）：揺れながら物理弾を薙ぎ払い、空いた穴から破壊不能の大型弾を自機の両脇の列へ、はじけて輪になる弾、広い針弾",
+	"desc": "核（坩堝）だけが弱点。核のまわりを回る 3 枚の装甲板の隙間を撃ち抜く（装甲板は 1 枚ずつ壊せる）。2 基のハンマーが自機の列に寄って予兆のあと画面の下端まで打ち下ろし、物理弾が上へ散る。角の砲塔は扇状の物理弾。時間で暴走：本体ごと迫り出して渦巻き弾、ハンマーが自機の両脇を同時に叩く。ハンマー（硬い）を両方失うと発狂（MELTDOWN）：大きく揺れながら 2 本の物理弾の薙ぎ払い、蛇行する鉄球弾 2 つ、空いた穴から自機の列と両脇の 3 列へ鉄球弾を 2 回、はじけて輪になる弾、広い針弾",
 	"demos": [["FULL", ""], ["OVERDRIVE", "B"], ["MELTDOWN", "C"]],
 }
 const CORE_HP := 1400.0
 const CORE_SCORE := 60000
-const HAMMER_HP := 280.0
+const HAMMER_HP := 560.0
 const HAMMER_SCORE := 8000
 const VENT_HP := 70.0
 const VENT_SCORE := 3000
@@ -47,8 +47,11 @@ const HOLD_T := 0.55
 const BACK_T := 1.1
 const CYCLE_A := 9.0
 const CYCLE_B := 10.0
-const CYCLE_C := 8.0
+const CYCLE_C := 7.0
 const MELT_DOWN := 2.5  # how far forward the press stays in MELTDOWN
+const SLUG_GAP := 3.4  # between MELTDOWN's slug lanes
+const PLATE_HP := 160.0
+const PLATE_SCORE := 2500
 const ADVANCE := 4.0  # how far the press comes down in OVERDRIVE
 const ENRAGE_T := 55.0
 
@@ -73,6 +76,7 @@ var spiral_t := 0.0
 var muzzles: Array[Enemy] = []  # where MELTDOWN's slugs leave (marked by the lock-ons)
 var lanes := PackedFloat32Array()
 var hose_t := 0.0
+var serpent_to := Vector3.ZERO
 var dying_t := 0.0
 var destroyed := false
 
@@ -85,7 +89,11 @@ func setup(g: Game) -> void:
 	# the plates come before the core they shield, the hull armour last
 	for k in 3:
 		var pl := game.spawn_part(self, "press_plate", 1.05)
-		pl.armored = true
+		pl.hp = PLATE_HP
+		pl.max_hp = PLATE_HP
+		pl.score = PLATE_SCORE
+		pl.energy_drop = 6.0
+		pl.blast = 1.8
 		pl.ram = false
 		plates.append(pl)
 	core = game.spawn_part(self, "press_core", 1.6)
@@ -131,7 +139,7 @@ func setup(g: Game) -> void:
 		e.armored = true
 		e.hp = 1e9
 		armour.append(e)
-	for k in 2:
+	for k in 3:
 		var m := game.spawn_part(self, "", 0.8)
 		m.intangible = true
 		m.ram = false
@@ -146,6 +154,9 @@ func setup(g: Game) -> void:
 ## While it comes in nothing can be hurt.
 func _arm(on: bool) -> void:
 	core.armored = on
+	for pl in plates:
+		if not pl.dead:
+			pl.armored = on
 	for h in hammers:
 		if not h["dead"]:
 			(h["head"] as Enemy).armored = on
@@ -166,7 +177,7 @@ func on_part_killed(e: Enemy) -> void:
 		if h["head"] == e:
 			_drop_hammer(h)
 			game.shake(0.8)
-	if vents.has(e):
+	if vents.has(e) or plates.has(e):
 		game.shake(0.5)
 
 
@@ -284,8 +295,6 @@ func _round_a() -> void:
 		_vents(Bullets.BIG)
 	if _once("v2s", 6.45):
 		_vents(Bullets.SMALL)
-	if _once("couriers", 5.6):
-		_couriers()
 
 
 ## Phase B: the press comes down (marked), spirals and strikes both sides
@@ -323,8 +332,6 @@ func _round_b(dt: float) -> void:
 		_vents(Bullets.BIG)
 	if _once("vs", 8.25):
 		_vents(Bullets.SMALL)
-	if _once("couriers", 6.6):
-		_couriers()
 
 
 func _overdrive() -> void:
@@ -346,52 +353,70 @@ func _meltdown() -> void:
 	game.shake(1.0)
 
 
-## Phase C: the press stays forward and sways. A hose of shells sweeps
-## across, slugs fire down the lanes either side of the ship, shells burst
-## into rings, a wide needle burst, then a rest (couriers fly out).
+## Phase C: the press stays forward and sways wide. Twin hoses of shells
+## sweep the tunnel from both sides at once while two serpents (snaking IRON
+## balls, marked) weave down at the ship; then IRON slugs fire down three
+## lanes (the ship's own and one either side, marked), shells burst into
+## rings, the vents fire, a wide needle burst, and a second round of slugs
+## before a short rest.
 func _round_c(dt: float) -> void:
 	center.z = move_toward(center.z, rest_z + MELT_DOWN, 3.0 * dt)
-	center.x = sin(st * 0.5) * 3.0
+	center.x = sin(st * 0.7) * 4.0
 	var cp := center + CORE_OFF + Vector3(0, 0, 1.4)
-	# the hose: a stream of shells swinging from one side to the other
-	if cycle_t < 2.2 and game.can_fire(cp):
+	# twin hoses: two streams of shells swinging out and back, mirrored
+	if cycle_t < 2.4 and game.can_fire(cp):
 		hose_t -= dt
 		if hose_t <= 0.0:
-			hose_t = 0.07
-			var a := PI / 2.0 + sin(cycle_t * 2.6) * 1.05
-			game.bullets.fire(cp, a, 6.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG)
-			game.bullets.fire(cp, a + 0.12, 6.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.SMALL)
-	# slugs from the empty hammer sockets down the lanes beside the ship
-	if _once("w_slug", 2.4):
-		var px := game.player.position.x
-		lanes = PackedFloat32Array([clampf(px - 3.2, -12.0, 12.0), clampf(px + 3.2, -12.0, 12.0)])
-		_place(0.0)
-		for k in 2:
-			game.warn(muzzles[k], 0.8, Game.Warn.MOVE, 0.9, Vector3(lanes[k], 0, game.field_bottom + 1.0))
-		game.sfx.play("slam")
-	if _once("slug", 3.2):
-		for k in 2:
-			var at: Vector3 = muzzles[k].position
-			if game.combat_on():
-				game.bullets.fire(at, PI / 2.0, 13.0, Bullets.IRON, self)
-		game.shake(0.4)
-	if _once("split", 3.6) and game.can_fire(cp):
+			hose_t = 0.075
+			var sw := sin(cycle_t * 2.6) * 1.0
+			for s in [-1, 1]:
+				game.bullets.fire(cp, PI / 2.0 + s * sw, 6.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if s < 0 else Bullets.SMALL)
+	# serpents from the core, weaving down at the ship (marked)
+	if _once("w_serpent", 0.6):
+		serpent_to = game.player.position
+		game.warn(core, 0.8, Game.Warn.MOVE, core.radius, serpent_to)
+	if _once("serpent", 1.4):
+		var d := serpent_to - cp
+		for s in [-1, 1]:
+			game.bullets.fire(cp, atan2(d.z, d.x) + s * deg_to_rad(18.0), 5.2, Bullets.IRON, self)
+			game.bullets.snake(2.6, 3.4)
+	# slugs down three lanes, twice a round
+	_slugs("a", 2.2)
+	_slugs("b", 5.4)
+	if _once("split", 3.3) and game.can_fire(cp):
 		# three big shells that burst into rings
 		for s in [-1, 0, 1]:
 			game.bullets.fire(cp, game.bullets.aim(cp) + s * deg_to_rad(25.0), 4.5, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, 1.6)
-			game.bullets.split(0.9, 10)
-	if _once("v", 4.4):
+			game.bullets.split(0.9, 12)
+	if _once("v", 3.9):
 		_vents(Bullets.BIG)
-	if _once("vs", 4.65):
+	if _once("vs", 4.15):
 		_vents(Bullets.SMALL)
-	if _once("w_core", 5.0):
+	if _once("w_core", 4.5):
 		game.warn(core, Enemy.WINDUP_SHOT + 0.15, Game.Warn.SHOT, core.radius)
-	if _once("core", 5.0 + Enemy.WINDUP_SHOT + 0.15):
+	if _once("core", 4.5 + Enemy.WINDUP_SHOT + 0.15):
 		var at := core.position + Vector3(0, 0, 1.6)
 		if game.can_fire(at):
-			game.bullets.fan(at, game.bullets.aim(at), 7, 30.0, 9.5, Bullets.ORB, self, Bullets.NEEDLE)
-	if _once("couriers", 6.2):
-		_couriers()
+			game.bullets.fan(at, game.bullets.aim(at), 9, 36.0, 10.0, Bullets.ORB, self, Bullets.NEEDLE)
+
+
+## IRON slugs from the hammer sockets down the ship's lane and one either
+## side of it: marked at `at`, fired 0.8 s later.
+func _slugs(key: String, at: float) -> void:
+	if _once("w_" + key, at):
+		var px := game.player.position.x
+		lanes = PackedFloat32Array()
+		for k in muzzles.size():
+			lanes.append(clampf(px + (k - 1) * SLUG_GAP, -12.0, 12.0))
+		_place(0.0)
+		for k in muzzles.size():
+			game.warn(muzzles[k], 0.8, Game.Warn.MOVE, 0.9, Vector3(lanes[k], 0, game.field_bottom + 1.0))
+		game.sfx.play("slam")
+	if _once(key, at + 0.8):
+		for k in muzzles.size():
+			if game.combat_on():
+				game.bullets.fire(muzzles[k].position, PI / 2.0, 14.0, Bullets.IRON, self)
+		game.shake(0.4)
 
 
 func _smooth(f: float) -> float:
@@ -533,23 +558,14 @@ func _needles() -> void:
 		game.bullets.fan(at, game.bullets.aim(at), 5, 18.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 
 
-## Two energy couriers out of the hatches at the hull's ends: shot down,
-## they spill energy for homing lasers.
-func _couriers() -> void:
-	for s: Array in Formations.new(game).couriers(0.0, center + Vector3(0, 0, 0.5)):
-		var p: Dictionary = s[2]
-		p["p0"] = Vector3(signf(p["p0"].x) * 12.5 + center.x, 0, center.z + 1.0)
-		p["x"] = p["p0"].x
-		p["z"] = p["p0"].z
-		game.spawn_enemy(s[1], p)
-
-
 func _place(dt: float) -> void:
 	hull.position = center
 	var cp := center + CORE_OFF
 	core.position = cp
 	core.model.rotation.y += dt * 0.8
 	for k in 3:
+		if plates[k].dead:
+			continue
 		var a := plate_a + k * TAU / 3.0
 		plates[k].position = cp + Vector3(cos(a), 0, sin(a)) * PLATE_R
 		plates[k].rotation.y = atan2(-cos(a), -sin(a))
