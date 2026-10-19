@@ -87,7 +87,7 @@ static func _lazaro_core() -> ArrayMesh:
 ## structure still being built): grey machinery in stepped rings round the
 ## eye with a ragged rim, truss girders and pipes sticking out past it
 ## (open pipe ends, flanges, cyan lamps at the joints), an unfinished flank
-## where only the frame is up, scaffold towers and a yellow crane at the
+## where only the frame is up, scaffold towers and a grey crane at the
 ## back, grey flank gun decks, a ring of cool lamps and a channel in front
 ## of the eye, so shots from below reach it. Everything but the back stays
 ## at or under the bullets' height (surface y 9, 0.32 above the plane) so
@@ -287,16 +287,17 @@ static func _scaffold(v: Vox, x: int, z: int, w: int, d: int, y0: int, y1: int) 
 	v.fill(x, y1, z, x + w / 2, y1, z + d, STEEL_L)
 
 
-## A tower crane: a lattice mast at `at` up to height `h`, a yellow jib
-## `reach` long along `dir` out past the edge with a girder hanging from it,
-## a short counter-jib with its weight.
+## A tower crane: a lattice mast at `at` up to height `h`, a jib `reach`
+## long along `dir` out past the edge with a girder hanging from it, a short
+## counter-jib with its weight. All in dull greys: it is scenery, and a
+## bright colour made it look like something to shoot (yos).
 static func _crane(v: Vox, at: Vector2i, dir: Vector2, reach: int, h: int) -> void:
 	for y in range(3, h + 1):
-		v.put(at.x, y, at.y, HAZARD if y % 2 == 0 else GUN_D)
-		v.put(at.x + 1, y, at.y + 1, GUN_D if y % 2 == 0 else HAZARD)
+		v.put(at.x, y, at.y, STEEL_M if y % 2 == 0 else GUN_D)
+		v.put(at.x + 1, y, at.y + 1, GUN_D if y % 2 == 0 else STEEL_M)
 	for t in range(-8, reach + 1):
 		var p := Vector2(at) + dir * t
-		v.put(int(round(p.x)), h, int(round(p.y)), HAZARD if posmod(t, 4) != 0 else GUN_D)
+		v.put(int(round(p.x)), h, int(round(p.y)), GUN if posmod(t, 4) != 0 else GUN_D)
 	var w := Vector2(at) - dir * 8
 	v.fill(int(w.x) - 1, h - 2, int(w.y) - 1, int(w.x) + 1, h - 1, int(w.y) + 1, GUN_D)
 	var e := Vector2(at) + dir * (reach - 3)
