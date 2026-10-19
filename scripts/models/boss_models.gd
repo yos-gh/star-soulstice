@@ -83,20 +83,26 @@ static func _lazaro_core() -> ArrayMesh:
 
 # ------------------------------------------------------------ boss
 
-## STAR CORTEX hull (Star Brain homage, after the NES art: a grey machine
-## fortress with cool lamps): an octagonal fortress (faces down-screen)
-## with stepped armour rings in machine greys, light inside, darker out to
-## a black-lined rim, blocks of machinery raised here and there, grey flank
-## gun decks, a ring of cool lamps and a channel in front of the eye, so
-## shots from below reach it.
+## STAR CORTEX hull (Star Brain homage, after the NES art: a huge machine
+## structure still being built): grey machinery in stepped rings round the
+## eye with a ragged rim, truss girders and pipes sticking out past it
+## (open pipe ends, flanges, cyan lamps at the joints), an unfinished flank
+## where only the frame is up, scaffold towers and a yellow crane at the
+## back, grey flank gun decks, a ring of cool lamps and a channel in front
+## of the eye, so shots from below reach it. Everything but the back stays
+## at or under the bullets' height (surface y 9, 0.32 above the plane) so
+## the hull never hides a bullet passing over it.
 static func _boss_hull() -> ArrayMesh:
-	var v := Vox.new(120, 13, 88)
+	var v := Vox.new(176, 16, 128)
+	var top_max := 9  # surface height over the bullets' plane (voxels)
 	for z in range(-44, 44):
 		for x in range(-60, 60):
 			var ax := absf(x + 0.5)
 			var az := absf(z + 0.5)
 			var oct := maxf(maxf(ax / 57.0, az / 42.0), (ax + az) / 76.0)
-			if oct > 1.0 or oct < 0.36:
+			# a ragged rim: blocks of the outer ring left out or built on
+			var rag := (Vox._hash(int(floor(x / 5.0)), 9, int(floor(z / 5.0))) - 0.5) * 0.22
+			if oct < 0.36 or oct > 0.95 + rag:
 				continue
 			if ax < 11.0 and z > 0:
 				continue
@@ -104,41 +110,94 @@ static func _boss_hull() -> ArrayMesh:
 			var top := GUN
 			if oct < 0.5:
 				h = 9
-				top = STEEL_L
+				top = STEEL_M.lerp(STEEL_L, 0.5)
 			elif oct < 0.66:
 				h = 7
 				top = STEEL_M
 			elif oct < 0.84:
 				h = 6
 				top = GUN
-			if oct > 0.94:
+			if oct > 0.92:
 				h = 3
 				top = GUN_D
 			var ring := absf(oct - 0.5) < 0.012 or absf(oct - 0.66) < 0.012 or absf(oct - 0.84) < 0.012
 			if ring:
 				top = BLACK
-			elif oct >= 0.5 and oct < 0.94:
+			elif oct >= 0.5 and oct < 0.92:
 				if int(ax) % 10 == 0 or int(az) % 8 == 0:
 					top = top.darkened(0.3)
 				else:
-					# machinery: blocks raised a step (mirrored, like the rest)
-					var n := Vox._hash(int(ax) / 3, 5, int(z + 44) / 3)
-					if n > 0.8:
-						h += 1
+					# machinery: blocks raised a step or two
+					var n := Vox._hash(int(floor(x / 3.0)), 5, int(floor(z / 3.0)))
+					if n > 0.78:
+						h = mini(h + (2 if n > 0.93 else 1), top_max)
 						top = top.lightened(0.12)
 					elif n < 0.12:
 						top = top.darkened(0.2)
+			# the unfinished flank (front right): only the frame is up
+			var frame := x > 26 and x < 56 and z > 4 and z < 34 and oct > 0.5
+			if frame and posmod(x, 6) != 0 and posmod(z, 6) != 0:
+				v.put(x, 0, z, BLACK)
+				v.put(x, 1, z, GUN_D)
+				continue
 			for y in h:
 				v.put(x, y, z, top if y == h - 1 else (GUN if y > 1 else GUN_D))
+			if frame and h < top_max:
+				v.put(x, h, z, STEEL_M)
+	# machinery blocks built out over the rim, all round (jittered, not
+	# mirrored: still being built)
+	for i in 18:
+		var a := TAU * (i + Vox._hash(i, 3, 7) * 0.6) / 18.0
+		var d := Vector2(cos(a), sin(a))
+		if absf(d.x) < 0.25 and d.y > 0.0:
+			continue  # keep the eye channel clear
+		var oct_d := maxf(maxf(absf(d.x) / 57.0, absf(d.y) / 42.0), (absf(d.x) + absf(d.y)) / 76.0)
+		var c := d * (0.9 / oct_d + 2.0 + Vox._hash(i, 4, 1) * 4.0)
+		var hw := 3 + int(Vox._hash(i, 5, 2) * 4.0)
+		var hd := 3 + int(Vox._hash(i, 6, 3) * 3.0)
+		var hh := 3 + int(Vox._hash(i, 7, 4) * 4.0)
+		var cx := int(c.x)
+		var cz := int(c.y)
+		v.fill(cx - hw, 1, cz - hd, cx + hw, hh, cz + hd, GUN)
+		v.fill(cx - hw, 0, cz - hd, cx + hw, 0, cz + hd, GUN_D)
+		v.fill(cx - hw + 1, hh, cz - hd + 1, cx + hw - 1, hh, cz + hd - 1, STEEL_M)
+		v.fill(cx - hw + 1, hh, cz, cx + hw - 1, hh, cz, BLACK)
+		if i % 4 == 1:
+			v.put(cx, hh + 1, cz - hd + 1, CYAN, true)
+	# truss girders sticking out a little past the rim, each with a module
+	# being hung on its end
+	for g: Array in [[12.0, 1.1], [38.0, 1.06], [64.0, 1.12], [101.0, 1.08], [143.0, 1.14], [168.0, 1.06], [205.0, 1.1], [232.0, 1.05], [300.0, 1.1], [331.0, 1.12]]:
+		var a := deg_to_rad(float(g[0]))
+		var d := Vector2(cos(a), sin(a))
+		var oct_d := maxf(maxf(absf(d.x) / 57.0, absf(d.y) / 42.0), (absf(d.x) + absf(d.y)) / 76.0)
+		var r0 := 0.8 / oct_d
+		var r1 := float(g[1]) / oct_d
+		_truss(v, d * r0, d, r1 - r0, 5)
+		var e := d * r1
+		v.fill(int(e.x) - 3, 2, int(e.y) - 3, int(e.x) + 3, 5, int(e.y) + 3, STEEL_M)
+		v.fill(int(e.x) - 2, 6, int(e.y) - 2, int(e.x) + 2, 6, int(e.y) + 2, GUN)
+		v.fill(int(e.x) - 3, 5, int(e.y), int(e.x) + 3, 5, int(e.y), BLACK)
+	# pipes along the deck, running a little out past the rim (mirrored pairs
+	# and a few odd ones)
+	for s in [-1, 1]:
+		_pipe(v, Vector2i(s * 24, -52), Vector2i(s * 24, 52), top_max)
+		_pipe(v, Vector2i(s * 34, -44), Vector2i(s * 34, 30), top_max)
+		_pipe(v, Vector2i(s * 13, -36), Vector2i(s * 44, -36), top_max)
+		_pipe(v, Vector2i(s * 14, 22), Vector2i(s * 58, 22), top_max)
+	_pipe(v, Vector2i(-46, -14), Vector2i(-46, 32), top_max)
+	_pipe(v, Vector2i(-62, 6), Vector2i(-20, 6), top_max)
+	_pipe(v, Vector2i(52, -26), Vector2i(52, 12), top_max)
+	# the eye channel's lamps
 	for z in range(1, 34):
 		if z % 4 == 0:
 			v.put(-12, 5, z, CYAN, true)
 			v.put(11, 5, z, CYAN, true)
+	# flank gun decks
 	for s in [-1, 1]:
-		v.fill(s * 30, 7, -10, s * 44, 8, 8, GUN)
-		v.fill(s * 31, 9, -8, s * 43, 9, 6, STEEL_L)
+		v.fill(s * 30, 5, -10, s * 44, 7, 8, GUN)
+		v.fill(s * 31, 8, -8, s * 43, 8, 6, STEEL_L)
 		for z in [-6, -1, 4]:
-			v.fill(s * 34, 9, z, s * 40, 9, z, BLACK)
+			v.fill(s * 34, 8, z, s * 40, 8, z, BLACK)
 		v.fill(s * 45, 6, -3, s * 52, 6, 2, GUN_D)
 		v.fill(s * 52, 6, -3, s * 52, 6, 2, AMBER, true)
 	for a in 24:
@@ -147,10 +206,102 @@ static func _boss_hull() -> ArrayMesh:
 		var z := int(round(sin(ang) * 17.0))
 		if absf(x) < 12 and z > 0:
 			continue
-		v.put(x, 9, z, LAMP, true)
-	v.fill(-3, 9, -43, 2, 10, -30, GUN)
+		v.put(x, 8, z, LAMP, true)
+	# at the back (only bullets leaving the screen pass over it): scaffold
+	# towers, the spine mast and a crane swinging a girder out past the edge
+	for t: Array in [[-40, -38, 8, 7, 13], [-17, -42, 6, 6, 11], [14, -40, 7, 6, 12], [40, -35, 6, 8, 10]]:
+		_scaffold(v, t[0], t[1], t[2], t[3], 4, t[4])
+	v.fill(-3, 3, -43, 2, 10, -30, GUN)
 	v.fill(-1, 11, -43, 0, 11, -36, AMBER, true)
+	_crane(v, Vector2i(28, -30), Vector2(0.86, -0.5), 46, 14)
 	return v.mesh(U * 1.2, Vector3(0.5, 6.0, 0.5))
+
+
+## Highest filled voxel in a column (-1: none).
+static func _top(v: Vox, x: int, z: int) -> int:
+	for y in range(v.sy - 1, -1, -1):
+		if v.filled(x, y, z):
+			return y
+	return -1
+
+
+## A truss girder from `from` along `dir` (plan view, voxels): two chords
+## at height y with cross members and posts every third step.
+static func _truss(v: Vox, from: Vector2, dir: Vector2, length: float, y: int) -> void:
+	var perp := Vector2(-dir.y, dir.x)
+	var steps := int(length)
+	for t in steps + 1:
+		var p := from + dir * t
+		for s: float in [-1.5, 1.5]:
+			var q := p + perp * s
+			v.put(int(round(q.x)), y, int(round(q.y)), STEEL_M)
+		if t % 3 == 0:
+			for k in range(-1, 2):
+				var q := p + perp * k
+				v.put(int(round(q.x)), y, int(round(q.y)), GUN_D)
+			v.fill(int(round(p.x)), y - 2, int(round(p.y)), int(round(p.x)), y - 1, int(round(p.y)), GUN_D)
+
+
+## A pipe (2 x 2) along x or z from a to b, lying on whatever is under it
+## (over open space it runs on at deck height and ends open), with flanges
+## and now and then a cyan lamp; it skips stretches where it would rise over
+## `top_max`.
+static func _pipe(v: Vox, a: Vector2i, b: Vector2i, top_max: int) -> void:
+	var along_x := a.y == b.y
+	var n := absi(b.x - a.x) if along_x else absi(b.y - a.y)
+	var step := Vector2i(signi(b.x - a.x), 0) if along_x else Vector2i(0, signi(b.y - a.y))
+	var side := Vector2i(0, 1) if along_x else Vector2i(1, 0)
+	var y := 4
+	for i in n + 1:
+		var p := a + step * i
+		var g := _top(v, p.x, p.y)
+		if g >= 0:
+			y = g + 1
+		if y + 1 > top_max - 1:
+			continue
+		var flange := i % 7 == 0
+		var col := GUN.lightened(0.06)
+		for k in 2:
+			var q := p + side * k
+			v.put(q.x, y, q.y, col)
+			v.put(q.x, y + 1, q.y, STEEL_L if flange else col.lightened(0.1))
+		if flange:
+			v.put(p.x - side.x, y, p.y - side.y, STEEL_M)
+			v.put(p.x + side.x * 2, y, p.y + side.y * 2, STEEL_M)
+			if i % 21 == 0:
+				v.put(p.x, y + 1, p.y, CYAN, true)
+		if i == n:
+			v.put(p.x, y + 1, p.y, BLACK)
+
+
+## An open scaffold tower: corner posts from y0 to y1, rings every third
+## level, a part-plated top.
+static func _scaffold(v: Vox, x: int, z: int, w: int, d: int, y0: int, y1: int) -> void:
+	for c: Vector2i in [Vector2i(x, z), Vector2i(x + w, z), Vector2i(x, z + d), Vector2i(x + w, z + d)]:
+		v.fill(c.x, y0, c.y, c.x, y1, c.y, STEEL_M)
+	for y in range(y0 + 2, y1 + 1, 3):
+		v.fill(x, y, z, x + w, y, z, GUN_D)
+		v.fill(x, y, z + d, x + w, y, z + d, GUN_D)
+		v.fill(x, y, z, x, y, z + d, GUN_D)
+		v.fill(x + w, y, z, x + w, y, z + d, GUN_D)
+	v.fill(x, y1, z, x + w / 2, y1, z + d, STEEL_L)
+
+
+## A tower crane: a lattice mast at `at` up to height `h`, a yellow jib
+## `reach` long along `dir` out past the edge with a girder hanging from it,
+## a short counter-jib with its weight.
+static func _crane(v: Vox, at: Vector2i, dir: Vector2, reach: int, h: int) -> void:
+	for y in range(3, h + 1):
+		v.put(at.x, y, at.y, HAZARD if y % 2 == 0 else GUN_D)
+		v.put(at.x + 1, y, at.y + 1, GUN_D if y % 2 == 0 else HAZARD)
+	for t in range(-8, reach + 1):
+		var p := Vector2(at) + dir * t
+		v.put(int(round(p.x)), h, int(round(p.y)), HAZARD if posmod(t, 4) != 0 else GUN_D)
+	var w := Vector2(at) - dir * 8
+	v.fill(int(w.x) - 1, h - 2, int(w.y) - 1, int(w.x) + 1, h - 1, int(w.y) + 1, GUN_D)
+	var e := Vector2(at) + dir * (reach - 3)
+	v.fill(int(e.x), 9, int(e.y), int(e.x), h - 1, int(e.y), BLACK)
+	_truss(v, e + Vector2(-dir.y, dir.x) * -4.0, Vector2(-dir.y, dir.x), 8.0, 8)
 
 
 ## A corner gun pod: grey rings round a cyan lamp, a cyan muzzle (it fires
