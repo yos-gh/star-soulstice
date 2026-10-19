@@ -5,10 +5,12 @@ extends RefCounted
 ##   player   white hull, red stripes, blue canopy and fins (after Caesar)
 ##   enemies  each family in its own livery, warm, cool, black and white
 ##            spread across the cast (white-and-blue is the player's, so
-##            enemies don't pair them): crimson-and-black fighters, jade
-##            drones, yellow-and-black racers, a black interceptor, cobalt
-##            blades, white mines, a white carrier banded in gold, a navy
-##            cruiser in gold; bosses after their concept (Lazaro violet,
+##            enemies don't pair them), and no near-black bodies against the
+##            black of space (mid grey at the darkest): crimson fighters, jade
+##            drones, yellow-and-grey racers, a pale interceptor with pink
+##            wings, sky-blue blades, white mines, a white carrier banded in
+##            gold, a grey cruiser in gold; bosses after their concept (Lazaro
+##            gold and bronze,
 ##            STAR CORTEX mechanical grey with a glowing eye after Star
 ##            Brain, OUROBOROS a jade train, VULCAN PRESS grey and
 ##            construction-machine orange round its molten core)
@@ -60,6 +62,9 @@ const STEEL_L := Color(0.52, 0.55, 0.58)  # light machine grey
 const STEEL_M := Color(0.4, 0.43, 0.46)
 const ORANGE := Color(0.88, 0.42, 0.1)  # construction-machine paint (matte, not a glow)
 const HAZARD := Color(0.86, 0.68, 0.16)  # hazard-stripe yellow
+const SKY := Color(0.48, 0.7, 0.86)  # light blue (softer than cobalt)
+const SKY_L := Color(0.74, 0.86, 0.94)
+const PINK := Color(0.92, 0.4, 0.64)
 # kept for callers
 const STEEL := GUN
 const CRIMSON := CRIM
@@ -72,10 +77,10 @@ const U := 0.09  # voxel size of small units
 
 ## Main armour colour of a model: its wreckage when it blows up.
 const BODY := {
-	"dart": CRIM, "swirl": JADE, "racer": GOLD, "chaser": GUN, "flanker": COBALT, "rammer": PEARL,
-	"container": PEARL, "turret_base": CRIM, "bulwark": COBALT_D, "railjack": JADE,
+	"dart": CRIM, "swirl": JADE, "racer": GOLD, "chaser": STEEL_L, "flanker": SKY, "rammer": PEARL,
+	"container": PEARL, "turret_base": CRIM, "bulwark": GUN, "railjack": JADE,
 	"rock_s": Color(0.33, 0.3, 0.27), "rock_l": Color(0.33, 0.3, 0.27),
-	"lazaro_piece": VIOLET, "boss_pod": STEEL_M, "boss_shutter": STEEL_L, "boss_eye": STEEL_M,
+	"lazaro_piece": GOLD, "boss_pod": STEEL_M, "boss_shutter": STEEL_L, "boss_eye": STEEL_M,
 	"ouro_head": JADE, "ouro_car": JADE, "press_core": GUN, "press_plate": STEEL_L,
 	"press_hammer": ORANGE, "press_vent": ORANGE,
 }

@@ -41,7 +41,7 @@ static func make(name: String) -> ArrayMesh:
 
 
 ## One quarter of Lazaro's shell: the +x/+z quadrant of a hollow sphere of
-## violet and black armour plates with gold seams and a red equator,
+## gold and bronze armour plates with brown seams and a red equator,
 ## re-centred on its own centroid so the pieces can fly apart.
 static func _lazaro_piece() -> ArrayMesh:
 	var v := Vox.new(26, 16, 26)
@@ -59,7 +59,7 @@ static func _lazaro_piece() -> ArrayMesh:
 				var c := GUN_D
 				var glow := false
 				if d > r - 1.2:
-					c = GOLD if seam else (VIOLET if int(floor(lat) + floor(lon)) % 2 == 0 else BLACK)
+					c = BROWN if seam else (GOLD if int(floor(lat) + floor(lon)) % 2 == 0 else BRONZE)
 				if y == -1 or y == 0:
 					c = EYE
 					glow = true
@@ -420,7 +420,7 @@ static func _ouro_head() -> ArrayMesh:
 		v.fill(x, 4, -8, x, 6, -8, AMBER if x % 2 == 0 else GUN_D, x % 2 == 0)
 	v.fill_sym(8, 5, -8, 9, 6, -7, EYE, true)
 	# cab dome and stack
-	v.blob(0, 7, 4, 4.5, 2.5, 5.0, BLACK)
+	v.blob(0, 7, 4, 4.5, 2.5, 5.0, STEEL_M)
 	v.blob(0, 8, 4, 3.0, 2.2, 3.5, JADE)
 	v.fill(-1, 8, -2, 0, 10, -1, GUN_D)
 	v.fill(-1, 10, -2, 0, 10, -1, EYE, true)
@@ -430,7 +430,7 @@ static func _ouro_head() -> ArrayMesh:
 	return v.mesh(U * 1.2, Vector3(0.5, 3.0, 0.5))
 
 
-## OUROBOROS's car (faces -z): an armoured hopper, jade and black
+## OUROBOROS's car (faces -z): an armoured hopper, jade and grey
 ## plates over gunmetal, gold stripes, a little turret dome with a red eye
 ## on top, couplers fore and aft, amber lamps at the corners.
 static func _ouro_car() -> ArrayMesh:
@@ -442,7 +442,7 @@ static func _ouro_car() -> ArrayMesh:
 			if ax + az > 18.0:
 				continue
 			var h := 5 if ax < 8.0 and az < 8.0 else 3
-			var top := JADE if ((x + 11) / 4 + (z + 11) / 4) % 2 == 0 else BLACK
+			var top := JADE if ((x + 11) / 4 + (z + 11) / 4) % 2 == 0 else STEEL_M
 			if h == 3:
 				top = JADE_D
 			for y in h:
