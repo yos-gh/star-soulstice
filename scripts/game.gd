@@ -529,6 +529,14 @@ func shake(a: float) -> void:
 	shake_a = maxf(shake_a, a)
 
 
+## A boss's or mid-boss's last blast over the whole screen (`k`: 1 = the
+## stage boss, about 0.7 = a mid-boss), with a white flash of the screen.
+## It stays under the units and bullets like every explosion (Fx.finale).
+func big_blast(at: Vector3, k: float, body: Color) -> void:
+	fx.finale(at, k, body)
+	flash_a = maxf(flash_a, 0.3 + 0.3 * k)
+
+
 # ------------------------------------------------------------ main loop
 
 func _physics_process(_delta: float) -> void:
@@ -1045,7 +1053,7 @@ func on_tile_broken(at: Vector3, world: Vector3, t: int, star: bool) -> void:
 
 ## Shards, smoke and a flash where tile type t broke (world = its position).
 func tile_break_fx(world: Vector3, t: int) -> void:
-	var c: Color = [Color(0.35, 0.6, 0.62), Color(0.45, 0.5, 0.65), Color(0.5, 0.52, 0.58)][t]
+	var c: Color = GroundModels.TILE_COL[t]
 	for k in 4 + t * 2:
 		fx._debris(world + Vector3(randf_range(-0.7, 0.7), 0.4, randf_range(-0.7, 0.7)), Vector3(randf_range(-3, 3), randf_range(2, 4), randf_range(-3, 3)), 0.18, c)
 	fx.puff(world + Vector3(0, 0.4, 0), Vector3(0, 0, scroll_speed * 0.5), 0.8, 1.8, 0.35, Fx.SMOKE)

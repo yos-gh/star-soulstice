@@ -12,6 +12,11 @@ render_mode unshaded, blend_mix, cull_disabled, depth_draw_never, shadows_disabl
 //   flash a short crisp four-point glint with a hot core.
 //   ring  a thin shock ring that fades as it expands.
 // INSTANCE_CUSTOM = (age 0..1, style, seed, palette 0 warm / 1 cool)
+// Depth: every pixel above `under_y` is tested as if it lay on that plane,
+// just under the units and bullets, so a blast never hides an enemy or a
+// bullet however big it grows; the ground below still covers it.
+
+uniform float under_y = -0.8;
 
 varying vec4 cust;
 varying float world_size;
@@ -45,6 +50,22 @@ float fbm(vec2 p) {
 		a *= 0.5;
 	}
 	return s;
+}
+
+// Depth of a view-space point pushed back along its view ray onto the
+// plane y = under_y (points already below it keep their own depth).
+float under_depth(vec3 v, mat4 inv_view, mat4 proj) {
+	vec3 dir = normalize(v);
+	vec3 wd = (inv_view * vec4(dir, 0.0)).xyz;
+	vec3 p = v;
+	if (wd.y < -0.0001) {
+		float t = (under_y - inv_view[3].y) / wd.y;
+		if (t > length(v)) {
+			p = dir * t;
+		}
+	}
+	vec4 c = proj * vec4(p, 1.0);
+	return c.z / c.w;
 }
 
 vec3 fire_ramp(float h, float pal) {
@@ -101,7 +122,10 @@ void fragment() {
 			vec3 hot = pal < 0.5 ? vec3(0.75, 0.35, 0.12) : vec3(0.25, 0.45, 0.85);
 			col = mix(base * 0.4, base * 1.25, lit);
 			col = mix(col, hot, (1.0 - smoothstep(0.0, 0.35, age)) * 0.6);
-			a = smoothstep(0.0, 0.12, dens) * (1.0 - smoothstep(0.3, 1.0, age)) * 0.5;
+			// big billows are thinner, so a boss's smoke veils the screen
+			// rather than blanking it
+			float thin = clamp(4.0 / world_size, 0.4, 1.0);
+			a = smoothstep(0.0, 0.12, dens) * (1.0 - smoothstep(0.3, 1.0, age)) * 0.5 * thin;
 		}
 	} else if (style < 2.5) {
 		vec2 ad = abs(q) * 2.0;
@@ -111,7 +135,8 @@ void fragment() {
 		a = max(spike, core);
 		col = mix(vec3(1.0, 0.97, 0.9), fire_ramp(0.7, pal), smoothstep(0.1, 0.6, r));
 	} else {
-		float w = mix(0.1, 0.03, age);
+		// a big ring stays a thin line (about half a unit at most)
+		float w = mix(0.1, 0.03, age) * clamp(10.0 / world_size, 0.03, 1.0);
 		float n = noise(vec2(atan(q.y, q.x) * 6.0, seed * 10.0));
 		a = step(abs(r - 0.88), w) * step(n, 1.05 - age) * (1.0 - age * 0.6);
 		col = fire_ramp(0.75 - age * 0.4, pal);
@@ -121,4 +146,5 @@ void fragment() {
 	}
 	ALBEDO = col;
 	ALPHA = a;
+	DEPTH = under_depth(VERTEX, INV_VIEW_MATRIX, PROJECTION_MATRIX);
 }

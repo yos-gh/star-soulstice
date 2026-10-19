@@ -23,6 +23,7 @@ static var hull_mat: ShaderMaterial
 static var glow_mat: ShaderMaterial
 static var glow_soft_mat: ShaderMaterial
 static var ground_mat: ShaderMaterial
+static var tile_mat: ShaderMaterial  # the ground's destructible tiles: same recession, more colour
 static var ground_glow_mat: ShaderMaterial
 static var _cache := {}
 
@@ -38,6 +39,7 @@ var _ids := {}
 var jitter := 0.06
 var cull_bottom := false
 var ground := false  # use the receding ground materials
+var tile := false  # with ground: the tile material (Palette sets both)
 
 
 func _init(w: int, h: int, d: int) -> void:
@@ -66,6 +68,7 @@ static func materials() -> void:
 	ground_mat.set_shader_parameter("haze", Color(0.03, 0.045, 0.07))
 	ground_mat.set_shader_parameter("haze_amt", 0.22)
 	ground_mat.set_shader_parameter("specular", 0.1)
+	tile_mat = ground_mat.duplicate() as ShaderMaterial
 	ground_glow_mat = ShaderMaterial.new()
 	ground_glow_mat.shader = glow_mat.shader
 	ground_glow_mat.set_shader_parameter("energy", 0.9)
@@ -282,7 +285,7 @@ func mesh(unit: float, origin := Vector3.ZERO, soft_glow := false) -> ArrayMesh:
 		arr[Mesh.ARRAY_COLOR] = hc
 		arr[Mesh.ARRAY_INDEX] = hi
 		m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
-		m.surface_set_material(m.get_surface_count() - 1, ground_mat if ground else hull_mat)
+		m.surface_set_material(m.get_surface_count() - 1, (tile_mat if tile else ground_mat) if ground else hull_mat)
 	if not gv.is_empty():
 		var arr := []
 		arr.resize(Mesh.ARRAY_MAX)
@@ -323,4 +326,5 @@ static func release() -> void:
 	glow_mat = null
 	glow_soft_mat = null
 	ground_mat = null
+	tile_mat = null
 	ground_glow_mat = null

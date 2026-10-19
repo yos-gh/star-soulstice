@@ -66,6 +66,8 @@ func setup(g: Game, k: String, params: Dictionary) -> void:
 	mesh_name = k
 	category = EnemyKinds.info(k).get("category", "small")
 	_init_kind()
+	if debris_col == Models.CRIMSON:
+		debris_col = Models.body_col(mesh_name, debris_col)
 	max_hp = hp
 	if mesh_name != "":
 		model = MeshInstance3D.new()

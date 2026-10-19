@@ -18,7 +18,7 @@ func _init_kind() -> void:
 	ram = false
 	drops_power = true
 	blast = 1.6
-	debris_col = Models.STEEL
+	debris_col = Models.PEARL
 
 
 func _behave(dt: float) -> void:

@@ -39,6 +39,17 @@ func gauge() -> Dictionary:
 	return {}
 
 
+## Out of health: from now on its wreck is not solid (the ship can't crash
+## into it while it blows up) and takes no more hits. Every boss calls this
+## as its death sequence starts.
+func disarm() -> void:
+	defeated = true
+	for e: Enemy in game.enemies:
+		if e.controller == self:
+			e.intangible = true
+			e.ram = false
+
+
 ## Viewer: destroy it now (its death sequence plays).
 func force_defeat() -> void:
 	pass

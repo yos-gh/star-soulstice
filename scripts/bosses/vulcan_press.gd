@@ -238,14 +238,14 @@ func tick(dt: float) -> void:
 			dying_t += dt
 			if int(dying_t * 8.0) != int((dying_t - dt) * 8.0):
 				var off := Vector3(randf_range(-11, 11), 0, randf_range(-3.5, 3.5))
-				game.fx.explode(center + off, randf_range(1.5, 3.0), Vector3.ZERO, Models.BRONZE)
+				game.fx.explode(center + off, randf_range(1.5, 3.0), Vector3.ZERO, Models.COBALT_D)
 				game.sfx.play("exp_m")
 				game.shake(0.4)
 			center.z += dt * 1.2
 			if dying_t > 3.5:
-				game.fx.explode(center + CORE_OFF, 9.0, Vector3.ZERO, Models.BRONZE)
+				game.big_blast(center + CORE_OFF, 1.0, Models.COBALT)
 				for k in 6:
-					game.fx.explode(center + Vector3(randf_range(-11, 11), 0, randf_range(-3, 3)), 4.0, Vector3.ZERO, Models.CRIMSON)
+					game.fx.explode(center + Vector3(randf_range(-11, 11), 0, randf_range(-3, 3)), 4.0, Vector3.ZERO, Models.PEARL_D)
 				game.sfx.play("exp_l")
 				game.shake(2.0)
 				destroyed = true
@@ -650,6 +650,7 @@ func _die() -> void:
 	for v in vents:
 		if not v.dead:
 			game.kill(v)
+	disarm()
 	var conv := game.bullets.cancel_all()
 	for b in conv:
 		game.items.spawn(b, Items.ENERGY, 1.0)

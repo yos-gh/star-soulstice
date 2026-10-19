@@ -2,7 +2,11 @@ shader_type spatial;
 render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabled, fog_disabled;
 // Camera-facing additive sprite used for flames, sparks and glows.
 // INSTANCE_CUSTOM.x = age 0..1, .y = style (0 soft glow, 1 fireball, 2 ring,
-// 3 square ring), .z = random seed.
+// 3 square ring), .z = random seed, .w = 1: part of an explosion, depth-tested
+// as if it lay on the plane y = under_y, under the units and bullets (see
+// puff.gdshader); 0: where it is (hit sparks stay on top of what they hit).
+
+uniform float under_y = -0.8;
 
 varying vec4 cust;
 
@@ -16,6 +20,20 @@ float hash(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
 	p3 += dot(p3, p3.yzx + 33.33);
 	return fract((p3.x + p3.y) * p3.z);
+}
+
+float under_depth(vec3 v, mat4 inv_view, mat4 proj, bool under) {
+	vec3 dir = normalize(v);
+	vec3 wd = (inv_view * vec4(dir, 0.0)).xyz;
+	vec3 p = v;
+	if (under && wd.y < -0.0001) {
+		float t = (under_y - inv_view[3].y) / wd.y;
+		if (t > length(v)) {
+			p = dir * t;
+		}
+	}
+	vec4 c = proj * vec4(p, 1.0);
+	return c.z / c.w;
 }
 
 void fragment() {
@@ -45,4 +63,5 @@ void fragment() {
 		col = c * g * 2.0 * (1.0 - age);
 	}
 	ALBEDO = col * COLOR.a;
+	DEPTH = under_depth(VERTEX, INV_VIEW_MATRIX, PROJECTION_MATRIX, cust.w > 0.5);
 }

@@ -102,7 +102,7 @@ func on_part_killed(e: Enemy) -> void:
 
 
 func _defeat() -> void:
-	defeated = true
+	disarm()
 	state = "dying"
 	st = 0.0
 	boom_t = 0.25
@@ -208,7 +208,7 @@ func tick(dt: float) -> void:
 			if boom_t <= 0.0:
 				boom_t = 0.13
 				if cars.is_empty():
-					game.fx.explode(hpos + Vector3(0, 0.4, 0), 5.0, Vector3.ZERO, Models.CRIMSON)
+					game.big_blast(hpos, 0.7, Models.JADE)
 					game.items.burst_energy(hpos, 24.0, 8.0)
 					game.sfx.play("exp_l")
 					game.shake(1.2)
@@ -217,7 +217,7 @@ func tick(dt: float) -> void:
 				var c: Enemy = cars.pop_front()
 				slots.pop_front()
 				car_t.pop_front()
-				game.fx.explode(c.position + Vector3(0, 0.4, 0), 2.0, Vector3.ZERO, Models.CRIMSON)
+				game.fx.explode(c.position + Vector3(0, 0.4, 0), 2.0, Vector3.ZERO, Models.JADE)
 				game.items.burst_energy(c.position, 4.0)
 				game.sfx.play("exp_m")
 				game.remove_enemy(c)

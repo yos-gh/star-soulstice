@@ -8,16 +8,21 @@ extends Node3D
 ##   smokes lit translucent smoke, its own layer under the fire
 ## Explosions after DoDonPachi DaiFukkatsu (fire dot work), Under Defeat and
 ## Ikaruga (lit translucent smoke, crisp flash and shards): a brief glint,
-## a few big billows that expand fast, cool and tear apart over rolling
-## smoke, shards and debris; big enemies go in a chain of small blasts instead of one big
-## glow. They sit just below the bullets so the bullets stay readable.
+## a few big billows that expand fast, cool and tear apart over smoke that
+## rolls far out, burning scraps, shards and debris flung wide; big enemies
+## go in a chain of small blasts instead of one big glow, and a boss's last
+## blast fills the screen (finale).
+## Everything an explosion draws is depth-tested as if it lay on a plane
+## just under the units (see puff.gdshader, debris.gdshader and the `under`
+## glow sprites), so however big it grows it never hides an enemy or a
+## bullet; it also draws before the pick-ups and shots.
 
-const MAX_GLOWS := 1600
-const MAX_PUFFS := 1400
-const MAX_DEBRIS := 500
+const MAX_GLOWS := 2400
+const MAX_PUFFS := 2400
+const MAX_DEBRIS := 900
 enum { FIRE, SMOKE, FLASH, RING }  # puff styles
 enum { WARM, COOL }  # puff palettes
-const BLAST_Y := 0.05  # explosion height: under the bullets (drawn at 0.32)
+const BLAST_Y := 0.05  # explosion height (drawn under the units whatever it is)
 
 
 ## One sprite layer: packed arrays + a MultiMesh of camera-facing quads.
@@ -136,22 +141,28 @@ func _ready() -> void:
 	d_life.resize(MAX_DEBRIS)
 	d_scale.resize(MAX_DEBRIS)
 	d_col.resize(MAX_DEBRIS)
+	# drawn smoke, fire, glows, then the pick-ups (0) and shots (1, 2) on top
 	glows = Layer.new(MAX_GLOWS)
-	sprites = _layer_node(glows, "res://shaders/additive.gdshader", 1)
+	sprites = _layer_node(glows, "res://shaders/additive.gdshader", -1)
 	smokes = Layer.new(MAX_PUFFS)
 	smokes.damp = 1.6
 	smokes.grow_pow = 2.0
-	smoke_mi = _layer_node(smokes, "res://shaders/puff.gdshader", -1)
+	smoke_mi = _layer_node(smokes, "res://shaders/puff.gdshader", -3)
 	puffs = Layer.new(MAX_PUFFS)
 	puffs.damp = 3.2
 	puffs.grow_pow = 3.0
-	puff_mi = _layer_node(puffs, "res://shaders/puff.gdshader", 0)
+	puff_mi = _layer_node(puffs, "res://shaders/puff.gdshader", -2)
 
 	debris = MultiMeshInstance3D.new()
 	var dm := MultiMesh.new()
 	dm.transform_format = MultiMesh.TRANSFORM_3D
 	dm.use_colors = true
 	dm.mesh = Vox.cube(false)
+	var dmat := ShaderMaterial.new()
+	dmat.shader = load("res://shaders/debris.gdshader")
+	dmat.render_priority = -1  # over the fire and smoke, under the pick-ups
+	debris.material_override = dmat
+	debris.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	dm.instance_count = MAX_DEBRIS
 	dm.visible_instance_count = 0
 	debris.multimesh = dm
@@ -192,8 +203,10 @@ func _layer_node(layer: Layer, shader: String, priority: int) -> MultiMeshInstan
 
 
 ## Additive glow sprite. style: 0 soft glow, 1 fireball, 2 ring, 3 square ring.
-func sprite(p: Vector3, v: Vector3, s0: float, s1: float, life: float, c: Color, style := 0.0, delay := 0.0) -> void:
-	glows.add(p, v, s0, s1, life, c, style, delay, rng.randf(), 0.0)
+## `under`: part of an explosion, drawn under the units and bullets (hit
+## sparks are not: they show on what they hit).
+func sprite(p: Vector3, v: Vector3, s0: float, s1: float, life: float, c: Color, style := 0.0, delay := 0.0, under := false) -> void:
+	glows.add(p, v, s0, s1, life, c, style, delay, rng.randf(), 1.0 if under else 0.0)
 
 
 ## Pixel explosion sprite (see the styles and palettes above).
@@ -221,45 +234,97 @@ func explode(p: Vector3, scale := 1.0, drift := Vector3.ZERO, body := Color(0.4,
 	if scale >= 2.4:
 		# a chain of small blasts across the body, then the core goes
 		var count := int(clampf(scale * 1.6, 3.0, 12.0))
-		var spread := minf(scale * 0.5, 4.0)
+		var spread := minf(scale * 0.6, 5.0)
 		for i in count:
 			var off := Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)) * spread
-			_blast(at + off, rng.randf_range(0.8, 1.2) * minf(scale * 0.4, 1.4), drift, pal, i * 0.07 + rng.randf() * 0.04)
+			# (less smoke each: together they still roll out wide)
+			_blast(at + off, rng.randf_range(0.8, 1.2) * minf(scale * 0.4, 1.6), drift, pal, i * 0.07 + rng.randf() * 0.04, 0.45)
 		var last := count * 0.07
-		_blast(at, minf(scale * 0.55, 3.0), drift, pal, last)
-		puff(at, drift, scale * 0.5, scale * 2.6, 0.45, RING, last, pal)
+		_blast(at, minf(scale * 0.6, 3.6), drift, pal, last, 0.7)
+		puff(at, drift, scale * 0.5, scale * 3.6, 0.5, RING, last, pal)
 	else:
 		_blast(at, scale, drift, pal, 0.0)
-	var chunks := int(clampf(scale * 4.0, 4.0, 40.0))
+	# wreckage flung out wide, with a little hop
+	var chunks := int(clampf(scale * 6.0, 6.0, 60.0))
 	for i in chunks:
-		var dv := Vector3(rng.randf_range(-1, 1), rng.randf_range(0.1, 0.6), rng.randf_range(-1, 1)) * rng.randf_range(4, 10) * sqrt(scale)
+		var a := rng.randf() * TAU
+		var dv := Vector3(cos(a), 0.0, sin(a)) * rng.randf_range(5, 15) * sqrt(scale) + Vector3(0, rng.randf_range(1, 4), 0)
 		var dc := body if rng.randf() < 0.75 else body.darkened(0.5)
-		_debris(at, dv + drift, clampf(scale * 0.1, 0.12, 0.4), dc)
+		_debris(at, dv + drift, clampf(scale * 0.12, 0.18, 0.5), dc)
 	flash(at, scale)
 
 
-## One blast: flash, fire puffs, smoke, sparks (and a ring when larger).
-func _blast(p: Vector3, s: float, drift: Vector3, pal: int, delay: float) -> void:
-	puff(p, drift, s * 1.6, s * 0.5, 0.08, FLASH, delay, pal)
+## One blast: flash, fire billows, burning scraps, smoke rolling far out
+## (`smoke` scales how much), shards (and a ring when larger).
+func _blast(p: Vector3, s: float, drift: Vector3, pal: int, delay: float, smoke := 1.0) -> void:
+	puff(p, drift, s * 2.0, s * 0.6, 0.09, FLASH, delay, pal)
 	# a few big turbulent billows rather than many small balls
 	var fires := 2 + int(s * 1.2)
 	for i in fires:
 		var a := rng.randf() * TAU
-		var off := Vector3(cos(a), 0, sin(a)) * s * (0.0 if i == 0 else rng.randf_range(0.25, 0.5))
-		puff(p + off, off * 2.2 + drift, s * rng.randf_range(0.6, 0.8), s * rng.randf_range(1.3, 1.7), rng.randf_range(0.5, 0.62), FIRE, delay + i * 0.03, pal)
-	# lit smoke rolls out under the fire and lingers, carried by the wreck
-	for i in 2 + int(s):
+		var off := Vector3(cos(a), 0, sin(a)) * s * (0.0 if i == 0 else rng.randf_range(0.3, 0.6))
+		puff(p + off, off * 2.6 + drift, s * rng.randf_range(0.85, 1.1), s * rng.randf_range(2.0, 2.6), rng.randf_range(0.55, 0.7), FIRE, delay + i * 0.03, pal)
+	# burning scraps thrown out of the fireball
+	for i in 2 + int(s * 1.5):
 		var a := rng.randf() * TAU
-		var off := Vector3(cos(a), 0, sin(a)) * s * rng.randf_range(0.2, 0.5)
-		puff(p + off, drift * 0.9 + off * 1.2, s * 0.8, s * rng.randf_range(1.5, 1.9), rng.randf_range(0.8, 1.1), SMOKE, delay + 0.05 + i * 0.04, pal)
-	# crisp shards
-	var sparks := 4 + int(s * 3.0)
+		var v := Vector3(cos(a), 0, sin(a)) * rng.randf_range(9, 16) * sqrt(s)
+		puff(p, v + drift, s * 0.45, s * 0.12, rng.randf_range(0.35, 0.55), FIRE, delay + 0.02, pal)
+	# lit smoke rolls out all round under the fire, far, and lingers,
+	# carried by the wreck
+	var smokes := int((6 + s * 3.0) * smoke)
+	for i in smokes:
+		var a := TAU * (i + rng.randf() * 0.8) / maxf(smokes, 1)
+		var dir := Vector3(cos(a), 0, sin(a))
+		puff(p + dir * s * 0.4, drift * 0.9 + dir * rng.randf_range(1.5, 6.0) * sqrt(s), s * 0.9, s * rng.randf_range(1.6, 2.9), rng.randf_range(1.1, 1.7), SMOKE, delay + 0.05 + i * 0.02, pal)
+	# crisp shards, flung far
+	var sparks := 6 + int(s * 4.0)
 	var sc := Color(1.0, 0.85, 0.5) if pal == WARM else Color(0.6, 0.85, 1.0)
 	for i in sparks:
-		var v := Vector3(rng.randf_range(-1, 1), 0.05, rng.randf_range(-1, 1)).normalized() * rng.randf_range(8, 16) * sqrt(s)
-		sprite(p, v + drift, 0.14, 0.03, rng.randf_range(0.18, 0.3), sc * 0.7, 0.0, delay)
+		var v := Vector3(rng.randf_range(-1, 1), 0.0, rng.randf_range(-1, 1)).normalized() * rng.randf_range(14, 28) * sqrt(s)
+		sprite(p, v + drift, 0.3, 0.05, rng.randf_range(0.3, 0.5), sc, 0.0, delay, true)
 	if s >= 1.3:
-		puff(p, drift, s * 0.5, s * 2.3, 0.3, RING, delay + 0.02, pal)
+		puff(p, drift, s * 0.5, s * 3.0, 0.35, RING, delay + 0.02, pal)
+
+
+## A boss's last blast, over the whole screen (`k`: 1 = stage boss, less for
+## a mid-boss): a white flash, shock rings that run off the screen, rings of
+## blasts going off outward to the edges, a blanket of smoke rolling out
+## behind them, shards and wreckage flung everywhere. Like every explosion
+## it stays under the units and bullets.
+func finale(p: Vector3, k := 1.0, body := Color(0.4, 0.4, 0.4)) -> void:
+	var at := Vector3(p.x, BLAST_Y, p.z)
+	puff(at, Vector3.ZERO, 18.0 * k, 5.0 * k, 0.2, FLASH, 0.0, WARM)
+	_blast(at, 4.5 * k, Vector3.ZERO, WARM, 0.0, 0.5)
+	# shock rings: quick, so their ends never linger as bars at the edges
+	for i in 2:
+		puff(at, Vector3.ZERO, 3.0, (64.0 - i * 22.0) * k, 0.55 + i * 0.1, RING, i * 0.1, WARM)
+	sprite(at, Vector3.ZERO, 4.0, 84.0 * k, 0.75, Color(0.9, 0.6, 0.35) * 0.6, 2.0, 0.0, true)
+	# rings of blasts going off outward (wider than tall, like the screen)
+	var rings := [[5.0, 6, 2.6], [10.0, 9, 2.1], [16.0, 12, 1.7], [22.0, 15, 1.4]]
+	for ri in rings.size():
+		var r: Array = rings[ri]
+		var n: int = r[1]
+		var a0 := rng.randf() * TAU
+		for i in n:
+			var a := a0 + TAU * (i + rng.randf_range(-0.3, 0.3)) / n
+			var dir := Vector3(cos(a), 0, sin(a))
+			var d: float = float(r[0]) * k * rng.randf_range(0.8, 1.15)
+			_blast(at + Vector3(dir.x * d * 1.3, 0, dir.z * d), float(r[2]) * k * rng.randf_range(0.8, 1.2), dir * 2.0, WARM, 0.08 + ri * 0.13 + rng.randf() * 0.08, 0.35)
+	# a blanket of smoke rolling out to the edges as the blast reaches them
+	for i in int(22 * k):
+		var a := rng.randf() * TAU
+		var dir := Vector3(cos(a), 0, sin(a))
+		var d := sqrt(rng.randf()) * 18.0 * k
+		puff(at + Vector3(dir.x * d * 1.3, 0, dir.z * d), dir * rng.randf_range(2.0, 5.0), 2.5 * k, rng.randf_range(5.0, 7.5) * k, rng.randf_range(1.5, 2.2), SMOKE, 0.12 + d * 0.025, WARM)
+	# shards and wreckage flung across the screen
+	for i in int(90 * k):
+		var a := rng.randf() * TAU
+		sprite(at, Vector3(cos(a), 0, sin(a)) * rng.randf_range(25, 60) * k, 0.4, 0.06, rng.randf_range(0.45, 0.8), Color(1.0, 0.85, 0.5) * 0.8, 0.0, rng.randf() * 0.3, true)
+	for i in int(70 * k):
+		var a := rng.randf() * TAU
+		var dv := Vector3(cos(a), 0, sin(a)) * rng.randf_range(8, 26) * k + Vector3(0, rng.randf_range(1, 5), 0)
+		_debris(at, dv, rng.randf_range(0.25, 0.6), body if rng.randf() < 0.7 else body.darkened(0.5))
+	flash(at, 12.0 * k)
 
 
 func shockwave(p: Vector3, radius: float, c: Color, square := false) -> void:
@@ -277,7 +342,7 @@ func flash(p: Vector3, scale: float) -> void:
 	l.omni_range = 5.0 + scale * 2.5
 	l.visible = true
 	light_t[best] = 0.2 + scale * 0.04
-	l.light_energy = 0.8 + scale * 0.35
+	l.light_energy = minf(0.8 + scale * 0.35, 4.0)
 
 
 func _debris(p: Vector3, v: Vector3, sc: float, c: Color) -> void:

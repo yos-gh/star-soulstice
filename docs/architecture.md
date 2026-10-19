@@ -62,6 +62,7 @@ Stages ──> StageDef（stage1.gd …）
    - 部位は `game.spawn_part(self, モデル名, 半径)` で作る（当たり判定は敵と同じ）。部位への被弾は `on_hit`、部位の撃破は `on_part_killed` に来る。
    - `gauge()` で HUD の体力ゲージ、`force_defeat()` は閲覧モードの K（撃破）、`debug_state()` は閲覧モードの状態表示。
    - 突進・打ち下ろしなどの大技は、`game.warn(部位, 秒, Game.Warn.MOVE, 半径, 狙う地点の Vector3)` で予兆を出すと、矢印がその地点へ流れ、自動操縦はその線から外れる（ボスの部位の予兆のみ）。
+   - 体力が尽きて最期の演出に入るときは `disarm()` を呼ぶ（全部位の当たり判定が消え、自機がぶつからず、弾も素通りする）。最後の大爆発は `game.big_blast(位置, 大きさ, 破片の色)`（1 = ボス、0.7 = 中ボス）。
    - ステージのボス（`final`）は、倒れきったら `game.boss_destroyed(self)` を呼ぶとステージクリアになる。中ボスは去るときに `finished = true` にして `game.remove_boss(self)`。
 2. `scripts/bosses/bosses.gd` の `KINDS` に足す。
 3. モデルを `scripts/models/boss_models.gd` に足す。
@@ -106,7 +107,7 @@ Stages ──> StageDef（stage1.gd …）
 | WAVES | 各ステージの全ウェーブを、そのエリアの地形と砲台つきで。最後にボス |
 | TERRAIN | エリアごとの地形の流れ、全区画を 1 つずつ静止で、IslandGen の全種類 |
 | SCENERY | 背景だけ（ステージ 1 は通常速度と 4 倍速、トンネルのあるステージは様式ごとに本編の速さと 1/4 の速さ） |
-| FX | 爆発の大きさ別、ラザロ・ボスの最期、自機の爆発、シールド、タイル破壊、火花、衝撃波、得点表示、弾のエネルギー化、予兆 |
+| FX | 爆発の大きさ別、ラザロ・ボスの最期（画面いっぱいの大爆発 `Fx.finale`、`Game.big_blast`）、自機の爆発、シールド、タイル破壊、火花、衝撃波、得点表示、弾のエネルギー化、予兆 |
 | BULLETS | 敵弾の種類と形 |
 | ITEMS | エネルギー・パワーアップ・スター |
 | MODELS | すべてのボクセルモデル（回転台）と、組み上げた状態 |

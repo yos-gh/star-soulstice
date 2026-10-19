@@ -36,9 +36,9 @@
 
 | 対象 | スコア | 耐久 | 場所 |
 |---|---:|---:|---|
-| タイル（薄いハッチ） | 50 | 0.5 | `scripts/terrain/island.gd` `TILE_SCORE` / `TILE_HP` |
-| タイル（十字ハッチ） | 150 | 1 | 〃 |
-| タイル（防爆扉） | 400 | 1.5 | 〃 |
+| タイル（緑のコンテナ） | 50 | 0.5 | `scripts/terrain/island.gd` `TILE_SCORE` / `TILE_HP` |
+| タイル（青灰色のタンク） | 150 | 1 | 〃 |
+| タイル（紫の屋根の倉庫） | 400 | 1.5 | 〃 |
 | 物理弾（撃ち落とし） | 10 | 1 | `scripts/game.gd` `_collide` |
 | 鉄球弾（ボスの IRON 弾） | なし | 撃ち落とせない（ショットを遮る。スピアでも消えない） | `scripts/bullets.gd` |
 
@@ -68,7 +68,7 @@
 | ラザロ撃破 | 40 | `scripts/bosses/lazaro.gd` |
 | OUROBOROS 車両 / 頭 / 最期 | 6 / 30 / 24 ＋車両ごとに 4 | `scripts/bosses/ouroboros.gd` |
 | VULCAN PRESS 砲塔 / ハンマー / 装甲板 | 8 / 14 / 6 | `scripts/bosses/vulcan_press.gd` |
-| タイル 薄 / 十字 / 防爆扉 | 2 / 5 / 10 | `scripts/terrain/island.gd` `TILE_ENERGY` |
+| タイル コンテナ / タンク / 倉庫 | 2 / 5 / 10 | `scripts/terrain/island.gd` `TILE_ENERGY` |
 | 消した弾（撃破・スピア） | 1 発につき 1 | `scripts/game.gd` |
 
 ## クリアボーナス
@@ -104,4 +104,4 @@
 | 1 | 18.6 | DEBRIS 10.5、HULL 30.5、（ラザロ）13.0、CORE 28.1、ボス戦 9.6 |
 | 2 | 13.9 | INTAKE DUCT 14.9、ASSEMBLY LINE 19.2、（OUROBOROS）14.1、FURNACE ROW 17.3、ボス戦 8.1 |
 
-ステージ 2 はスクロールが 1.5 倍なので、区画の間隔（`stage2.gd` の `gap`）を広げて密度を下げている。区画に硬いタイル（防爆扉：スターが隠れている率 6%、ほかは 2%）が多いので、密度が同じならスターはステージ 1 より多めに出る。
+ステージ 2 はスクロールが 1.5 倍なので、区画の間隔（`stage2.gd` の `gap`）を広げて密度を下げている。区画に硬いタイル（倉庫：スターが隠れている率 6%、ほかは 2%）が多いので、密度が同じならスターはステージ 1 より多めに出る。

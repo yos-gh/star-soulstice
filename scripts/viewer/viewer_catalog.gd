@@ -178,18 +178,18 @@ static func _scenery(stages: Array[StageDef]) -> Array:
 static func _fx(d: StageDef) -> Array:
 	var out := []
 	var ex := [
-		["EXPLOSION S   1.0  fighter", 1.0, Models.CRIMSON],
-		["EXPLOSION M   1.6  container", 1.6, Models.STEEL],
-		["EXPLOSION M   1.8  big rock", 1.8, Models.CRIMSON],
-		["EXPLOSION L   2.5  boss pod", 2.5, Models.CRIMSON],
-		["EXPLOSION XL  3.0  bulwark", 3.0, Models.CRIMSON],
-		["EXPLOSION XXL 6.0  boss eye", 6.0, Models.CRIMSON],
+		["EXPLOSION S   1.0  fighter", 1.0, Models.COBALT],
+		["EXPLOSION M   1.6  container", 1.6, Models.PEARL],
+		["EXPLOSION M   1.8  big rock", 1.8, Models.body_col("rock_l", Models.GUN)],
+		["EXPLOSION L   2.5  boss pod", 2.5, Models.COBALT],
+		["EXPLOSION XL  3.0  bulwark", 3.0, Models.COBALT_D],
+		["EXPLOSION XXL 6.0  boss eye", 6.0, Models.body_col("boss_eye", Models.GUN)],
 	]
 	for e: Array in ex:
-		out.append({"name": e[0], "type": "fx", "fx": "explode", "scale": e[1], "body": e[2], "every": 2.2, "stage": d, "desc": "爆発 大きさ %.1f（大きさ 2.4 以上は小爆発の連鎖になる）" % e[1]})
+		out.append({"name": e[0], "type": "fx", "fx": "explode", "scale": e[1], "body": e[2], "every": 2.2, "stage": d, "desc": "爆発 大きさ %.1f（大きさ 2.4 以上は小爆発の連鎖になる）。火・煙・破片はすべて敵と敵弾の下に描く" % e[1]})
 	for e: Array in [
-		["LAZARO DEFEAT", "lazaro_end", 3.0, "ラザロの最期：核と 4 つの殻が爆発"],
-		["STAR CORTEX FINALE", "finale", 4.5, "ボスの最後の大爆発"],
+		["LAZARO DEFEAT", "lazaro_end", 3.0, "ラザロの最期：画面の大半に広がる大爆発と、4 つの殻の爆発"],
+		["STAR CORTEX FINALE", "finale", 4.5, "ボスの最後の大爆発：画面全体に広がる"],
 		["SHIP LOST", "player_die", 2.5, "自機の爆発（寒色）と画面の閃光"],
 		["SHIELD BREAK", "shield", 2.0, "第 3 形態のシールドが割れるところ"],
 		["TILE BREAK", "tiles", 3.0, "区画のタイルが割れるところ（3 種、スターとエネルギーも）"],
