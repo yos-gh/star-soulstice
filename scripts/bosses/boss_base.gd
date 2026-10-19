@@ -40,14 +40,19 @@ func gauge() -> Dictionary:
 
 
 ## Out of health: from now on its wreck is not solid (the ship can't crash
-## into it while it blows up) and takes no more hits. Every boss calls this
-## as its death sequence starts.
+## into it while it blows up) and takes no more hits, and it draws under
+## the explosions (Vox.sink_node), so the fire of its death goes over it
+## while live enemies and bullets stay on top. Every boss calls this as its
+## death sequence starts.
 func disarm() -> void:
 	defeated = true
+	Vox.sink_node(self)
 	for e: Enemy in game.enemies:
 		if e.controller == self:
 			e.intangible = true
 			e.ram = false
+			e.sunk = true
+			Vox.sink_node(e)
 
 
 ## Viewer: destroy it now (its death sequence plays).

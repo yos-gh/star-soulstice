@@ -148,6 +148,9 @@ func _ready() -> void:
 	smokes.damp = 1.6
 	smokes.grow_pow = 2.0
 	smoke_mi = _layer_node(smokes, "res://shaders/puff.gdshader", -3)
+	# smoke lies deeper than the fire: under a defeated boss's sunk wreck
+	# (which lies under the fire, see Vox.sunk), just above the tunnel walls
+	((smoke_mi.multimesh.mesh as QuadMesh).material as ShaderMaterial).set_shader_parameter("under_y", -0.995)
 	puffs = Layer.new(MAX_PUFFS)
 	puffs.damp = 3.2
 	puffs.grow_pow = 3.0

@@ -37,6 +37,7 @@ var leaves := true
 var entered := false
 var dead := false
 var controller: Object = null
+var sunk := false  # part of a defeated boss's wreck, drawn under the explosions (no more flashes)
 var hit_pos := Vector3.ZERO
 var vel := Vector3.ZERO
 var t := 0.0
@@ -117,7 +118,7 @@ func tick(dt: float) -> void:
 
 
 func _shade() -> void:
-	if model == null:
+	if model == null or sunk:
 		return
 	# quantised so a handful of shared overlay materials cover every case
 	var c := Color(1.0, 0.85, 0.7) * (flash * 0.85) + tint

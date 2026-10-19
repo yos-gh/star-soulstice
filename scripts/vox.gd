@@ -26,6 +26,7 @@ static var ground_mat: ShaderMaterial
 static var tile_mat: ShaderMaterial  # the ground's destructible tiles: same recession, more colour
 static var ground_glow_mat: ShaderMaterial
 static var _cache := {}
+static var _sunk := {}  # material -> its sunk twin
 
 var sx: int
 var sy: int
@@ -311,6 +312,45 @@ static func cube(glow := false) -> ArrayMesh:
 	return m
 
 
+## The "sunk" twin of a voxel material (vox_sunk / glow_sunk shaders, same
+## parameters): it looks the same but draws just under the explosions.
+static func sunk(mat: Material) -> Material:
+	var sm := mat as ShaderMaterial
+	if sm == null:
+		return mat
+	if _sunk.has(sm):
+		return _sunk[sm]
+	var path := sm.shader.resource_path
+	var to := ""
+	if path.ends_with("/vox.gdshader"):
+		to = "res://shaders/vox_sunk.gdshader"
+	elif path.ends_with("/glow.gdshader"):
+		to = "res://shaders/glow_sunk.gdshader"
+	else:
+		return mat
+	var m := ShaderMaterial.new()
+	m.shader = load(to)
+	for u: Dictionary in sm.shader.get_shader_uniform_list():
+		m.set_shader_parameter(u["name"], sm.get_shader_parameter(u["name"]))
+	_sunk[sm] = m
+	return m
+
+
+## A defeated boss's wreck: every voxel mesh under `n` draws sunk (see
+## sunk), so the fire of its death goes over it, while live units and
+## bullets stay on top of the fire. It no longer casts a shadow (the sunk
+## shape would cast a wrong one).
+static func sink_node(n: Node) -> void:
+	for c in n.get_children():
+		var mi := c as MeshInstance3D
+		if mi != null and mi.mesh != null:
+			for i in mi.mesh.get_surface_count():
+				mi.set_surface_override_material(i, sunk(mi.mesh.surface_get_material(i)))
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mi.material_overlay = null
+		sink_node(c)
+
+
 ## Cached model by name (built by Models).
 static func get_mesh(name: String) -> ArrayMesh:
 	if _cache.has(name):
@@ -322,6 +362,7 @@ static func get_mesh(name: String) -> ArrayMesh:
 
 static func release() -> void:
 	_cache.clear()
+	_sunk.clear()
 	hull_mat = null
 	glow_mat = null
 	glow_soft_mat = null
