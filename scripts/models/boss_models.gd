@@ -389,84 +389,192 @@ static func _boss_shutter() -> ArrayMesh:
 
 # ------------------------------------------------------------ stage 2
 
-## OUROBOROS's locomotive (faces -z): a brass wedge plough, a furnace
-## grille glowing behind it with two red eyes, a jade body in dark jade
-## side armour, a domed cab with a stack, gold stripes, a coupler at the
-## back.
+## OUROBOROS's locomotive (faces -z), a foundry engine with its works
+## showing and armour only in places: a brass wedge plough, a furnace
+## grille glowing in the smokebox with lamps either side, a boiler banded in
+## steel and plated in jade on its front half (bare grey behind, with a
+## steam dome, a sand dome and the stack), pipes along it, a bare chassis
+## of rails and cross members, three pairs of spoked wheels with their
+## coupling rods out at the sides, jade skirts over the front wheels, a cab
+## with lit windows, a coupler at the back.
 static func _ouro_head() -> ArrayMesh:
-	var v := Vox.new(32, 11, 38)
-	for z in range(-18, 19):
+	var v := Vox.new(32, 13, 38)
+	# the plough narrows to a point at the nose
+	for z in range(-18, -8):
 		for x in range(-15, 15):
 			var ax := absf(x + 0.5)
-			# the plough narrows to a point at the nose
-			var half := 14.0 if z > -8 else 14.0 - (-8 - z) * 1.35
+			var half := 14.0 - (-8 - z) * 1.35
 			if ax > half:
 				continue
-			var h := 4
-			var c := GUN
-			if z < -8:
-				h = 2 + int((half - ax) * 0.35)
-				c = GOLD if int(ax + z) % 4 != 0 else BRONZE
-			elif ax > 11.0:
-				h = 5
-				c = JADE_D if (z + 18) % 6 > 0 else GUN_D
-			else:
-				h = 6
-				c = JADE if ax > 4.0 else JADE_L
+			var h := 2 + int((half - ax) * 0.35)
+			var c := GOLD if int(ax + z) % 4 != 0 else BRONZE
 			for y in h:
-				v.put(x, y, z, c if y == h - 1 else (GUN if y > 0 else GUN_D))
-	# furnace grille behind the plough, eyes either side
-	for x in range(-7, 7):
-		v.fill(x, 4, -8, x, 6, -8, AMBER if x % 2 == 0 else GUN_D, x % 2 == 0)
-	v.fill_sym(8, 5, -8, 9, 6, -7, EYE, true)
-	# cab dome and stack
-	v.blob(0, 7, 4, 4.5, 2.5, 5.0, STEEL_M)
-	v.blob(0, 8, 4, 3.0, 2.2, 3.5, JADE)
-	v.fill(-1, 8, -2, 0, 10, -1, GUN_D)
-	v.fill(-1, 10, -2, 0, 10, -1, EYE, true)
-	# gold-striped flanks and the rear coupler
-	v.fill_sym(14, 2, -6, 14, 3, 16, GOLD)
-	v.fill_sym(0, 1, 17, 2, 3, 18, GUN_D)
+				v.put(x, y, z, c if y == h - 1 else GUN)
+	# the chassis: side rails, cross members, a floor
+	v.fill_sym(0, 0, -9, 9, 0, 17, GUN)
+	v.fill_sym(9, 1, -9, 10, 2, 17, STEEL_M)
+	for z in range(-9, 18, 3):
+		v.fill_sym(0, 1, z, 8, 1, z, GUN)
+	# wheels and coupling rods
+	for wz in [-5, 3, 11]:
+		_wheel(v, 11, 12, 3, wz, 3.4)
+	v.fill_sym(13, 3, -5, 13, 3, 11, STEEL_L)
+	# jade skirts over the front wheels, gold-striped
+	v.fill_sym(11, 3, -9, 13, 5, -1, JADE)
+	v.fill_sym(13, 4, -9, 13, 4, -1, GOLD)
+	# the boiler: plated in jade over the front half, bare steel behind
+	for z in range(-9, 9):
+		for y in range(1, 12):
+			for x in range(-6, 6):
+				var r := Vector2(x + 0.5, y + 0.5 - 5.5).length()
+				if r > 5.0:
+					continue
+				var c := STEEL_M if r > 4.0 else GUN
+				if z < 1 and y >= 7:
+					c = JADE if r > 4.0 else JADE_D
+				if posmod(z, 4) == 0:
+					c = STEEL_L
+				v.put(x, y, z, c)
+	# the smokebox front with its glowing grille, lamps either side
+	for x in range(-5, 5):
+		v.fill(x, 4, -10, x, 8, -10, AMBER if x % 2 == 0 else GUN, x % 2 == 0)
+	v.fill_sym(7, 5, -10, 8, 6, -9, EYE, true)
+	# pipes along the boiler, domes and the stack on top
+	v.fill_sym(6, 6, -8, 6, 6, 8, STEEL_L)
+	v.fill_sym(6, 4, -8, 6, 4, 8, GUN)
+	for z in [-6, 2]:
+		v.fill_sym(6, 4, z, 6, 6, z, STEEL_M)
+	v.blob(0, 10, -1, 2.2, 1.0, 2.2, STEEL_L)
+	v.blob(0, 10, 5, 1.8, 0.8, 1.8, JADE)
+	v.fill(-1, 10, -7, 0, 11, -6, STEEL_M)
+	v.fill(-1, 11, -7, 0, 11, -6, EYE, true)
+	# the cab: jade walls, a grey roof, lit windows
+	v.fill_sym(0, 3, 10, 7, 8, 16, JADE_D)
+	v.fill_sym(0, 9, 10, 8, 9, 16, STEEL_M)
+	v.fill_sym(0, 9, 10, 4, 9, 13, JADE)
+	v.fill_sym(2, 6, 9, 5, 7, 9, LAMP, true)
+	v.fill_sym(8, 6, 12, 8, 7, 14, LAMP, true)
+	# the rear coupler
+	v.fill_sym(0, 1, 17, 2, 3, 18, GUN)
 	return v.mesh(U * 1.2, Vector3(0.5, 3.0, 0.5))
 
 
-## OUROBOROS's car (faces -z): an armoured hopper, jade and grey
-## plates over gunmetal, gold stripes, a little turret dome with a red eye
-## on top, couplers fore and aft, amber lamps at the corners.
+## OUROBOROS's car (faces -z): an ore hopper on a bare frame, armoured in
+## jade over its front half and open behind (two pressure tanks, pipes and
+## valves), two bogies with spoked wheels showing at the sides, gold
+## stripes, a little turret with a red eye on a gun ring, couplers fore and
+## aft, amber lamps at the corners.
 static func _ouro_car() -> ArrayMesh:
-	var v := Vox.new(26, 9, 26)
-	for z in range(-11, 11):
-		for x in range(-11, 11):
+	var v := Vox.new(26, 10, 26)
+	# the frame: side rails and cross members on a floor
+	v.fill_sym(0, 0, -10, 8, 0, 9, GUN)
+	v.fill_sym(8, 1, -11, 9, 2, 10, STEEL_M)
+	for z in range(-10, 10, 3):
+		v.fill_sym(0, 1, z, 7, 1, z, GUN)
+	# bogies
+	for bz in [-7, 6]:
+		v.fill_sym(9, 1, bz - 4, 10, 2, bz + 4, GUN)
+		for wz in [bz - 2, bz + 2]:
+			_wheel(v, 10, 11, 2, wz, 2.3)
+	# the hopper: chamfered, plated in jade at the front, open behind
+	for z in range(-9, 9):
+		for x in range(-8, 8):
 			var ax := absf(x + 0.5)
 			var az := absf(z + 0.5)
-			if ax + az > 18.0:
+			if ax + az > 14.0:
 				continue
-			var h := 5 if ax < 8.0 and az < 8.0 else 3
-			var top := JADE if ((x + 11) / 4 + (z + 11) / 4) % 2 == 0 else STEEL_M
-			if h == 3:
-				top = JADE_D
-			for y in h:
-				v.put(x, y, z, top if y == h - 1 else (GUN if y > 0 else GUN_D))
-	v.fill_sym(10, 1, -6, 10, 2, 5, GOLD)
-	v.blob(0, 6, 0, 3.0, 1.6, 3.0, GUN)
-	v.fill_sym(0, 7, -3, 0, 7, -2, EYE, true)
-	v.fill_sym(0, 1, -13, 1, 2, -11, GUN_D)
-	v.fill_sym(0, 1, 11, 1, 2, 12, GUN_D)
+			var front := z < 0
+			var h := 6 if front else 4
+			var c := JADE if front else GUN
+			if front and (posmod(x, 5) == 0 or z == -1):
+				c = JADE_D
+			for y in range(2, h):
+				v.put(x, y, z, c if y == h - 1 else STEEL_M)
+	# the open back: two pressure tanks across, a pipe with valves
+	for tz in [3, 6]:
+		for x in range(-6, 6):
+			for y in range(4, 8):
+				for z in range(tz - 1, tz + 2):
+					if Vector2(y + 0.5 - 5.5, z + 0.5 - tz - 0.5).length() < 1.6:
+						v.put(x, y, z, STEEL_L if absf(x + 0.5) < 5.0 else GUN)
+	v.fill_sym(0, 4, 8, 6, 4, 8, STEEL_M)
+	v.fill_sym(3, 5, 8, 3, 5, 8, CYAN, true)
+	# gold stripes on the sides
+	v.fill_sym(8, 3, -6, 8, 4, 5, GOLD)
+	# the turret on its gun ring, on the plated front
+	v.blob(0, 6, -3, 3.0, 0.8, 3.0, GUN)
+	v.blob(0, 7, -3, 2.0, 1.2, 2.0, STEEL_M)
+	v.fill_sym(0, 8, -5, 0, 8, -4, EYE, true)
+	# couplers and lamps
+	v.fill_sym(0, 1, -13, 1, 2, -11, GUN)
+	v.fill_sym(0, 1, 11, 1, 2, 12, GUN)
 	for c: Vector2i in [Vector2i(-8, -7), Vector2i(7, -7), Vector2i(-8, 6), Vector2i(7, 6)]:
 		v.put(c.x, 3, c.y, AMBER, true)
 	return v.mesh(U * 1.2, Vector3(0.5, 2.5, 0.5))
 
 
-## VULCAN PRESS's hull (faces down-screen, +z): as wide as the tunnel. A
-## gunmetal base, a deck of grey steel plates lined in black in the middle,
-## heavy furnace housings in construction-machine orange at the sides with
-## glowing grilles, a back ridge with smoke stacks, the hammers' rail along the
-## front edge (hazard-striped, amber lamps), and in the middle of the front
-## a round bay where the crucible core burns on a molten bed inside a lit
-## rim.
+## A spoked wheel standing in the y-z plane, `x0`..`x1` thick on both sides
+## (mirrored), centre (yc, zc), radius r: a steel rim and hub, grey spokes.
+static func _wheel(v: Vox, x0: int, x1: int, yc: int, zc: int, r: float) -> void:
+	for dy in range(-int(ceil(r)), int(ceil(r)) + 1):
+		for dz in range(-int(ceil(r)), int(ceil(r)) + 1):
+			var d := Vector2(dy, dz).length()
+			if d > r:
+				continue
+			var c := Color(0, 0, 0, 0)
+			if d > r - 1.0 or d < 1.0:
+				c = STEEL_L
+			elif dy == 0 or dz == 0:
+				c = STEEL_M
+			if c.a > 0.0:
+				v.fill_sym(x0, yc + dy, zc + dz, x1, yc + dy, zc + dz, c)
+
+
+## A vertical hydraulic cylinder (round in plan) at (cx, cz): a grey barrel
+## from y0 to y1 with a lighter collar and a steel rod cap.
+static func _ram_post(v: Vox, cx: int, cz: int, r: float, y0: int, y1: int) -> void:
+	for dz in range(-int(ceil(r)), int(ceil(r)) + 1):
+		for dx in range(-int(ceil(r)), int(ceil(r)) + 1):
+			var d := Vector2(dx, dz).length()
+			if d > r:
+				continue
+			for y in range(y0, y1 + 1):
+				v.put(cx + dx, y, cz + dz, STEEL_M if y < y1 - 1 else STEEL_L)
+			if d < r * 0.5:
+				v.put(cx + dx, y1 + 1, cz + dz, STEEL_L)
+
+
+## A drum (a roller) lying along x from x0 to x1, centre (yc, zc) in
+## voxels, radius r: grey steel banded every few voxels; `cover` ranges of
+## x get an orange half-casing over the top.
+static func _drum_x(v: Vox, x0: int, x1: int, yc: int, zc: int, r: float, cover: Array) -> void:
+	for x in range(x0, x1 + 1):
+		var covered := false
+		for cr: Vector2i in cover:
+			if x >= cr.x and x <= cr.y:
+				covered = true
+		for dy in range(-int(ceil(r)) - 1, int(ceil(r)) + 2):
+			for dz in range(-int(ceil(r)) - 1, int(ceil(r)) + 2):
+				var d := Vector2(dy, dz).length()
+				if d <= r:
+					v.put(x, yc + dy, zc + dz, GUN if posmod(x, 6) == 0 else STEEL_M)
+				elif covered and d <= r + 1.2 and dy >= 0:
+					v.put(x, yc + dy, zc + dz, ORANGE if posmod(x, 8) != 0 else ORANGE.darkened(0.2))
+
+
+## VULCAN PRESS's hull (faces down-screen, +z): as wide as the tunnel, a
+## press with its works showing and orange casing only in places. At the
+## back, on a ragged ridge of machinery, two great rollers half cased in
+## orange with gear wheels at their ends and the smoke stacks. In the middle
+## a bare deck of grey machinery: rows of hydraulic rams, grey plates over
+## part of it, pipes running across. At the sides orange furnace housings,
+## cut open in places to show rams inside, with glowing grilles. Along the
+## front the hammers' rail (hazard-striped, brackets, amber lamps), and in
+## the middle of the front a round bay where the crucible core burns on a
+## molten bed inside a lit rim.
 static func _press_hull() -> ArrayMesh:
 	var u := U * 1.5
-	var v := Vox.new(188, 15, 56)
+	var v := Vox.new(196, 16, 60)
 	for z in range(-28, 28):
 		for x in range(-94, 94):
 			var ux := (x + 0.5) * u
@@ -478,7 +586,8 @@ static func _press_hull() -> ArrayMesh:
 			if uz > 1.0:
 				lim -= (uz - 1.0) * 1.2
 			if uz < -2.6:
-				lim -= (-2.6 - uz) * 2.0
+				# a ragged back edge: blocks of machinery stepped in and out
+				lim -= (-2.6 - uz) * 2.0 - (Vox._hash(int(floor(x / 6.0)), 3, 1) - 0.5) * 1.4
 			if ax > lim:
 				continue
 			var bay := Vector2(ux, uz - 1.4).length()
@@ -489,7 +598,7 @@ static func _press_hull() -> ArrayMesh:
 				if bay > 3.25:
 					h = 6
 					var seg := int(floor((atan2(uz - 1.4, ux) + PI) * 12.0 / PI))
-					top = BLACK if seg % 2 == 0 else GUN
+					top = GUN_D if seg % 2 == 0 else STEEL_M
 					if seg % 4 == 1 and bay > 3.45:
 						top = AMBER
 						glow = true
@@ -501,41 +610,78 @@ static func _press_hull() -> ArrayMesh:
 					h = 2
 					top = GUN_D
 			elif uz < -2.4:
-				h = 10
-				top = GUN_D if int(ax / 0.8) % 2 == 0 else GUN
+				# the back ridge: a low base, the rollers lie on it
+				h = 6
+				top = GUN if posmod(x, 12) < 6 else STEEL_M
 			elif ax > 8.8 and uz < 1.0:
-				h = 9
-				top = ORANGE
-				# furnace grilles, dark, one lit slit in each
-				if int((uz + 4.0) / 0.4) % 2 == 0 and ax > 9.4 and ax < 11.6:
-					top = GUN_D
-					if absf(ax - 10.5) < u:
+				# furnace housings: orange casing, cut open in places
+				var cut := posmod(int(floor((uz + 4.0) / 1.2)), 2) == 1 and ax > 9.5 and ax < 11.9
+				if cut:
+					h = 6
+					top = GUN
+				else:
+					h = 9
+					top = ORANGE if posmod(int(floor((uz + 4.0) / 0.4)), 4) != 0 else ORANGE.darkened(0.25)
+					if posmod(int(floor((uz + 4.0) / 0.4)), 2) == 0 and absf(ax - 10.7) < u * 1.5:
 						top = Color(0.7, 0.25, 0.08)
 						glow = true
 			elif ax < 8.8 and uz < 0.6:
-				# grey steel plates lined in black
-				h = 8
-				top = STEEL_L if (int((ux + 12.0) / 1.6) + int((uz + 4.0) / 1.6)) % 2 == 0 else STEEL_M
-				if absf(fmod(ux + 12.0, 1.6)) < u or absf(fmod(uz + 4.0, 1.6)) < u:
-					top = BLACK
+				# the deck: bare machinery with grey plates over part of it
+				h = 6
+				top = GUN if posmod(x + z, 3) != 0 else STEEL_M
+				var plate := posmod(int(floor((ux + 12.0) / 2.4)) + int(floor((uz + 4.0) / 1.6)), 3) == 0
+				if plate:
+					h = 8
+					top = STEEL_L
+					if absf(fmod(ux + 12.0, 2.4)) < u or absf(fmod(uz + 4.0, 1.6)) < u:
+						top = STEEL_M
 			elif uz > 2.6:
 				# the hammers' rail, hazard-striped, with amber lamps
 				h = 6
-				top = HAZARD if int((x + z) / 3) % 2 == 0 else BLACK
+				top = HAZARD if int((x + z) / 3) % 2 == 0 else GUN_D
 				if x % 10 == 0 and uz > 2.95:
 					top = AMBER
 					glow = true
+			else:
+				# the floor between: low boxes of machinery here and there
+				if Vox._hash(int(floor(x / 3.0)), 4, int(floor(z / 3.0))) > 0.8:
+					h = 5
+					top = STEEL_M
 			for y in h:
 				v.put(x, y, z, top if y == h - 1 else (GUN if y > 0 else GUN_D), glow and y == h - 1)
+	# the rollers at the back, half cased, with gear wheels at their ends
+	_drum_x(v, -82, -10, 8, -21, 4.0, [Vector2i(-62, -40), Vector2i(-22, -12)])
+	_drum_x(v, 9, 81, 8, -21, 4.0, [Vector2i(11, 21), Vector2i(39, 61)])
+	for gx in [-84, -9, 8, 83]:
+		for dy in range(-6, 7):
+			for dz in range(-6, 7):
+				var d := Vector2(dy, dz).length()
+				if d > 6.0:
+					continue
+				var teeth := d > 5.0 and int((atan2(dy, dz) + PI) * 8.0 / PI) % 2 == 0
+				if d <= 5.0 or teeth:
+					v.fill(gx, 8 + dy, -21 + dz, gx + (1 if gx > 0 else -1), 8 + dy, -21 + dz, STEEL_L if d < 1.5 or d > 4.0 else GUN)
+	# hydraulic rams in rows on the deck, and in the open housings
+	for px in [-58, -44, -30, 30, 44, 58]:
+		for pz in [-13, -4]:
+			_ram_post(v, px, pz, 2.6, 6, 9)
+	for px in [-79, 79]:
+		for pz in [-16, 1]:
+			_ram_post(v, px, pz, 2.2, 6, 8)
+	# pipes across the deck and along the front floor
+	for s in [-1, 1]:
+		_pipe(v, Vector2i(s * 90, -9), Vector2i(s * 14, -9), 14)
+		_pipe(v, Vector2i(s * 88, 12), Vector2i(s * 30, 12), 14)
+		_pipe(v, Vector2i(s * 66, -26), Vector2i(s * 66, 4), 14)
+	# rail brackets
+	for bx in range(-84, 85, 12):
+		v.fill(bx, 6, 19, bx + 1, 7, 20, GUN)
 	# smoke stacks on the back ridge
 	for sx: float in [-6.5, -3.0, 3.0, 6.5]:
 		var cx := int(sx / u)
-		v.fill(cx - 2, 10, -25, cx + 1, 13, -22, GUN_D)
-		v.fill(cx - 1, 14, -24, cx, 14, -23, Color(1.0, 0.4, 0.12), true)
-	# bolts round the deck
-	for k in 12:
-		var bx := int(lerpf(-60.0, 60.0, k / 11.0))
-		v.put(bx, 8, -16, AMBER, true)
+		v.fill(cx - 2, 6, -28, cx + 1, 13, -26, GUN)
+		v.fill(cx - 2, 13, -28, cx + 1, 13, -26, STEEL_M)
+		v.fill(cx - 1, 14, -28, cx, 14, -27, Color(1.0, 0.4, 0.12), true)
 	return v.mesh(u, Vector3(0, 3.0, 0))
 
 
@@ -590,24 +736,32 @@ static func _press_plate() -> ArrayMesh:
 	return v.mesh(U * 1.2, Vector3(0, 1.5, 0))
 
 
-## A hammer head (strikes toward +z): an orange block with a steel top,
-## grey sides, a row of teeth on the striking face, a red eye on top,
+## A hammer head (strikes toward +z): orange casing on a grey frame with
+## ribbed sides, twin hydraulic cylinders along the top with a steel plate
+## between them, a row of teeth on the striking face, a red eye on top,
 ## amber lamps, and the ram's socket at the back.
 static func _press_hammer() -> ArrayMesh:
-	var v := Vox.new(24, 12, 24)
-	v.fill(-11, 0, -9, 10, 7, 8, ORANGE.darkened(0.15))
-	v.fill(-11, 0, -9, 10, 0, 8, GUN_D)
+	var v := Vox.new(24, 13, 24)
+	v.fill(-11, 0, -9, 10, 7, 8, GUN)
+	v.fill(-10, 1, -8, 9, 7, 7, ORANGE.darkened(0.15))
 	v.fill(-10, 8, -8, 9, 8, 7, ORANGE)
-	v.fill(-7, 9, -6, 6, 9, 5, STEEL_L)
-	v.fill(-12, 1, -8, -12, 6, 7, STEEL_M)
-	v.fill(11, 1, -8, 11, 6, 7, STEEL_M)
+	for z in range(-8, 8, 3):
+		v.fill(-12, 1, z, -12, 7, z, STEEL_M)
+		v.fill(11, 1, z, 11, 7, z, STEEL_M)
+	for cx in [-6, 5]:
+		for z in range(-7, 7):
+			for dx in range(-2, 2):
+				for dy in range(-2, 2):
+					if Vector2(dx + 0.5, dy + 0.5).length() < 1.8:
+						v.put(cx + dx, 10 + dy, z, STEEL_L if posmod(z, 4) != 0 else GUN)
+	v.fill(-3, 9, -6, 2, 9, 5, STEEL_M)
 	for x in range(-10, 10, 4):
 		v.fill(x, 2, 9, x + 1, 5, 10, GUN_D)
-		v.fill(x, 3, 11, x + 1, 4, 11, GUN_D.lightened(0.15))
+		v.fill(x, 3, 11, x + 1, 4, 11, STEEL_M)
 	v.fill(-1, 10, -2, 0, 10, 1, EYE, true)
 	for c: Vector2i in [Vector2i(-11, -9), Vector2i(10, -9), Vector2i(-11, 8), Vector2i(10, 8)]:
 		v.put(c.x, 8, c.y, AMBER, true)
-	v.fill(-3, 2, -11, 2, 5, -10, GUN_D)
+	v.fill(-3, 2, -11, 2, 5, -10, GUN)
 	return v.mesh(U * 1.5, Vector3(0.5, 3.0, 0.5))
 
 
