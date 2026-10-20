@@ -179,7 +179,7 @@ static func _fx(d: StageDef) -> Array:
 	var out := []
 	var ex := [
 		["EXPLOSION S   1.0  fighter", 1.0, Models.CRIM],
-		["EXPLOSION M   1.6  container", 1.6, Models.PEARL],
+		["EXPLOSION M   1.6  container", 1.6, Models.COBALT],
 		["EXPLOSION M   1.8  big rock", 1.8, Models.body_col("rock_l", Models.GUN)],
 		["EXPLOSION L   2.5  boss pod", 2.5, Models.STEEL_M],
 		["EXPLOSION XL  3.0  bulwark", 3.0, Models.GUN],

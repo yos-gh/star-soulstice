@@ -107,20 +107,20 @@ static func _saucer(rad: float, a: Color, b: Color, spoke := GOLD_L) -> ArrayMes
 
 
 ## Interceptor that strikes from behind (so it has to catch the eye): a
-## grey needle with swept delta wings in bright pink edged in white,
-## twin glowing engines and a red eye up front.
+## grey needle with swept delta wings in bright pink, red along their leading
+## edges and at the tips, twin glowing engines and a red eye up front.
 static func _chaser() -> ArrayMesh:
 	var v := Vox.new(18, 6, 22)
 	# spine and needle nose
 	v.fill_sym(0, 1, -10, 0, 2, 7, DUSK_L)
-	v.fill_sym(0, 3, -6, 0, 3, 5, PEARL)
+	v.fill_sym(0, 3, -6, 0, 3, 5, STEEL_L)
 	v.fill_sym(0, 0, -7, 1, 0, 6, DUSK_D)
 	v.fill_sym(0, 3, -9, 0, 3, -7, EYE, true)
 	# delta wings, swept back
 	for k in range(1, 9):
-		v.fill_sym(k, 1, -4 + k, k, 1, 6 - k / 3, PINK if k < 6 else PINK.darkened(0.15))
-		v.fill_sym(k, 1, -4 + k, k, 1, -4 + k, PEARL)
-	v.fill_sym(8, 1, 3, 8, 2, 4, PEARL)
+		v.fill_sym(k, 1, -4 + k, k, 1, 6 - k / 3, PINK if k < 6 else CRIM)
+		v.fill_sym(k, 1, -4 + k, k, 1, -4 + k, RED)
+	v.fill_sym(8, 1, 3, 8, 2, 4, RED)
 	# twin engines
 	v.fill_sym(2, 1, 2, 3, 3, 8, STEEL_M)
 	v.fill_sym(2, 4, 3, 3, 4, 6, STEEL_L)
@@ -150,8 +150,8 @@ static func _flanker() -> ArrayMesh:
 	return v.mesh(U, Vector3(0, 2.0, 0))
 
 
-## Star mine: four long white spikes and four short crimson ones around a
-## red core.
+## Star mine: four long gold spikes and four short bronze ones around a red
+## core.
 static func _rammer() -> ArrayMesh:
 	var v := Vox.new(22, 6, 22)
 	for k in 4:
@@ -161,19 +161,20 @@ static func _rammer() -> ArrayMesh:
 			for t in range(-w + 1, w):
 				var x := d.x * s + d.y * t
 				var z := d.y * s + d.x * t
-				v.fill(x, 2, z, x, 3 if s < 9 else 2, z, PEARL if s < 9 else PEARL_D)
+				v.fill(x, 2, z, x, 3 if s < 9 else 2, z, GOLD if s < 9 else GOLD_L)
 	for k in 4:
 		var dx := 1 if k % 2 == 0 else -1
 		var dz := 1 if k < 2 else -1
 		for s in range(2, 6):
-			v.fill(dx * s, 2, dz * s, dx * s, 2, dz * s, CRIM)
+			v.fill(dx * s, 2, dz * s, dx * s, 2, dz * s, BRONZE)
 	v.blob(0, 3, 0, 3.2, 2.6, 3.2, GUN)
 	v.blob(0, 4, 0, 1.8, 1.4, 1.8, EYE, true)
 	# 1.5x the small-unit voxel so it stands out
 	return v.mesh(U * 1.5, Vector3(0, 3.0, 0))
 
 
-## Cargo capsule: a pearl-white armoured pod with gold bands and beacons.
+## Cargo capsule: a blue armoured pod like the power-up it carries, with a
+## few white bands, a glowing cyan band round the middle and amber beacons.
 static func _container() -> ArrayMesh:
 	var v := Vox.new(20, 10, 14)
 	for z in range(-6, 6):
@@ -186,14 +187,16 @@ static func _container() -> ArrayMesh:
 			if ax > 7.5:
 				top -= 1
 			for y in range(0, top + 1):
-				var c := PEARL_D
-				if int(ax) == 3 or int(ax) == 6:
-					c = GOLD
-				if y == top and c == PEARL_D:
-					c = PEARL
+				var c := COBALT
+				if int(ax) == 6:
+					c = PEARL_D
+				if y == top and c == COBALT:
+					c = COBALT.lightened(0.08)
+				if int(ax) == 0 and y == top:
+					c = CYAN
 				if y == 0:
 					c = GUN_D
-				v.put(x, y, z, c)
+				v.put(x, y, z, c, c == CYAN)
 	for s: Vector2i in [Vector2i(-8, 0), Vector2i(7, 0), Vector2i(-1, -5), Vector2i(0, 4)]:
 		v.put(s.x, 5, s.y, AMBER, true)
 	v.fill(-1, 7, -2, 0, 7, 1, AMBER, true)

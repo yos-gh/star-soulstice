@@ -6,8 +6,9 @@ extends BossBase
 ## the ship; while it turns, the cars spray shells out of the ring
 ## (breakable: the low-threat curtain) and the head fires telegraphed
 ## needle bursts. Then it stops and winds up: a lock-on marks the line,
-## and the head strikes straight down it, brakes to a stop short of the
-## bottom edge, swings round away from the ship and climbs back to coil
+## and the head strikes straight down it through where the ship was (right
+## down to the bottom edge if the ship is there), brakes to a stop just past
+## it, swings round away from the ship and climbs back to coil
 ## again, the train behind it running the same line. Cars can be shot off
 ## one by one (the train closes up); destroying the head ends it. With all
 ## its cars gone it goes berserk: faster, a tighter coil, rings of shells
@@ -15,7 +16,7 @@ extends BossBase
 
 const INFO := {
 	"name": "OUROBOROS", "role": "mid",
-	"desc": "装甲列車：自機の前でとぐろを巻いて回り、車両が輪の外へ物理弾をまく。止まって予兆（線を示す）のあと、頭が一直線に突っ込み、下端の手前で止まって自機と反対側へ回り込み戻る。車両は 1 両ずつ壊せる。車両を全部失うと発狂：速く小さくとぐろを巻き、頭から物理弾の輪、突進も早まる。頭を壊すと撃破",
+	"desc": "装甲列車：自機の前でとぐろを巻いて回り、車両が輪の外へ物理弾をまく。止まって予兆（線を示す）のあと、頭が自機のいた所を通って一直線に突っ込み（自機が最下部にいれば下端まで届く）、少し先で止まって自機と反対側へ回り込み戻る。車両は 1 両ずつ壊せる。車両を全部失うと発狂：速く小さくとぐろを巻き、頭から物理弾の輪、突進も早まる。頭を壊すと撃破",
 	"demos": [["FULL", ""], ["STRIKE", "strike"]],
 }
 const HEAD_HP := 560.0
@@ -232,7 +233,8 @@ func _go(s: String) -> void:
 
 func _begin_aim() -> void:
 	var pp := game.player.position
-	lock = Vector3(clampf(pp.x, -game.field_hw + 3.0, game.field_hw - 3.0), 0, minf(pp.z, game.field_bottom - 5.0))
+	# through where the ship is and a little past it, at most to the bottom edge
+	lock = Vector3(clampf(pp.x, -game.field_hw + 3.0, game.field_hw - 3.0), 0, minf(pp.z + 1.0, game.field_bottom - 1.0))
 	game.warn(head, AIM_TIME * (0.8 if berserk else 1.0), Game.Warn.MOVE, head.radius, lock)
 	game.sfx.play("slam")
 	_go("aim")

@@ -7,9 +7,9 @@ extends RefCounted
 ##            spread across the cast (white-and-blue is the player's, so
 ##            enemies don't pair them), and no near-black bodies against the
 ##            black of space (mid grey at the darkest): crimson fighters, jade
-##            drones, yellow-and-grey racers, a pale interceptor with pink
-##            wings, sky-blue blades, white mines, a white carrier banded in
-##            gold, a grey cruiser in gold; bosses after their concept (Lazaro
+##            drones, yellow-and-grey racers, a grey interceptor with pink and
+##            red wings, sky-blue blades, gold mines, a blue carrier like its
+##            power-up, a grey cruiser in gold; bosses after their concept (Lazaro
 ##            gold and bronze,
 ##            STAR CORTEX mechanical grey with a glowing eye after Star
 ##            Brain, OUROBOROS a jade train, VULCAN PRESS grey and
@@ -82,8 +82,8 @@ const U := 0.09  # voxel size of small units
 
 ## Main armour colour of a model: its wreckage when it blows up.
 const BODY := {
-	"dart": CRIM, "swirl": JADE, "racer": GOLD, "chaser": STEEL_L, "flanker": SKY, "rammer": PEARL,
-	"container": PEARL, "turret_base": CRIM, "bulwark": GUN, "railjack": JADE,
+	"dart": CRIM, "swirl": JADE, "racer": GOLD, "chaser": STEEL_L, "flanker": SKY, "rammer": GOLD,
+	"container": COBALT, "turret_base": CRIM, "bulwark": GUN, "railjack": JADE,
 	"rock_s": Color(0.33, 0.3, 0.27), "rock_l": Color(0.33, 0.3, 0.27),
 	"lazaro_piece": GOLD, "boss_pod": STEEL_M, "boss_shutter": STEEL_L, "boss_eye": STEEL_M,
 	"ouro_head": JADE, "ouro_car": JADE, "press_core": GUN, "press_plate": STEEL_L,
