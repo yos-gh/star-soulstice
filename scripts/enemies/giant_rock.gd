@@ -40,6 +40,9 @@ func _behave(dt: float) -> void:
 		model.rotation.y = float(p.get("turn", 0.0))
 	position += vel * dt
 	model.rotation.y += dt * float(p.get("spin", 0.1))
+	# a soft flicker under fire, not a full flash: it soaks shots for a
+	# long while, and kept white it no longer looked like rock
+	flash = minf(flash, 0.3)
 	# gone once wholly off the screen (it is too big for the usual margin)
 	if position.z > game.field_bottom + radius + 1.0 or absf(position.x) > game.hw_bottom + radius + 2.0 or (not entered and t > 14.0):
 		game.remove_enemy(self)
