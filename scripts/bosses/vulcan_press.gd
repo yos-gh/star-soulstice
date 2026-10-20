@@ -42,6 +42,7 @@ const TUBE_LEN := 6.0
 const RODS := 6  # hit zones along a ram (they stop shots and ram; the lane is also checked whole)
 const RAM_HW := 0.7  # half width of a ram, for touching the ship
 const AIM_T := 1.0
+const SLIDE_T := 0.55  # in the wind-up, the hammer slides over to its lane
 const DRIVE_T := 0.18
 const HOLD_T := 0.55
 const BACK_T := 1.1
@@ -60,7 +61,7 @@ var core: Enemy
 var plates: Array[Enemy] = []
 var vents: Array[Enemy] = []
 var armour: Array[Enemy] = []
-## {head, rods: [Enemy], tubes: [MeshInstance3D], x, lo, hi, park, state, st, ext, to_ext, target, dead}
+## {head, rods: [Enemy], tubes: [MeshInstance3D], x, from_x, lane, lo, hi, park, state, st, ext, to_ext, target, dead}
 var hammers: Array[Dictionary] = []
 var center := Vector3.ZERO
 var rest_z := 0.0
@@ -122,7 +123,7 @@ func setup(g: Game) -> void:
 			m.mesh = Vox.get_mesh("press_tube%d" % k)
 			add_child(m)
 			tubes.append(m)
-		hammers.append({"head": h, "rods": rods, "tubes": tubes, "x": s * 6.0, "park": s * 7.5,
+		hammers.append({"head": h, "rods": rods, "tubes": tubes, "x": s * 6.0, "from_x": s * 6.0, "lane": s * 6.0, "park": s * 7.5,
 			"lo": -11.0 if s < 0 else -4.0, "hi": 4.0 if s < 0 else 11.0,
 			"state": "idle", "st": 0.0, "ext": 0.0, "to_ext": 0.0, "target": Vector3.ZERO, "dead": false})
 	for o: Vector3 in VENT_OFF:
@@ -432,7 +433,10 @@ func _strike(h: Dictionary, x: float, exact := false) -> void:
 	var lx := clampf(x, h["lo"], h["hi"])
 	if exact and absf(lx - x) > 0.5:
 		return
-	h["x"] = lx
+	# it slides over to the lane during the wind-up (set at once, it jumped
+	# sideways)
+	h["from_x"] = h["x"]
+	h["lane"] = lx
 	var head_rest := center.z + RAIL_Z + HEAD_REST
 	# right down to the bottom edge of the screen: the whole lane closes
 	var tz := game.field_bottom + 1.2
@@ -467,6 +471,7 @@ func _hammer(i: int, dt: float) -> void:
 			h["x"] = move_toward(h["x"], want, 5.0 * dt)
 			h["ext"] = move_toward(h["ext"], 0.0, 6.0 * dt)
 		"aim":
+			h["x"] = lerpf(h["from_x"], h["lane"], _smooth(s / SLIDE_T))
 			if s >= AIM_T:
 				h["state"] = "drive"
 				h["st"] = 0.0

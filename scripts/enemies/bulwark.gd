@@ -13,6 +13,9 @@ const INFO := {
 }
 
 
+var hold_t := 0.0  # seconds holding station (the sway starts from zero there)
+
+
 func _init_kind() -> void:
 	hp = 120.0
 	radius = 2.1
@@ -28,7 +31,10 @@ func _behave(dt: float) -> void:
 		position.z = move_toward(position.z, hold_z, 7.0 * dt)
 		fire_t = 0.8
 	elif t < stay:
-		position.x = float(p["x"]) + sin(t * 0.6) * 1.6
+		# sway from where it arrived (timed from the spawn, the sway jumped it
+		# sideways the moment it stopped)
+		hold_t += dt
+		position.x = float(p["x"]) + sin(hold_t * 0.6) * 1.6
 		fire_t -= dt
 		if fire_t <= 0.0 and game.can_fire(position):
 			var down := PI / 2.0

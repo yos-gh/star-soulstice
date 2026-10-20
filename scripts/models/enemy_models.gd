@@ -173,8 +173,10 @@ static func _rammer() -> ArrayMesh:
 	return v.mesh(U * 1.5, Vector3(0, 3.0, 0))
 
 
-## Cargo capsule: a blue armoured pod like the power-up it carries, with a
-## few white bands, a glowing cyan band round the middle and amber beacons.
+## Cargo capsule, coloured like the power-up it carries: a blue armoured
+## pod with white end caps (about the item's share of white), a dark seam
+## where each cap meets the body, a glowing cyan band across the middle and
+## amber beacons.
 static func _container() -> ArrayMesh:
 	var v := Vox.new(20, 10, 14)
 	for z in range(-6, 6):
@@ -187,11 +189,13 @@ static func _container() -> ArrayMesh:
 			if ax > 7.5:
 				top -= 1
 			for y in range(0, top + 1):
-				var c := COBALT
-				if int(ax) == 6:
-					c = PEARL_D
-				if y == top and c == COBALT:
-					c = COBALT.lightened(0.08)
+				var c := BLUE
+				if ax > 6.5:
+					c = PEARL if y == top else PEARL_D
+				elif int(ax) == 6:
+					c = DUSK
+				elif y == top:
+					c = BLUE.lightened(0.1)
 				if int(ax) == 0 and y == top:
 					c = CYAN
 				if y == 0:
