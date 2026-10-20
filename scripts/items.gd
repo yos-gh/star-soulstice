@@ -147,7 +147,9 @@ func draw() -> void:
 		mms[k].multimesh.visible_instance_count = counts[k]
 
 
-## Energy: a see-through yellow cube whose edges are a little brighter.
+## Energy: a see-through pale blue-green cube whose edges are a little
+## brighter (yellow got lost among the orange energy bullets; it stays pale
+## and greener than the cyan shells, and away from the ship's white and blue).
 func _wire_cube() -> ArrayMesh:
 	var m := ArrayMesh.new()
 	var face := BoxMesh.new()
@@ -168,8 +170,8 @@ func _wire_cube() -> ArrayMesh:
 				p[(axis + 2) % 3] = b
 				st.append_from(beam, 0, Transform3D(Basis.IDENTITY, p))
 	st.commit(m)
-	m.surface_set_material(0, _energy_mat(Color(1.0, 0.86, 0.4, 0.1)))
-	m.surface_set_material(1, _energy_mat(Color(1.0, 0.9, 0.6, 0.15)))
+	m.surface_set_material(0, _energy_mat(Color(0.62, 0.95, 0.82, 0.1)))
+	m.surface_set_material(1, _energy_mat(Color(0.76, 1.0, 0.9, 0.16)))
 	return m
 
 
