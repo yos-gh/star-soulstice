@@ -1,10 +1,10 @@
 extends Enemy
-## A boulder (the drifting big rock): carried in a GRAPPLER's claws and
+## A boulder (a meteor chunk): carried in a GRAPPLER's claws and
 ## flung down a marked line, or fired from TITAN DREDGE's mass driver or
 ## its rockfall. Rams like any rock; shots break it. One whose carrier is
 ## gone drifts down slowly (or, still above the screen, is gone with it).
 ## params: holder (the Enemy carrying it; the carrier moves `grip`), or vx,
-## vz (flying from the start), spin, scale (of the model)
+## vz (flying from the start), spin, scale (of the model), mesh (meteor_a)
 
 const INFO := {
 	"name": "BOULDER", "category": "hazard", "stage": 3,
@@ -25,7 +25,7 @@ func _init_kind() -> void:
 	blast = 1.8
 	counts = false
 	marked = true
-	mesh_name = "rock_l"
+	mesh_name = p.get("mesh", "meteor_a")
 
 
 func _behave(dt: float) -> void:

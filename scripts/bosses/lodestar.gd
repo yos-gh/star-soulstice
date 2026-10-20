@@ -1,8 +1,9 @@
 extends BossBase
-## Mid-boss of stage 3, a magnetic ore-catcher of the mining belt: a steel
-## ring frame round a reactor core (the weak point, the gauge), three
-## electromagnet pylons on the ring, and six boulders held in orbit round it
-## by their field. The boulders shield it (they take the shots as they
+## Mid-boss of stage 3, a magnetic ore-catcher of the mining belt: a
+## warship built round a horseshoe magnet (a spine with engines and swept
+## wings behind, the horseshoe's arms round a reactor core, the weak point
+## and the gauge), three electromagnet pylons on the arms, and six boulders
+## held in orbit round it by their field. The boulders shield it (they take the shots as they
 ## pass; each can be broken) and they are its ammunition: it slings them
 ## one at a time down a marked line through where the ship is, right to the
 ## bottom edge. The pylons spray shell fans (big, then small), the core
@@ -30,9 +31,9 @@ const ROCK_SCORE := 300
 const ROCKS := 6
 const ROCK_R := 1.4
 const RING_R := 3.4  # the pylons and the armour, on the ring
-const ORBIT_R := 6.2
+const ORBIT_R := 5.8
 const ORBIT_W := 0.9  # rad/s, clockwise on screen
-const WILD_R := 4.8  # OVERLOAD's tight ring
+const WILD_R := 4.6  # OVERLOAD's tight ring
 const WILD_W := 2.2
 const PYLON_A := [PI * 1.5, PI / 6.0, PI * 5.0 / 6.0]  # top, lower right, lower left (+z is down)
 const ARMOUR_A := [0.0, PI]
@@ -65,7 +66,7 @@ var boom_t := 0.0
 
 func setup(g: Game) -> void:
 	game = g
-	rest_z = game.field_top + 8.0
+	rest_z = game.field_top + 10.5
 	center = Vector3(0, 0, game.field_top - 8.0)
 	# order matters (a shot hits the first part in the list it touches):
 	# the boulders, then the pylons and the core, the armour last
@@ -91,7 +92,7 @@ func setup(g: Game) -> void:
 		e.hp = 1e9
 		armour.append(e)
 	frame = MeshInstance3D.new()
-	frame.mesh = Vox.get_mesh("lode_frame")
+	frame.mesh = Vox.get_mesh("lode_hull")
 	add_child(frame)
 	_arm(true)
 	_place(0.0)
@@ -100,7 +101,7 @@ func setup(g: Game) -> void:
 ## A boulder in the field, at orbit angle `a`; "in" = reeled in from `from`
 ## (harmless and not shootable until it is in orbit).
 func _add_rock(a: float, state: String, from := Vector3.ZERO) -> void:
-	var e := game.spawn_part(self, "rock_l", ROCK_R)
+	var e := game.spawn_part(self, "meteor_a" if rocks.size() % 2 == 0 else "meteor_b", ROCK_R)
 	e.hp = ROCK_HP
 	e.max_hp = ROCK_HP
 	e.score = ROCK_SCORE
@@ -206,7 +207,7 @@ func tick(dt: float) -> void:
 					return
 				var r: Dictionary = rocks.pop_front()
 				var e: Enemy = r["e"]
-				game.fx.explode(e.position + Vector3(0, 0.4, 0), 1.8, Vector3.ZERO, Models.body_col("rock_l", Models.GUN))
+				game.fx.explode(e.position + Vector3(0, 0.4, 0), 1.8, Vector3.ZERO, Models.body_col("meteor_a", Models.GUN))
 				game.items.burst_energy(e.position, 3.0)
 				game.sfx.play("exp_m")
 				game.remove_enemy(e)

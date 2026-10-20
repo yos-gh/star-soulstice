@@ -91,7 +91,7 @@ const BODY := {
 	"ouro_head": JADE, "ouro_car": JADE, "press_core": GUN, "press_plate": STEEL_L,
 	"press_hammer": ORANGE, "press_vent": ORANGE,
 	"giant_rock_a": Color(0.34, 0.31, 0.28), "giant_rock_b": Color(0.34, 0.31, 0.28), "grappler": Color(0.42, 0.45, 0.24),
-	"lode_core": Color(0.7, 0.42, 0.24), "lode_pylon": Color(0.7, 0.42, 0.24), "dredge_core": GUN, "dredge_wheel": Color(0.84, 0.64, 0.14), "dredge_driver": Color(0.84, 0.64, 0.14),
+	"lode_core": Color(0.7, 0.42, 0.24), "lode_pylon": Color(0.7, 0.42, 0.24), "dredge_core": GUN, "dredge_wheel": Color(0.84, 0.64, 0.14), "dredge_driver": Color(0.84, 0.64, 0.14), "meteor_a": Color(0.34, 0.31, 0.28), "meteor_b": Color(0.34, 0.31, 0.28),
 }
 
 

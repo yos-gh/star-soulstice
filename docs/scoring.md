@@ -36,9 +36,9 @@
 | 中ボス LODESTAR の岩塊（6 個、引き寄せて補充） | 300 | 24 | `scripts/bosses/lodestar.gd` `ROCK_SCORE` / `ROCK_HP` |
 | 中ボス LODESTAR の磁石の柱（3 本） | 3,000 | 150 | `scripts/bosses/lodestar.gd` `PYLON_SCORE` / `PYLON_HP` |
 | 中ボス LODESTAR の核（撃破） | 25,000 | 620 | `scripts/bosses/lodestar.gd` `SCORE` / `CORE_HP` |
-| ボス TITAN DREDGE のベルトの岩塊 | 400 | 36 | `scripts/bosses/titan_dredge.gd` `ORE_SCORE` / `ORE_HP` |
+| ボス TITAN DREDGE のベルトの岩塊 | 400 | 24 | `scripts/bosses/titan_dredge.gd` `ORE_SCORE` / `ORE_HP` |
 | ボス TITAN DREDGE のカッターホイール（2 基） | 8,000 | 520 | `scripts/bosses/titan_dredge.gd` `WHEEL_SCORE` / `WHEEL_HP` |
-| ボス TITAN DREDGE の核 | 60,000 | 2,800 | `scripts/bosses/titan_dredge.gd` `CORE_SCORE` / `CORE_HP` |
+| ボス TITAN DREDGE の核 | 60,000 | 1,500 | `scripts/bosses/titan_dredge.gd` `CORE_SCORE` / `CORE_HP` |
 
 撃破した敵の弾は消えてエネルギーになる（スコアはエネルギー取得分のみ）。
 
@@ -105,8 +105,8 @@
 | 1 | 約 41 万 | 約 38 万（うちスター 39 個、パワーアップ 6 個） | 約 18 万 | 約 118 秒 |
 | 2（ステージ 1 から続けて） | 約 41 万 | 約 64 万（うちスター 51 個） | 約 18 万 | 約 125 秒 |
 | 2（ステージ 2 から始めて、第 1 形態から） | 約 39 万 | 約 51 万（うちスター 55 個） | 約 18 万 | 約 119 秒 |
-| 3（ステージ 2 から続けて） | 約 49 万 | 約 62 万（うちスター 48 個） | 約 17 万 | 約 127 秒 |
-| 3（ステージ 3 から始めて、第 1 形態から） | 約 45 万 | 約 38 万（うちスター 39 個） | 約 18 万 | 約 123 秒 |
+| 3（ステージ 2 から続けて） | 約 47 万 | 約 59 万（うちスター 44 個） | 約 18 万 | 約 122 秒 |
+| 3（ステージ 3 から始めて、第 1 形態から） | 約 49 万 | 約 40 万（うちスター 41 個） | 約 17 万 | 約 128 秒 |
 
 自動操縦はほぼ秒間 7.5 回連打するので、ショットはおおむね ×8（最大）。
 
@@ -118,7 +118,7 @@
 |---|---:|---|
 | 1 | 18.6 | DEBRIS 10.5、HULL 30.5、（ラザロ）13.0、CORE 28.1、ボス戦 9.6 |
 | 2 | 13.9 | INTAKE DUCT 14.9、ASSEMBLY LINE 19.2、（OUROBOROS）14.1、FURNACE ROW 17.3、ボス戦 8.1 |
-| 3 | 13.3 | DRIFT FIELD 14.8、QUARRY ROCKS 18.7、（LODESTAR）11.0、CRUSH ZONE 17.5、ボス戦 6.2（ステージ 3 から始めた値） |
+| 3 | 13.3 | DRIFT FIELD 15.7、QUARRY ROCKS 17.6、（LODESTAR）10.4、CRUSH ZONE 16.4、ボス戦 6.6（ステージ 3 から始めた値） |
 
 ステージ 2 はスクロールが 1.5 倍なので、区画の間隔（`stage2.gd` の `gap`）を広げて密度を下げている。区画に硬いタイル（倉庫：スターが隠れている率 6%、ほかは 2%）が多いので、密度が同じならスターはステージ 1 より多めに出る。
 

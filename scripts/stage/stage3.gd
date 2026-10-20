@@ -125,7 +125,7 @@ func _giants(g: Game) -> int:
 
 func build_waves(f: Formations) -> void:
 	# build the stage's big models now, not the moment they first appear
-	for n: String in ["giant_rock_a", "giant_rock_b", "grappler", "grappler_claw", "lode_frame", "lode_core", "lode_pylon", "dredge_hull", "dredge_core", "dredge_wheel", "dredge_boom", "dredge_jib", "dredge_driver"]:
+	for n: String in ["giant_rock_a", "giant_rock_b", "grappler", "grappler_claw", "lode_hull", "lode_core", "lode_pylon", "dredge_hull", "dredge_core", "dredge_wheel", "dredge_boom", "dredge_jib", "dredge_driver"]:
 		Vox.get_mesh(n)
 	# AREA 1: drift field
 	wave("drift", f.col(0.0, -0.75, 6, 0.18, 1) + f.col(0.8, 0.75, 6, 0.18, -1))

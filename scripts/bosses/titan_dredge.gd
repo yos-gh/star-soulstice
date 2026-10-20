@@ -1,74 +1,82 @@
 extends BossBase
 ## Stage 3 boss TITAN DREDGE: a strip-mining machine dug into a giant
-## asteroid at the top of the screen. Its core (the only weak point, the
-## gauge) turns in a bay in the middle of its front, and across the front
-## runs the ore belt: boulders dug out of the asteroid ride it from the
-## left, past the core (they take the shots: break them, or wait for a
-## gap) to the hopper on the right, which feeds the mass driver. The driver
-## turns on the ship and fires the boulders down a marked line to the
-## bottom edge: every boulder broken on the belt is one it can't fire. Two
-## cutter wheels on telescoping booms (tough; breaking them is the player's
-## choice) take turns to sweep: a lock-on, the whole path marked (down the
-## side and the arc), the boom reaches out to the bottom of the screen and
-## the wheel sweeps an arc along the bottom from the edge to past the
-## middle, throwing gravel shells out of it, holds, comes back along the
-## same arc and stows: get above the arc (inside its reach) or out past its
-## end. Gravel vents fire shell fans, the core telegraphed needle bursts,
-## and every round ends in a quiet gap.
+## asteroid at the top of the screen. Its two cutter wheels dig at the
+## asteroid's face between attacks, and what they cut comes out of a mine
+## adit on the left onto the ore belt: the boulders ride it down the left
+## side and across the front of the core (the only weak point, the gauge;
+## they take the shots meant for it: break them, or wait for a gap) to the
+## hopper on the right, where they drop in to load the mass driver beside
+## it (a loaded boulder shows on the driver). The driver turns on the ship
+## and fires them down a marked line to the bottom edge: every boulder
+## broken on the belt is one it can't fire.
+## The cutter wheels (tough; breaking them is the player's choice) take
+## turns to sweep. The boom reaches out to the ship's distance from its
+## pivot (at least MIN_R): a lock-on and the whole path marked (out to the
+## edge of the screen, then the arc through where the ship is and on past
+## it), the wheel sweeps the arc throwing gravel shells out of it, holds,
+## comes back along the same arc and stows. Dodge by changing your distance
+## from the pivot (in or out of the arc's band), by slipping inside the
+## minimum reach close under the pivot, or out past the arc's end. Gravel
+## vents fire shell fans, the core telegraphed needle bursts, and every
+## round ends in a quiet gap.
 ## RAMPAGE (both wheels broken, or after a while): it pushes forward and
 ## sways, the belt runs fast, the core spins a shell spiral, the asteroid
-## sheds boulders down three marked lanes (the ship's and either side)
-## twice a round, the driver fires three-way, a wide needle burst; wheels
-## still up sweep both at once.
+## sheds boulders down marked lanes scattered across the screen (one near
+## the ship) twice a round, the driver fires three-way, a wide needle
+## burst; wheels still up sweep both at once.
 
 const INFO := {
 	"name": "TITAN DREDGE", "role": "boss",
-	"desc": "巨大な小惑星に食い込んだ採掘機。弱点は前の真ん中で回る核だけ。核の前をベルトコンベアが横切り、掘り出した岩塊が左から流れて弾を受け止める（壊せる）。右の端でホッパーに入った岩は質量投射機の弾になり、予兆（線）のあと自機のいた所へ下端まで撃ち出される（ベルトで壊した分だけ減る）。伸び縮みするブームの先の 2 つのカッターホイール（硬い）が交互に、予兆（道筋全体を示す）のあと画面の下端まで伸びて弧を描いて薙ぎ払い、物理弾の砂利を外へまき、同じ弧を戻る：弧の内側（上）か、弧の終わりの先へ逃げる。端の噴出口は扇状の物理弾、核は針弾。ホイールを両方失うか時間で発狂（RAMPAGE）：迫り出して揺れ、ベルトが速まり、核から渦巻き弾、小惑星から岩塊が 3 列（自機の列と両脇）に予兆つきで落ちてくる、投射機は 3 方向、広い針弾、残ったホイールは 2 つ同時に薙ぎ払う",
+	"desc": "巨大な小惑星に食い込んだ採掘機。弱点は前の真ん中で回る核だけ。カッターホイールが小惑星を掘り、削った岩塊が左の坑道からベルトコンベアに出てきて、左側を下り、核の前を横切って弾を受け止める（壊せる）。右端のホッパーに落ちた岩は隣の質量投射機に装填され、予兆（線）のあと自機のいた所へ下端まで撃ち出される（ベルトで壊した分だけ減る）。2 つのカッターホイール（硬い）が交互に、自機までの距離にブームを伸ばし（最小半径あり）、予兆（道筋全体）のあと画面の端から自機の向こうまで弧を描いて薙ぎ払い、物理弾の砂利を外へまいて同じ弧を戻る：弧の帯から外れるか、最小半径の内側（支点の下）に潜るか、弧の終わりの先へ。端の噴出口は扇状の物理弾、核は針弾。ホイールを両方失うか時間で発狂（RAMPAGE）：迫り出して揺れ、ベルトが速まり、核から渦巻き弾、小惑星から岩塊がばらけた列に予兆つきで落ちてくる（1 つは自機の近く）、投射機は 3 方向、広い針弾、残ったホイールは 2 つ同時に薙ぎ払う",
 	"demos": [["FULL", ""], ["SWEEP", "A"], ["RAMPAGE", "C"]],
 }
-const CORE_HP := 2800.0
+const CORE_HP := 1500.0
 const CORE_SCORE := 60000
 const WHEEL_HP := 520.0
 const WHEEL_SCORE := 8000
-const ORE_HP := 36.0
+const ORE_HP := 24.0
 const ORE_SCORE := 400
-const ORE_R := 1.25
+const ORE_R := 1.2
 const CORE_OFF := Vector3(0, 0, 1.4)
 const PIVOT_OFF := [Vector3(-8.5, 0, -1.0), Vector3(8.5, 0, -1.0)]
-const BELT_Z := 4.3
-const BELT_X := 11.4  # the belt runs from -BELT_X to BELT_X
+## the ore belt: out of the adit in the asteroid, down the left side and
+## across the front of the core to the hopper
+const BELT := [Vector3(-12.4, 0, -5.2), Vector3(-12.4, 0, 4.3), Vector3(11.4, 0, 4.3)]
+const EMERGE := 1.4  # along the belt: coming out of the adit
+const HOPPER := Vector3(12.7, 0, 4.0)
+const DROP_T := 0.45  # falling into the hopper
 const DRIVER_OFF := Vector3(11.8, 0, 6.2)
-const VENT_OFF := [Vector3(-12.9, 0, 1.8), Vector3(12.9, 0, 1.8)]
-const ARMOUR := [[Vector3(-4.6, 0, 0.2), 2.6], [Vector3(4.6, 0, 0.2), 2.6], [Vector3(-10.4, 0, 0.0), 2.4], [Vector3(10.4, 0, 0.0), 2.4], [Vector3(0, 0, -2.4), 2.4]]
+const VENT_OFF := [Vector3(-8.5, 0, 2.3), Vector3(8.5, 0, 2.3)]
+const ARMOUR := [[Vector3(-4.6, 0, 0.2), 2.6], [Vector3(4.6, 0, 0.2), 2.6], [Vector3(-10.0, 0, -0.4), 2.3], [Vector3(10.0, 0, -0.4), 2.3], [Vector3(0, 0, -2.4), 2.4]]
 const JIB_LEN := 10.5
 ## a boom's angle (0 = +x, PI/2 = down-screen) for the left one; the right
 ## one mirrors it
-const REST_A := 2.51  # stowed: up and out to the side
-const START_A := 1.95  # a sweep starts with the wheel at the edge, low
-const END_A := 0.97  # and ends past the middle
+const REST_A := 3.95  # stowed: up and out, the wheel digging at the asteroid
 const REST_L := 6.5  # boom length stowed
-const REACH_TO := 0.5  # a sweep reaches out to this far above the bottom edge
+const MIN_R := 11.0  # the shortest a sweep reaches: inside it is safe
+const REACH_TO := 0.5  # the longest: to this far above the bottom edge
+const PAST := 0.6  # the arc runs on past the ship by this (radians)
+const SWEEP_W := 1.1  # rad/s on average
 const WIND_T := 1.0
-const SWEEP_T := 1.0
 const HOLD_T := 0.35
-const BACK_T := 1.5
+const BACK_T := 1.4
 const STOW_T := 1.2
 const ROUND_A := 10.0
 const ROUND_C := 8.0
 const ENRAGE_T := 50.0
 const RAGE_DOWN := 2.0
-const LANE_GAP := 3.6
 const BOULDER_SPEED := 15.0
 const FALL_SPEED := 14.0
 
 var hull: MeshInstance3D
 var core: Enemy
 var driver: Enemy
+var loaded: MeshInstance3D  # a boulder in the driver's breech
 var armour: Array[Enemy] = []
-var ores: Array[Enemy] = []  # boulders on the belt
+var ores: Array[Dictionary] = []  # boulders on the belt: {e, s (along it), drop (s falling in, -1)}
 var lanes: Array[Enemy] = []  # where the rockfall comes down (marked)
 var fan_marks: Array[Enemy] = []  # the driver's three-way lines (marked)
-## {wheel, boom, jib, side, a, l, state, st, from_a, from_l, spray_t, dead}
+## {wheel, boom, jib, side, a, l, state, st, from_a, from_l, reach, start, end, sweep_t, spray_t, dead}
 var booms: Array[Dictionary] = []
 var center := Vector3.ZERO
 var rest_z := 0.0
@@ -80,9 +88,10 @@ var cycle := 0
 var fired := {}
 var ammo := 1
 var ore_t := 0.0
+var ore_k := 0
 var aim_to := Vector3.ZERO
 var fan_to: Array[Vector3] = []
-var fall_x := PackedFloat32Array()
+var falls: Array = []  # this round's rockfall: [x, ...]
 var spiral_a := 0.0
 var spiral_t := 0.0
 var sway_t := 0.0
@@ -111,10 +120,15 @@ func setup(g: Game) -> void:
 		jib.mesh = Vox.get_mesh("dredge_jib")
 		add_child(jib)
 		booms.append({"wheel": w, "boom": boom, "jib": jib, "side": s, "a": REST_A, "l": REST_L, "state": "rest", "st": 0.0,
-			"from_a": REST_A, "from_l": REST_L, "reach": 19.0, "spray_t": 0.0, "dead": false})
+			"from_a": REST_A, "from_l": REST_L, "reach": MIN_R, "start": 2.0, "end": 1.0, "sweep_t": 1.0, "spray_t": 0.0, "dead": false})
 	driver = game.spawn_part(self, "dredge_driver", 1.4)
 	driver.armored = true
 	driver.hp = 1e9
+	loaded = MeshInstance3D.new()
+	loaded.mesh = Vox.get_mesh("meteor_b")
+	loaded.scale = Vector3.ONE * 0.5
+	loaded.position = Vector3(0, 0.55, 0.25)
+	driver.add_child(loaded)
 	core = game.spawn_part(self, "dredge_core", 1.7)
 	core.hp = CORE_HP
 	core.max_hp = CORE_HP
@@ -126,34 +140,39 @@ func setup(g: Game) -> void:
 		e.armored = true
 		e.hp = 1e9
 		armour.append(e)
+	for k in 4:
+		var m := game.spawn_part(self, "", 0.9)
+		m.intangible = true
+		m.ram = false
+		lanes.append(m)
 	for k in 3:
-		for list: Array in [lanes, fan_marks]:
-			var m := game.spawn_part(self, "", 0.9)
-			m.intangible = true
-			m.ram = false
-			list.append(m)
+		var m := game.spawn_part(self, "", 0.9)
+		m.intangible = true
+		m.ram = false
+		fan_marks.append(m)
 	hull = MeshInstance3D.new()
 	hull.mesh = Vox.get_mesh("dredge_hull")
 	add_child(hull)
 	# the belt already loaded as it comes in
-	for x: float in [-8.0, -2.5, 3.0, 8.5]:
-		_add_ore(x)
+	for s: float in [6.0, 13.0, 20.0, 27.0]:
+		_add_ore(s)
 	_arm(true)
 	_place(0.0)
 
 
-func _add_ore(x: float) -> void:
-	var e := game.spawn_part(self, "rock_l", ORE_R)
+## A boulder on the belt, `s` along it (0 = deep in the adit).
+func _add_ore(s: float) -> void:
+	var e := game.spawn_part(self, "meteor_a" if ore_k % 2 == 0 else "meteor_b", ORE_R)
+	ore_k += 1
 	e.hp = ORE_HP
 	e.max_hp = ORE_HP
 	e.score = ORE_SCORE
 	e.energy_drop = 5.0
 	e.blast = 1.8
-	e.model.scale = Vector3.ONE * 0.82
 	e.model.rotation = Vector3(randf() * TAU, randf() * TAU, 0)
-	e.position = center + Vector3(x, 0, BELT_Z)
 	e.armored = phase == 0
-	ores.append(e)
+	ores.append({"e": e, "s": s, "drop": -1.0})
+	_place_ore(ores[-1], 0.0)
 
 
 ## While it comes in nothing can be hurt.
@@ -162,8 +181,8 @@ func _arm(on: bool) -> void:
 	for b in booms:
 		if not b["dead"]:
 			(b["wheel"] as Enemy).armored = on
-	for e in ores:
-		e.armored = on
+	for o in ores:
+		(o["e"] as Enemy).armored = on
 
 
 func on_hit(_e: Enemy, dmg: float) -> float:
@@ -174,10 +193,11 @@ func on_part_killed(e: Enemy) -> void:
 	if e == core:
 		_die()
 		return
-	if ores.has(e):
-		ores.erase(e)
-		e.queue_free()
-		return
+	for o in ores:
+		if o["e"] == e:
+			ores.erase(o)
+			e.queue_free()
+			return
 	for b in booms:
 		if b["wheel"] == e:
 			b["dead"] = true
@@ -287,9 +307,9 @@ func _round_a() -> void:
 
 
 ## RAMPAGE: forward and swaying; a shell spiral from the core, the rockfall
-## down three marked lanes twice, a three-way from the driver, a wide needle
-## burst, both wheels sweeping at once if any are left (vent fans if not),
-## a last boulder, a short quiet gap.
+## twice, a three-way from the driver, a wide needle burst, both wheels
+## sweeping at once if any are left (vent fans if not), a last boulder, a
+## short quiet gap.
 func _round_c(dt: float) -> void:
 	center.z = move_toward(center.z, rest_z + RAGE_DOWN, 3.0 * dt)
 	sway_t += dt
@@ -302,10 +322,10 @@ func _round_c(dt: float) -> void:
 			spiral_a += 0.39
 			for arm in 2:
 				game.bullets.fire(cp, spiral_a + arm * PI, 4.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if arm == 0 else Bullets.SMALL)
-	_rockfall("f1", 1.0)
-	_driver_fan("t", 2.4)
+	_rockfall("f1", 1.0, 3)
+	_driver_fan("t", 2.6)
 	_core_needles("c", 3.4, 7, 34.0)
-	_rockfall("f2", 4.4)
+	_rockfall("f2", 4.4, 4)
 	if _once("both", 5.4):
 		if wheels_alive() > 0:
 			for b in booms:
@@ -333,6 +353,8 @@ func _pick(k: int) -> Dictionary:
 
 # ------------------------------------------------------------ the booms
 
+## Direction of a boom at angle a (in the left boom's terms; the right one
+## mirrors it).
 func _dir(b: Dictionary, a: float) -> Vector3:
 	var m := a if float(b["side"]) < 0.0 else PI - a
 	return Vector3(cos(m), 0, sin(m))
@@ -352,23 +374,41 @@ func _smooth(f: float) -> float:
 	return f * f * (3.0 - 2.0 * f)
 
 
-## A sweep: the lock-on and the whole path marked (the reach down the side,
-## then the arc), then the wind-up starts.
+## A sweep: the boom will reach out to the ship's distance from the pivot
+## (at least MIN_R, at most the bottom of the screen), the arc runs from
+## the edge of the screen through the ship's direction and PAST on. The
+## lock-on and the whole path are marked (out to the start, then the arc),
+## then the wind-up starts.
 func _sweep(b: Dictionary) -> void:
 	if b["dead"] or b["state"] != "rest":
 		return
+	var pv := _pivot(b)
+	var sp := game.player.position
+	var d := Vector2(sp.x - pv.x, sp.z - pv.z)
+	var reach := clampf(d.length(), MIN_R, game.field_bottom - REACH_TO - pv.z)
+	# the ship's direction in the left boom's terms
+	var ship_a := atan2(d.y, d.x * float(b["side"]) * -1.0)
+	# start just off the outer edge of the screen (or level, if it can't reach it)
+	var edge := game.field_hw + 1.0
+	var px := pv.x * -float(b["side"])  # the pivot's x, mirrored for the right boom
+	var c := (-edge - px) / reach
+	var start := acos(clampf(c, -1.0, 1.0)) if c >= -1.0 else PI
+	start = clampf(maxf(start, ship_a + PAST), 1.2, PI)
+	var end := clampf(ship_a - PAST, 0.25, start - 0.5)
+	b["reach"] = reach
+	b["start"] = start
+	b["end"] = end
+	b["sweep_t"] = clampf((start - end) / SWEEP_W, 0.7, 1.5)
 	b["state"] = "wind"
 	b["st"] = 0.0
 	b["from_a"] = b["a"]
 	b["from_l"] = b["l"]
-	# right down to the bottom of the screen, wherever the dredge is
-	b["reach"] = game.field_bottom - REACH_TO - _pivot(b).z
 	var path := PackedVector3Array()
 	for k in 5:
 		var f := _smooth(k / 4.0)
-		path.append(_wheel_at(b, lerpf(b["a"], START_A, f), lerpf(b["l"], b["reach"], f)))
+		path.append(_wheel_at(b, lerpf(b["a"], start, f), lerpf(b["l"], reach, f)))
 	for k in range(1, 9):
-		path.append(_wheel_at(b, lerpf(START_A, END_A, k / 8.0), b["reach"]))
+		path.append(_wheel_at(b, lerpf(start, end, k / 8.0), reach))
 	game.warn(b["wheel"], WIND_T, Game.Warn.MOVE, 1.9, path)
 	game.sfx.play("slam")
 
@@ -384,33 +424,33 @@ func _boom(b: Dictionary, dt: float) -> void:
 			b["l"] = move_toward(b["l"], REST_L, 4.0 * dt)
 		"wind":
 			var f := _smooth(s / WIND_T)
-			b["a"] = lerpf(b["from_a"], START_A, f)
+			b["a"] = lerpf(b["from_a"], b["start"], f)
 			b["l"] = lerpf(b["from_l"], b["reach"], f)
 			moving = true
 			if s >= WIND_T:
 				_go(b, "sweep")
 		"sweep":
-			b["a"] = lerpf(START_A, END_A, _smooth(s / SWEEP_T))
+			b["a"] = lerpf(b["start"], b["end"], _smooth(s / float(b["sweep_t"])))
 			moving = true
 			_spray(b, dt)
-			if s >= SWEEP_T:
+			if s >= float(b["sweep_t"]):
 				_go(b, "hold")
 				# it comes back along the same arc
 				var path := PackedVector3Array()
 				for k in 9:
-					path.append(_wheel_at(b, lerpf(END_A, START_A, k / 8.0), b["reach"]))
+					path.append(_wheel_at(b, lerpf(b["end"], b["start"], k / 8.0), b["reach"]))
 				game.warn(w, HOLD_T, Game.Warn.MOVE, 1.9, path)
 		"hold":
 			if s >= HOLD_T:
 				_go(b, "back")
 		"back":
-			b["a"] = lerpf(END_A, START_A, _smooth(s / BACK_T))
+			b["a"] = lerpf(b["end"], b["start"], _smooth(s / BACK_T))
 			moving = true
 			if s >= BACK_T:
 				_go(b, "stow")
 		"stow":
 			var f := _smooth(s / STOW_T)
-			b["a"] = lerpf(START_A, REST_A, f)
+			b["a"] = lerpf(b["start"], REST_A, f)
 			b["l"] = lerpf(b["reach"], REST_L, f)
 			moving = true
 			if s >= STOW_T:
@@ -421,7 +461,7 @@ func _boom(b: Dictionary, dt: float) -> void:
 			b["a"] = lerpf(b["from_a"], REST_A, f)
 			b["l"] = lerpf(b["from_l"], REST_L * 0.8, f)
 	if not b["dead"]:
-		w.model.rotation.y += dt * (10.0 if moving else 2.5) * -float(b["side"])
+		w.model.rotation.y += dt * (10.0 if moving else 4.0) * -float(b["side"])
 
 
 func _go(b: Dictionary, s: String) -> void:
@@ -445,25 +485,69 @@ func _spray(b: Dictionary, dt: float) -> void:
 
 # ------------------------------------------------------------ belt and driver
 
-## The belt carries boulders from the chute on the left to the hopper on
-## the right; each that gets there is one more for the driver.
+## The belt brings the boulders the wheels cut out of the adit, down the
+## left side and across the front of the core; at the far end each drops
+## into the hopper and loads the driver.
 func _belt(dt: float) -> void:
-	var v := 5.0 if phase == 3 else 3.0
+	var v := 4.5 if phase == 3 else 3.0
 	if phase != 4:
 		ore_t -= dt
 		if ore_t <= 0.0:
-			ore_t = 1.0 if phase == 3 else 1.5
-			_add_ore(-BELT_X)
-	for e in ores.duplicate():
-		e.position = Vector3(e.position.x + v * dt, 0, center.z + BELT_Z)
-		e.position.x = maxf(e.position.x, center.x - BELT_X)
-		e.hit_pos = e.position
-		e.model.rotation.y += dt * 0.6
-		if e.position.x > center.x + BELT_X:
-			ores.erase(e)
-			game.remove_enemy(e)
-			e.queue_free()
-			ammo = mini(ammo + 1, 3)
+			ore_t = 1.2 if phase == 3 else 2.4
+			_add_ore(0.0)
+	var length := _belt_len()
+	for o in ores.duplicate():
+		var e: Enemy = o["e"]
+		if o["drop"] >= 0.0:
+			o["drop"] += dt
+			if o["drop"] >= DROP_T:
+				ores.erase(o)
+				game.remove_enemy(e)
+				e.queue_free()
+				ammo = mini(ammo + 1, 3)
+				continue
+		else:
+			o["s"] += v * dt
+			if o["s"] >= length and phase != 4:
+				# over the end and into the hopper: no longer a target
+				o["drop"] = 0.0
+				e.intangible = true
+				e.ram = false
+		_place_ore(o, dt)
+
+
+func _belt_len() -> float:
+	var l := 0.0
+	for k in BELT.size() - 1:
+		l += (BELT[k + 1] - BELT[k]).length()
+	return l
+
+
+## A boulder's place: along the belt, growing as it comes out of the adit,
+## or falling into the hopper.
+func _place_ore(o: Dictionary, dt: float) -> void:
+	var e: Enemy = o["e"]
+	var s: float = o["s"]
+	var p: Vector3 = BELT[BELT.size() - 1]
+	var acc := 0.0
+	for k in BELT.size() - 1:
+		var seg: float = (BELT[k + 1] - BELT[k]).length()
+		if s <= acc + seg:
+			p = (BELT[k] as Vector3).lerp(BELT[k + 1], (s - acc) / seg)
+			break
+		acc += seg
+	var sc := lerpf(0.35, 1.0, _smooth(s / EMERGE))
+	var y := 0.0
+	if o["drop"] >= 0.0:
+		var f := _smooth(o["drop"] / DROP_T)
+		p = p.lerp(HOPPER, f)
+		sc *= 1.0 - 0.7 * f
+		y = -0.9 * f
+	e.position = center + p
+	e.hit_pos = e.position
+	e.model.scale = Vector3.ONE * sc
+	e.model.position.y = y
+	e.model.rotation.y += dt * 0.6
 
 
 func _muzzle(dir: Vector3) -> Vector3:
@@ -514,31 +598,46 @@ func _driver_fan(key: String, at: float) -> void:
 			_fire_boulder(_muzzle(d.normalized()), d.normalized() * BOULDER_SPEED)
 
 
-func _fire_boulder(at: Vector3, v: Vector3) -> void:
+func _fire_boulder(at: Vector3, v: Vector3, mesh := "meteor_a") -> void:
 	if not game.combat_on():
 		return
-	game.spawn_enemy("boulder", {"x": at.x, "z": at.z, "vx": v.x, "vz": v.z, "spin": 2.5})
+	game.spawn_enemy("boulder", {"x": at.x, "z": at.z, "vx": v.x, "vz": v.z, "spin": 2.5, "mesh": mesh})
 	game.fx.flash(at + Vector3(0, 0.4, 0), 0.6)
 	game.shake(0.3)
 
 
-## RAMPAGE: the asteroid sheds boulders down three lanes, the ship's and
-## one either side, marked at `at` from the top edge to the bottom, falling
-## 0.8 s later.
-func _rockfall(key: String, at: float) -> void:
-	if _once("w_" + key, at):
-		var px := game.player.position.x
-		fall_x = PackedFloat32Array()
-		for k in 3:
-			var x := clampf(px + (k - 1) * LANE_GAP, -game.hw_top + 1.5, game.hw_top - 1.5)
-			fall_x.append(x)
+## RAMPAGE: the asteroid sheds `n` boulders down lanes scattered across the
+## screen, one of them near the ship's; each lane is marked from the top
+## edge to the bottom, one after another, and its boulder falls 0.8 s
+## after its mark.
+func _rockfall(key: String, at: float, n: int) -> void:
+	if _once("p_" + key, at):
+		falls.clear()
+		var lim := game.hw_top - 1.5
+		falls.append(clampf(game.player.position.x + randf_range(-1.2, 1.2), -lim, lim))
+		var tries := 0
+		while falls.size() < n and tries < 40:
+			tries += 1
+			var x := randf_range(-lim, lim)
+			var ok := true
+			for q: float in falls:
+				if absf(q - x) < 3.4:
+					ok = false
+			if ok:
+				falls.append(x)
+		# in a scattered order, not left to right
+		falls.shuffle()
+	for k in falls.size():
+		var t0 := at + k * 0.22
+		if _once("w_%s%d" % [key, k], t0):
+			var x: float = falls[k]
 			lanes[k].position = Vector3(x, 0, game.field_top + 1.2)
 			lanes[k].hit_pos = lanes[k].position
 			game.warn(lanes[k], 0.8, Game.Warn.MOVE, 0.9, Vector3(x, 0, game.field_bottom + 1.0))
-		game.sfx.play("slam")
-	if _once(key, at + 0.8) and fall_x.size() == 3:
-		for k in 3:
-			_fire_boulder(Vector3(fall_x[k], 0, game.field_top - 2.0 - k * 0.6), Vector3(0, 0, FALL_SPEED))
+			if k == 0:
+				game.sfx.play("slam")
+		if _once("%s%d" % [key, k], t0 + 0.8):
+			_fire_boulder(Vector3(falls[k], 0, game.field_top - 2.0), Vector3(0, 0, FALL_SPEED), "meteor_b" if k % 2 == 0 else "meteor_a")
 
 
 # ------------------------------------------------------------ guns
@@ -573,6 +672,7 @@ func _place(dt: float) -> void:
 	for i in armour.size():
 		armour[i].position = center + ARMOUR[i][0]
 	driver.position = center + DRIVER_OFF
+	loaded.visible = ammo > 0 and phase != 4
 	var d := game.player.position - driver.position
 	if d.length_squared() > 0.01 and phase != 4:
 		driver.rotation.y = lerp_angle(driver.rotation.y, atan2(-d.x, -d.z), clampf(4.0 * dt, 0.0, 1.0))
@@ -593,7 +693,9 @@ func _place(dt: float) -> void:
 
 
 func _parts() -> Array:
-	var out: Array = [core, driver] + armour + lanes + fan_marks + ores
+	var out: Array = [core, driver] + armour + lanes + fan_marks
+	for o in ores:
+		out.append(o["e"])
 	for b in booms:
 		out.append(b["wheel"])
 	return out
@@ -634,8 +736,8 @@ func debug_state() -> String:
 	var names := ["enter", "A", "-", "RAMPAGE", "dying"]
 	var bs := []
 	for b in booms:
-		bs.append(b["state"])
-	return "phase %s %.1fs  core %d/%d  wheels %s  belt %d  ammo %d  round %d %.1fs" % [names[phase], st, int(maxf(core.hp, 0.0)), int(CORE_HP), "/".join(bs), ores.size(), ammo, cycle, cycle_t]
+		bs.append("%s r%.0f" % [b["state"], b["reach"]])
+	return "phase %s %.1fs  core %d/%d  wheels %s  belt %d  ammo %d  round %d %.1fs" % [names[phase], st, int(maxf(core.hp, 0.0)), int(CORE_HP), " / ".join(bs), ores.size(), ammo, cycle, cycle_t]
 
 
 func _die() -> void:
