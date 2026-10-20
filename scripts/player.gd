@@ -43,7 +43,8 @@ var level := 0
 var shield := false
 var alive := false
 var invuln := 0.0
-var entering := 0.0
+var entering := 0.0  # seconds left flying in from below (no control)
+var enter_speed := 9.0  # how fast it flies in
 var energy := 0.0
 var conc := 0.0
 var taps := PackedFloat32Array()
@@ -149,7 +150,7 @@ func tick(dt: float, move: Vector2, tap: bool, hold: bool, side: bool) -> void:
 	fire_cd -= dt
 	if entering > 0.0:
 		entering -= dt
-		position.z -= 9.0 * dt
+		position.z -= enter_speed * dt
 		move = Vector2.ZERO
 		tap = false
 		hold = false

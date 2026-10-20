@@ -43,6 +43,7 @@ const CAM_DIST := 34.0
 const CAM_FOV := 40.0
 const CAM_TARGET := Vector3(0, 0, 0.0)
 const START_LIVES := 3
+const RESPAWN_WAIT := 0.9  # after a miss until the next ship flies in (was 1.8)
 const EXTENDS := [200000, 600000, 1200000]
 ## (The time bonus is per stage: StageDef.bonus_t / bonus_rate.)
 ## Item scoring (see docs/scoring.md)
@@ -429,6 +430,7 @@ func _start_stage(n: int, new_game: bool) -> void:
 	var keep := [player.level, player.shield, player.energy]
 	player.reset_at(Vector3(0, 0, field_bottom + 2.0))
 	player.entering = 0.9
+	player.enter_speed = 9.0
 	player.invuln = 2.5
 	player.energy = 20.0
 	if not new_game:
@@ -461,7 +463,10 @@ func clear_field() -> void:
 func _respawn() -> void:
 	var keep := player.energy * 0.5
 	player.reset_at(Vector3(0, 0, field_bottom + 2.0))
-	player.entering = 0.9
+	# back in half the time it used to take (yos): twice as fast up to the
+	# same spot
+	player.entering = 0.45
+	player.enter_speed = 18.0
 	player.invuln = 3.0
 	player.energy = keep
 
@@ -1030,7 +1035,8 @@ func _player_hit() -> void:
 	deaths += 1
 	power_mul = 1
 	lives -= 1
-	respawn_t = 1.8
+	# the next ship comes in after RESPAWN_WAIT; the game over waits longer
+	respawn_t = RESPAWN_WAIT if lives > 0 else 1.8
 	fx.explode(player.position + Vector3(0, 0.4, 0), 2.6, Vector3.ZERO, Models.WHITE, Color(0.5, 0.75, 1.0))
 	sfx.play("die")
 	shake(1.0)
