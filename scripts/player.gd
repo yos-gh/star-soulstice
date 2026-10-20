@@ -189,6 +189,35 @@ func tick(dt: float, move: Vector2, tap: bool, hold: bool, side: bool) -> void:
 	_visuals()
 
 
+## Shoved out of a solid circle (centre c, radius r: a giant rock) instead
+## of crashing into it. Pressed against an edge of the field it slides out
+## sideways along the edge; wedged in a corner it stays where it is (a rock
+## never crushes the ship).
+func push_out(c: Vector3, r: float) -> void:
+	var d := Vector2(position.x - c.x, position.z - c.z)
+	if d.length() >= r:
+		return
+	var dir := d.normalized() if d.length() > 0.01 else Vector2(0, 1)
+	var p := _inside(Vector2(c.x, c.z) + dir * r)
+	if p.distance_to(Vector2(c.x, c.z)) < r - 0.05:
+		# pinned: out to the side the ship is on, at the same height
+		var sx := signf(d.x) if absf(d.x) > 0.01 else 1.0
+		var dz := clampf(p.y - c.z, -r, r)
+		p = _inside(Vector2(c.x + sx * sqrt(maxf(0.0, r * r - dz * dz)), p.y))
+		if p.distance_to(Vector2(c.x, c.z)) < r - 0.05:
+			return
+	position.x = p.x
+	position.z = p.y
+
+
+## A plane point (x, z) kept inside the ship's bounds (as tick keeps it).
+func _inside(q: Vector2) -> Vector2:
+	var x := clampf(q.x, -bounds_x, bounds_x)
+	var z := clampf(q.y, bounds_z0, bounds_z1)
+	var w := game.half_width_at(z) - 0.8
+	return Vector2(clampf(x, -w, w), z)
+
+
 func _volley() -> void:
 	var m := shot_mul()
 	var p := position

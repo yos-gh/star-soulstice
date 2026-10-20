@@ -154,9 +154,12 @@ func racers(at: float, corner: String, laps: int, count: int, along := false, ga
 		c.add_point(pts[k])
 		if k > 0:
 			dist.append(dist[k - 1] + pts[k].distance_to(pts[k - 1]))
-	# fire once a lap, from the top of the loop
+	# fire once a lap, from the top of the loop (and where a stage doubles
+	# the fire, also as they come onto each lap: `early`)
 	var fire := []
+	var early := []
 	for r: Array in lap_at:
+		early.append(dist[r[0]])
 		var j: int = r[0]
 		for k in range(r[0], r[1]):
 			if pts[k].y < pts[j].y:
@@ -164,7 +167,7 @@ func racers(at: float, corner: String, laps: int, count: int, along := false, ga
 		fire.append(dist[j])
 	var out := []
 	for i in count:
-		out.append([at + i * 0.02, "racer", {"curve": c, "i": i, "gap": gap, "fire": fire, "x": pts[0].x, "z": pts[0].y}])
+		out.append([at + i * 0.02, "racer", {"curve": c, "i": i, "gap": gap, "fire": fire, "early": early, "x": pts[0].x, "z": pts[0].y}])
 	return out
 
 
@@ -227,6 +230,12 @@ func rammers(at: float, xs: Array, interval: float) -> Array:
 
 func bulwark(at: float, xn: float, stay := 11.0) -> Array:
 	return [[at, "bulwark", {"x": xn * _hw(), "z": _top() - 3.0, "stay": stay}]]
+
+
+## A mining tug at x (fraction of the half width) down to hold `hold` below
+## the top of the screen, with a boulder in its claws (see grappler.gd).
+func grappler(at: float, xn: float, hold := 5.0, stay := 13.0) -> Array:
+	return [[at, "grappler", {"x": xn * _hw(), "z": _top() - 3.0, "hold": _top() + hold, "stay": stay}]]
 
 
 ## A rail carriage down the wall on `side` (-1 = left) to hold `hold`

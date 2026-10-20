@@ -63,22 +63,25 @@ func think() -> Array:
 				push += side * (3.2 - dist) * 1.4 + d.normalized() * (3.2 - dist) * 0.4
 	# get out of a boss's marked strike line (a big move telegraphed toward
 	# a point: a press hammer, a train's strike)
+	# (or a path of points: a boom's sweep; or a thrown rock's line)
 	for w: Dictionary in game.warnings:
-		if w["kind"] != Game.Warn.MOVE or not (w["to"] is Vector3) or not is_instance_valid(w["node"]):
+		if w["kind"] != Game.Warn.MOVE or not (w["to"] is Vector3 or w["to"] is PackedVector3Array) or not is_instance_valid(w["node"]):
 			continue
-		if not (w["node"] is Enemy) or (w["node"] as Enemy).controller == null:
+		if not (w["node"] is Enemy) or ((w["node"] as Enemy).controller == null and not (w["node"] as Enemy).marked):
 			continue
 		var nd: Enemy = w["node"]
-		var a: Vector3 = nd.hit_pos
-		var ab: Vector3 = w["to"] - a
-		ab.y = 0.0
-		var f := clampf((pp - a).dot(ab) / maxf(ab.length_squared(), 0.01), 0.0, 1.0)
-		var d := pp - (a + ab * f)
-		d.y = 0.0
-		var dist := d.length()
-		if dist < 3.6:
-			var away := d / dist if dist > 0.05 else Vector3(-ab.z, 0, ab.x).normalized()
-			push += away * (3.6 - dist) * 1.6
+		var path := PackedVector3Array([nd.hit_pos, w["to"]]) if w["to"] is Vector3 else (w["to"] as PackedVector3Array)
+		for k in path.size() - 1:
+			var a: Vector3 = path[k]
+			var ab: Vector3 = path[k + 1] - a
+			ab.y = 0.0
+			var f := clampf((pp - a).dot(ab) / maxf(ab.length_squared(), 0.01), 0.0, 1.0)
+			var d := pp - (a + ab * f)
+			d.y = 0.0
+			var dist := d.length()
+			if dist < 3.6:
+				var away := d / dist if dist > 0.05 else Vector3(-ab.z, 0, ab.x).normalized()
+				push += away * (3.6 - dist) * 1.6
 	for e in enemies:
 		if e.dead or not e.ram or e.intangible:
 			continue

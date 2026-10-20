@@ -236,6 +236,22 @@ func cancel_spear(p: Vector3, r: float, hw: float, length: float) -> PackedVecto
 	return out
 
 
+## A solid thing (a giant rock) stops every bullet that flies into the circle
+## (p, r), whatever its kind (launched ones still climbing pass under);
+## returns where they were.
+func cancel_in(p: Vector3, r: float) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	var i := 0
+	while i < n:
+		var d := pos[i] - p
+		if lift[i] <= 0.0 and d.x * d.x + d.z * d.z < r * r:
+			out.push_back(pos[i])
+			_remove(i)
+			continue
+		i += 1
+	return out
+
+
 ## A player shot at p hits a shell: the shell takes the damage. Returns
 ## Vector3(INF, ...) for no hit, else the shell's position with y = 1 if it
 ## broke, y = 0 if it held, y = 2 if the shot glanced off an IRON ball.

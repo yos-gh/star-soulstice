@@ -291,6 +291,8 @@ func _warnings() -> void:
 			target = g.camera.unproject_position(g.player.position)
 		elif to is Vector3:
 			target = g.camera.unproject_position(to)
+		elif to is PackedVector3Array:
+			_path_chevrons(to as PackedVector3Array)
 		if target != Vector2.INF:
 			var d := target - sp
 			var len := minf(d.length(), 420.0)
@@ -306,3 +308,32 @@ func _warnings() -> void:
 					draw_polyline(pts, Color(0, 0, 0, a * 0.5), 4.0)
 					draw_polyline(pts, col, 2.0)
 					k += 22.0
+
+
+## A big move along a path of points on the plane (a boom's sweep):
+## chevrons streaming along the whole path.
+func _path_chevrons(path: PackedVector3Array) -> void:
+	var g := game
+	var pts := PackedVector2Array()
+	for q in path:
+		pts.append(g.camera.unproject_position(q))
+	var total := 0.0
+	for k in pts.size() - 1:
+		total += pts[k].distance_to(pts[k + 1])
+	var k := fmod(g.time * 90.0, 22.0)
+	var seg := 0
+	var seg_start := 0.0
+	while k < total and seg < pts.size() - 1:
+		var sl := pts[seg].distance_to(pts[seg + 1])
+		if k > seg_start + sl:
+			seg_start += sl
+			seg += 1
+			continue
+		var dir := (pts[seg + 1] - pts[seg]) / maxf(sl, 0.001)
+		var side := Vector2(-dir.y, dir.x)
+		var tip := pts[seg] + dir * (k - seg_start)
+		var a := clampf(1.0 - k / total, 0.3, 0.9)
+		var tri := PackedVector2Array([tip - dir * 6.0 + side * 5.0, tip, tip - dir * 6.0 - side * 5.0])
+		draw_polyline(tri, Color(0, 0, 0, a * 0.5), 4.0)
+		draw_polyline(tri, Color(1, 1, 1, a), 2.0)
+		k += 22.0

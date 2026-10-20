@@ -8,6 +8,9 @@ extends Node3D
 ##   planet  {x, y, screen_y, radius, rotation, ring}  ring = ring plane size (0 = none)
 ##   stars   [[height, count, size], ...]
 ##   deep    {y, meshes: [model names], count}       far-below blocks, cycling
+##   rocks   {y: [near, far], count, meshes, size: [min, max], seed}  rocks of
+##           an asteroid belt tumbling between the ground and the deep
+##           layer, at depths spread from near to far (stage 3)
 ##   tunnel  {styles: {area: style}, first, seed}    a tunnel close below
 ##           (see Tunnel); its style follows the stage's area (set_area)
 ## Palette sets the colours of the nebula, planet and ring.
@@ -23,6 +26,8 @@ var planet: Node3D
 var star_layers: Array = []  # {mm: MultiMesh, pos: PackedVector3Array, rect: Rect2, size}
 var deep: Array[MeshInstance3D] = []
 var deep_rect := Rect2()
+var belt: Array = []  # {m, a, b, spin}: the rocks layer
+var belt_rng := RandomNumberGenerator.new()
 var tunnel: Tunnel
 var scroll_total := 0.0
 
@@ -39,6 +44,7 @@ func use(cfg: Dictionary) -> void:
 	planet = null
 	star_layers.clear()
 	deep.clear()
+	belt.clear()
 	tunnel = null
 	config = cfg
 	built = true
@@ -147,6 +153,27 @@ func build(cfg: Dictionary) -> void:
 			m.position = Vector3(deep_rect.position.x + deep_rect.size.x * (0.25 + 0.5 * (i % 2)), dy - (i % 2) * 8.0, deep_rect.position.y + deep_rect.size.y * i / float(count))
 			add_child(m)
 			deep.append(m)
+	if cfg.has("rocks"):
+		var rc: Dictionary = cfg["rocks"]
+		belt_rng.seed = int(rc.get("seed", 3))
+		var ys: Array = rc.get("y", [-12.0, -36.0])
+		var meshes: Array = rc.get("meshes", [])
+		var sz: Array = rc.get("size", [0.7, 1.4])
+		var count: int = rc.get("count", 16)
+		for i in count:
+			if meshes.is_empty():
+				break
+			var y := lerpf(float(ys[0]), float(ys[1]), float(i) / maxf(count - 1.0, 1.0))
+			var a := game.screen_to_y(Vector2(-160, -220), y)
+			var b := game.screen_to_y(Vector2(1120, 940), y)
+			var m := MeshInstance3D.new()
+			m.mesh = Vox.get_mesh(meshes[i % meshes.size()])
+			m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			m.scale = Vector3.ONE * belt_rng.randf_range(float(sz[0]), float(sz[1]))
+			m.position = Vector3(belt_rng.randf_range(a.x, b.x), y, belt_rng.randf_range(a.z, b.z))
+			m.rotation = Vector3(belt_rng.randf() * TAU, belt_rng.randf() * TAU, 0)
+			add_child(m)
+			belt.append({"m": m, "a": a, "b": b, "spin": Vector3(belt_rng.randf_range(-0.25, 0.25), belt_rng.randf_range(-0.3, 0.3), 0)})
 	if cfg.has("tunnel"):
 		tunnel = Tunnel.new()
 		tunnel.game = game
@@ -184,6 +211,15 @@ func tick(dt: float, speed: float) -> void:
 			var s := size * (0.8 + 0.4 * fmod(i * 0.618, 1.0))
 			mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(s, s, s)), p))
 		L["pos"] = pos
+	for r: Dictionary in belt:
+		var m: MeshInstance3D = r["m"]
+		var a: Vector3 = r["a"]
+		var b: Vector3 = r["b"]
+		m.position.z += speed * dt
+		m.rotation += (r["spin"] as Vector3) * dt
+		if m.position.z > b.z:
+			m.position.z -= b.z - a.z
+			m.position.x = belt_rng.randf_range(a.x, b.x)
 	for m in deep:
 		m.position.z += speed * dt
 		if m.position.z > deep_rect.end.y + 20.0:

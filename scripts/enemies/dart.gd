@@ -15,6 +15,8 @@ const INFO := {
 	],
 }
 
+const REFIRE := 0.6  # between needles where the stage doubles the fire
+
 
 func _init_kind() -> void:
 	hp = 1.0
@@ -32,9 +34,11 @@ func _behave(dt: float) -> void:
 	position += vel * dt
 	face(vel)
 	model.rotation.z = lerpf(model.rotation.z, clampf(float(p.get("turn", 0.0)) * 0.25, -0.8, 0.8) if (t > tt and t < tt + float(p.get("turn_dur", 1.0))) else 0.0, 6.0 * dt)
-	# one unbreakable needle, announced: the lock-on starts WINDUP_SHOT early
-	if not fired and t >= float(p.get("fire_at", 0.7)) - WINDUP_SHOT and game.can_fire(position):
-		fired = true
+	# an unbreakable needle, announced: the lock-on starts WINDUP_SHOT early
+	# (where the stage doubles the fire, a second one follows REFIRE later)
+	if step < game.zako_fire() and t >= maxf(float(p.get("fire_at", 0.7)) - WINDUP_SHOT, fire_t) and game.can_fire(position):
+		step += 1
+		fire_t = t + REFIRE
 		game.warn_then(self, WINDUP_SHOT, Game.Warn.SHOT, func() -> void:
 			if game.can_fire(position):
 				game.bullets.fire(position, game.bullets.aim(position), 8.0, Bullets.ORB, self, Bullets.NEEDLE))

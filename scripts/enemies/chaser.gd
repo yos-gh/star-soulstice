@@ -69,13 +69,11 @@ func _behave(dt: float) -> void:
 				# one unbreakable needle, announced (the train one after another)
 				fire_t = WINDUP_SHOT + i * 0.15
 				if game.combat_on() and pl.alive and game.on_field(position, -0.8):
-					game.warn_then(self, fire_t, Game.Warn.SHOT, func() -> void:
-						if game.combat_on() and pl.alive and game.on_field(position, -0.8) and (pl.position - position).length() > 3.0:
-							game.bullets.fire(position, game.bullets.aim(position), 7.0, Bullets.ORB, self, Bullets.NEEDLE))
+					_needle(fire_t, game.zako_fire())
 		1:
 			rotation.y = lerp_angle(rotation.y, atan2(-look.x, -look.z), 10.0 * dt)
 			fire_t -= dt
-			if fire_t <= -0.05:
+			if fire_t <= -0.05 - (game.zako_fire() - 1) * WINDUP_SHOT:
 				step = 2
 				away = signf(lane - pl.position.x) if absf(lane - pl.position.x) > 0.1 else signf(lane + 0.001)
 				heading = Vector3(0, 0, -1)
@@ -91,3 +89,14 @@ func _behave(dt: float) -> void:
 	if step == 0:
 		rotation.y = lerp_angle(rotation.y, 0.0, 8.0 * dt)
 	model.rotation.z = lerpf(model.rotation.z, away * 0.6 if step >= 2 else 0.0, 6.0 * dt)
+
+
+## One unbreakable needle up at the ship, announced `wait` ahead; where the
+## stage doubles the fire (`count` 2) the next is announced as it goes.
+func _needle(wait: float, count: int) -> void:
+	var pl := game.player
+	game.warn_then(self, wait, Game.Warn.SHOT, func() -> void:
+		if game.combat_on() and pl.alive and game.on_field(position, -0.8) and (pl.position - position).length() > 3.0:
+			game.bullets.fire(position, game.bullets.aim(position), 7.0, Bullets.ORB, self, Bullets.NEEDLE)
+		if count > 1 and game.combat_on() and pl.alive and game.on_field(position, -0.8):
+			_needle(WINDUP_SHOT, count - 1))

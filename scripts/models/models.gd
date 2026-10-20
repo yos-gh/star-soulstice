@@ -13,7 +13,9 @@ extends RefCounted
 ##            gold and bronze,
 ##            STAR CORTEX mechanical grey with a glowing eye after Star
 ##            Brain, OUROBOROS a jade train, VULCAN PRESS grey and
-##            construction-machine orange round its molten core)
+##            construction-machine orange round its molten core;
+##            stage 3: an olive mining tug, LODESTAR copper on steel,
+##            TITAN DREDGE mining yellow on steel, rocks in browns)
 ##   ground   teal-grey fortress steel (see IslandGen); its tiles are
 ##            coloured storehouses (GroundModels)
 ## Ships are built from stacked, bevelled plates so the baked AO and the
@@ -21,7 +23,7 @@ extends RefCounted
 ##
 ## The models live in one script per group (each extends this one, so the
 ## colours below are at hand): ShipModels, EnemyModels, BossModels,
-## ItemModels, GroundModels, TunnelModels. To add a model, add its name to the group's
+## ItemModels, GroundModels, TunnelModels, BeltModels. To add a model, add its name to the group's
 ## NAMES and build it in the group's make(); Vox.get_mesh(name) finds it
 ## and the viewer's MODELS list shows it.
 
@@ -88,6 +90,8 @@ const BODY := {
 	"lazaro_piece": GOLD, "boss_pod": STEEL_M, "boss_shutter": STEEL_L, "boss_eye": STEEL_M,
 	"ouro_head": JADE, "ouro_car": JADE, "press_core": GUN, "press_plate": STEEL_L,
 	"press_hammer": ORANGE, "press_vent": ORANGE,
+	"giant_rock_a": Color(0.34, 0.31, 0.28), "giant_rock_b": Color(0.34, 0.31, 0.28), "grappler": Color(0.42, 0.45, 0.24),
+	"lode_core": Color(0.7, 0.42, 0.24), "lode_pylon": Color(0.7, 0.42, 0.24), "dredge_core": GUN, "dredge_wheel": Color(0.84, 0.64, 0.14), "dredge_driver": Color(0.84, 0.64, 0.14),
 }
 
 
@@ -97,7 +101,7 @@ static func body_col(name: String, fallback: Color) -> Color:
 
 ## [group label, script] in viewer order.
 static func groups() -> Array:
-	return [["SHIP", ShipModels], ["ENEMIES", EnemyModels], ["BOSSES", BossModels], ["ITEMS", ItemModels], ["GROUND", GroundModels], ["TUNNEL", TunnelModels]]
+	return [["SHIP", ShipModels], ["ENEMIES", EnemyModels], ["BOSSES", BossModels], ["ITEMS", ItemModels], ["GROUND", GroundModels], ["TUNNEL", TunnelModels], ["BELT", BeltModels]]
 
 
 static func build(name: String) -> ArrayMesh:

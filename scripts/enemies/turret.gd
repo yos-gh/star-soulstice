@@ -26,7 +26,8 @@ func _init_kind() -> void:
 	ground = true
 	ram = false
 	mesh_name = "turret_base"
-	fire_t = 1.0 + randf() * 1.5
+	# (from stage 3 the first shot comes sooner: StageDef.zako_early)
+	fire_t = (1.0 + randf() * 1.5) * (0.5 if game.zako_early() else 1.0)
 
 
 func _build() -> void:
@@ -63,4 +64,6 @@ func _behave(dt: float) -> void:
 		game.fx.sprite(muzzle, Vector3(0, 4.0, 0), 0.5, 1.6, 0.22, Color(1.0, 0.7, 0.35))
 		game.fx.flash(muzzle, 0.3)
 		step = 0
-		fire_t = 2.6
+		# twice as often where the stage doubles the fire (lock-on included)
+		var n := game.zako_fire()
+		fire_t = 2.6 if n <= 1 else (2.6 + WINDUP_SHOT) / n - WINDUP_SHOT

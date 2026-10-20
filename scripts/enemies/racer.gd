@@ -45,8 +45,12 @@ func _behave(dt: float) -> void:
 	model.rotation.z = sin(t * 3.0) * 0.2
 	if int(p.get("i", 0)) % 2 == 0:
 		# an unbreakable orb from the top of the loop, announced
-		# WINDUP_SHOT before it gets there
-		for f: float in p.get("fire", []):
+		# WINDUP_SHOT before it gets there; where the stage doubles the fire,
+		# one more as it comes onto the loop (an early first shot)
+		var at: Array = p.get("fire", [])
+		if game.zako_fire() >= 2:
+			at = at + p.get("early", [])
+		for f: float in at:
 			var w := f - SPEED * WINDUP_SHOT
 			if last < w and s >= w and game.can_fire(position):
 				game.warn_then(self, WINDUP_SHOT, Game.Warn.SHOT, func() -> void:

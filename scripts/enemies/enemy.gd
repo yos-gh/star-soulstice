@@ -15,6 +15,8 @@ extends Node3D
 ##   desc      one line for the viewer
 ##   demos     [[label, formation, args], ...] for the viewer: a Formations
 ##             method and its arguments ("ground" = on a deck section)
+##   stage     (optional) the stage whose scenery the viewer shows it over,
+##             for a kind no wave lists (the stage 3 rocks)
 
 var game: Game
 var kind := ""
@@ -34,6 +36,9 @@ var intangible := false
 var ram := true
 var drops_power := false
 var leaves := true
+var solid := false  # a wall on the plane (giant rock): stops enemy bullets, shoves the ship aside
+var lock := true  # homing lasers may pick it
+var marked := false  # its charges' MOVE warnings mark a line the autopilot keeps out of
 var entered := false
 var dead := false
 var controller: Object = null

@@ -46,8 +46,9 @@ func _behave(dt: float) -> void:
 		position += vel * dt
 	model.rotation.y += dt * 5.0
 	model.rotation.z = sin(t * 3.0) * 0.2
-	# fires going down the centre line (a quarter of the way round)
-	if not fired and t >= t_in + PI / 2.0 / absf(w) - WINDUP_SHOT and game.can_fire(position):
-		fired = true
+	# fires going down the centre line (a quarter of the way round), and
+	# where the stage doubles the fire again half a loop on
+	if step < game.zako_fire() and t >= t_in + (PI / 2.0 + step * PI) / absf(w) - WINDUP_SHOT and game.can_fire(position):
+		step += 1
 		game.warn_then(self, WINDUP_SHOT, Game.Warn.SHOT, func() -> void:
 			game.bullets.fire(position, game.bullets.aim(position), 6.5, Bullets.ORB, self))

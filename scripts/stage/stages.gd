@@ -7,6 +7,7 @@ extends RefCounted
 const LIST := [
 	preload("res://scripts/stage/stage1.gd"),
 	preload("res://scripts/stage/stage2.gd"),
+	preload("res://scripts/stage/stage3.gd"),
 ]
 
 

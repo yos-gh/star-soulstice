@@ -13,6 +13,11 @@ var subtitle := ""
 ## scroll speed (units/s) during the waves, and from the boss warning on
 var scroll := Game.SCROLL
 var boss_scroll := Game.BOSS_SCROLL
+## difficulty: small fighters and turrets fire `zako_fire` times as often
+## (2 from stage 3 on), and with `zako_early` those slow to open fire (the
+## racers, the turrets) start sooner
+var zako_fire := 1
+var zako_early := false
 ## time bonus: bonus_rate points for every second the stage took under bonus_t
 var bonus_t := 260.0
 var bonus_rate := 1300

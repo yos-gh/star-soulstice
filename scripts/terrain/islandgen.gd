@@ -11,6 +11,9 @@ extends RefCounted
 ##   asteroid  a rock with hatches bolted on (debris belt)
 ##   bridge    a gantry across a tunnel, wall to wall: rows of hatches with
 ##             grated walkways between, on truss girders
+##   quarry    an asteroid being strip-mined (stage 3): an open pit stepping
+##             down in benches to an ore seam, ore bins (tiles) on the
+##             benches round it, a conveyor gantry across the pit
 ## Voxels are R units; a cell (one 2 x 2 tile) is K x K voxels. Tiles sit
 ## in sockets half a voxel below the deck. Local y = 0 is the deck top.
 ## A stage picks kinds and sizes per area (StageDef.areas). A new kind
@@ -18,7 +21,7 @@ extends RefCounted
 ## and its surface (_structure, or a builder of its own like _asteroid);
 ## add it to KINDS so the viewer can show it.
 
-const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid", "bridge"]
+const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid", "bridge", "quarry"]
 
 const R := 0.5
 const K := 4
@@ -75,11 +78,11 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 					var d := Vector2((i + 0.5 - w * 0.5) / s, (j + 0.5 - h * 0.5) / s).length()
 					inside = d < 0.98
 					e = d
-				"fragment", "asteroid":
+				"fragment", "asteroid", "quarry":
 					var a := atan2(dz, dx)
 					var wob := 0.13 * sin(a * 3.0 + phase) + 0.09 * sin(a * 5.0 + phase * 2.0)
 					var d := sqrt(dx * dx + dz * dz)
-					inside = d < 0.95 + wob and (kind == "asteroid" or r.randf() > 0.08)
+					inside = d < 0.95 + wob and (kind != "fragment" or r.randf() > 0.08)
 					e = d
 			cell_in[j * w + i] = 1 if inside else 0
 			cell_e[j * w + i] = e
@@ -119,6 +122,10 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 				"asteroid":
 					if r.randf() < 0.45:
 						t = 1 if r.randf() < 0.6 else 2
+				"quarry":
+					# ore bins on the benches round the pit, none down in it
+					if e > 0.45 and e < 0.9 and r.randf() < 0.7:
+						t = 0 if r.randf() < 0.45 else (1 if r.randf() < 0.65 else 2)
 				"bridge":
 					# rows of hatches across (the ends rest in the walls), the
 					# heavy ones in the middle
@@ -138,7 +145,7 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 				continue
 			if kind == "trench" and (i == mid or i == mid - 1):
 				continue
-			if kind == "reactor" and cell_e[idx] < 0.36:
+			if kind == "reactor" and cell_e[idx] < 0.36 or kind == "quarry" and cell_e[idx] < 0.45:
 				continue
 			var ok := true
 			for c in tcells:
@@ -157,6 +164,8 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 	var info := {"kind": kind, "w": w, "h": h, "W": W, "H": H, "mid": mid, "vmask": vmask, "types": types, "tcells": tcells, "cell_e": cell_e, "r": r}
 	if kind == "asteroid":
 		_asteroid(v, info)
+	elif kind == "quarry":
+		_quarry(v, info)
 	else:
 		_structure(v, info)
 	var mesh := v.mesh(R, Vector3(0, D, 0), true)
@@ -179,7 +188,7 @@ static func _footprint(kind: String, w: int, h: int, W: int, H: int, cell_in: Pa
 					if c2.x >= 0 and cell_in[c2.y * w + c2.x] == 1:
 						m = 1
 						break
-			if m == 1 and (kind == "asteroid" or kind == "fragment"):
+			if m == 1 and (kind == "asteroid" or kind == "fragment" or kind == "quarry"):
 				m = 1 if Vox._hash(vx / 2, 3, vz / 2) > 0.4 else 0
 			vmask[vz * W + vx] = m
 	return vmask
@@ -408,3 +417,86 @@ static func _asteroid(v: Vox, info: Dictionary) -> void:
 					v.put(x, surf - 1, z, SOCKET)
 			elif on_turret and lx >= 1 and lz >= 1:
 				v.put(x, surf + 1, z, SIDE)
+
+
+## An asteroid being strip-mined: an open pit stepping down in benches
+## toward the middle, the bench floors alternately darker, an ore seam
+## glinting at the bottom, ore bins (tiles) and guns on raised pads round
+## it, a conveyor gantry across the pit.
+static func _quarry(v: Vox, info: Dictionary) -> void:
+	var w: int = info["w"]
+	var h: int = info["h"]
+	var W: int = info["W"]
+	var H: int = info["H"]
+	var vmask: PackedByteArray = info["vmask"]
+	var types: PackedInt32Array = info["types"]
+	var tcells: Array[Vector2i] = info["tcells"]
+	var top := D - 1
+	for vz in H:
+		for vx in W:
+			if vmask[vz * W + vx] == 0:
+				continue
+			var x := vx - W / 2
+			var z := vz - H / 2
+			var ed := _edge_dist(vmask, W, H, vx, vz, 6)
+			var c2 := _cell_of(vx, vz, w, h)
+			var on_tile := c2.x >= 0 and types[c2.y * w + c2.x] >= 0
+			var on_turret := c2.x >= 0 and tcells.has(c2)
+			var n := Vox._hash(vx / 2, 7, vz / 2)
+			var e := Vector2((vx + 0.5 - W * 0.5) / (W * 0.5), (vz + 0.5 - H * 0.5) / (H * 0.5)).length()
+			# benches stepping down toward the middle of the pit
+			var bench := clampi(int((0.62 - e) / 0.11) + 1, 0, 4) if e < 0.62 else 0
+			var surf := top - bench - (1 if ed < 1 else 0) - (1 if bench == 0 and n < 0.3 else 0)
+			if on_tile or on_turret:
+				surf = top
+				bench = 0
+			var bottom := top - clampi(2 + ed, 2, D - 1)
+			for y in range(bottom, surf + 1):
+				var c := ROCK_S
+				var glow := false
+				if y == surf:
+					if bench == 0:
+						c = ROCK_L if n > 0.75 else ROCK
+					else:
+						c = ROCK if bench % 2 == 1 else ROCK_S
+						# the lip of each bench catches the light
+						var e2 := Vector2((vx + 1.5 - W * 0.5) / (W * 0.5), (vz + 1.5 - H * 0.5) / (H * 0.5)).length()
+						if int((0.62 - e2) / 0.11) + 1 < bench:
+							c = ROCK_L
+				elif y < surf - 2:
+					c = ROCK_D
+				if bench >= 4 and y == surf and Vox._hash(vx, 3, vz) > 0.88:
+					c = ORE
+					glow = true
+				v.put(x, y, z, c, glow)
+			if c2.x < 0:
+				continue
+			var lx := (vx - MARGIN) % K
+			var lz := (vz - MARGIN) % K
+			if on_tile:
+				if lx == 0 or lz == 0:
+					v.put(x, surf, z, SIDE)
+				else:
+					v.erase(x, surf, z)
+					v.put(x, surf - 1, z, SOCKET)
+			elif on_turret and lx >= 1 and lz >= 1:
+				v.put(x, surf + 1, z, SIDE)
+	# the conveyor gantry across the pit: a girder on posts, with rollers
+	for vx in W:
+		var vz := H / 2
+		if vmask[vz * W + vx] == 0:
+			continue
+		var e := absf((vx + 0.5 - W * 0.5) / (W * 0.5))
+		if e > 0.7:
+			continue
+		var gc := _cell_of(vx, vz, w, h)
+		if gc.x >= 0 and (types[gc.y * w + gc.x] >= 0 or tcells.has(gc)):
+			continue
+		var x := vx - W / 2
+		for dz in [-1, 1]:
+			v.put(x, top + 1, dz, SIDE)
+		v.put(x, top + 1, 0, PIPE if vx % 3 != 0 else SEAM)
+		if vx % 6 == 0:
+			for y in range(top - 4, top + 1):
+				v.put(x, y, -1, SIDE)
+				v.put(x, y, 1, SIDE)

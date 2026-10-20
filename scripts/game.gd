@@ -53,6 +53,7 @@ const POWER_UP_SCORE := 1000  # power-up taken in Form I / II
 const POWER_SCORE := 5000  # power-up taken in Form III (chained)
 const STAR_SCORE := 1000  # hidden star (chained)
 const CHAIN_MAX := 8
+const PUSH_R := 0.75  # the ship's body, for being shoved by solid rocks
 
 var state := State.TITLE
 var state_t := 0.0
@@ -364,6 +365,28 @@ func can_fire(p: Vector3) -> bool:
 ## Enemies attack only during play (and in the viewer, unless it says no).
 func combat_on() -> bool:
 	return state == State.PLAY or (state == State.VIEWER and viewer.fire_on)
+
+
+## Where a charge from `from` through `through` (the ship) meets the bottom
+## edge of the screen (straight down if the ship is not below it): the end
+## of a marked line for a thrown or slung rock.
+func line_to_bottom(from: Vector3, through: Vector3) -> Vector3:
+	var d := Vector3(through.x - from.x, 0, through.z - from.z)
+	if d.z < 1.0:
+		d = Vector3(0, 0, 1)
+	d = d.normalized()
+	var to := from + d * ((field_bottom + 1.0 - from.z) / d.z)
+	return Vector3(clampf(to.x, -hw_bottom - 2.0, hw_bottom + 2.0), 0, to.z)
+
+
+## The stage's difficulty for small fighters and turrets (StageDef): how
+## many times as often they fire, and whether the slow ones start early.
+func zako_fire() -> int:
+	return stage_def.zako_fire if stage_def != null else 1
+
+
+func zako_early() -> bool:
+	return stage_def != null and stage_def.zako_early
 
 
 # ------------------------------------------------------------ states
@@ -859,6 +882,7 @@ func _collide(dt: float) -> void:
 	# spear
 	if player.alive and player.spear_t > 0.0:
 		_spear(dt)
+	_solids()
 	# player
 	if player.alive and player.entering <= 0.0 and player.invuln <= 0.0 and state == State.PLAY:
 		var hit := bullets.hit_test(player.position, Player.HIT_R)
@@ -878,6 +902,19 @@ func _collide(dt: float) -> void:
 					break
 		if hit and not god:
 			_player_hit()
+
+
+## Solid things on the plane (giant rocks, `Enemy.solid`): enemy bullets
+## that fly into one stop there (any kind: it is cover), and the ship is
+## shoved aside instead of crashing (see Player.push_out).
+func _solids() -> void:
+	for e in enemies:
+		if not e.solid or e.dead or e.intangible or not e.visible:
+			continue
+		for q in bullets.cancel_in(e.hit_pos, e.radius * 0.95):
+			fx.spark(q + Vector3(0, 0.4, 0), Color(0.8, 0.74, 0.64), 1, 0.3)
+		if player.alive and player.entering <= 0.0 and state != State.CLEAR:
+			player.push_out(e.hit_pos, e.radius + PUSH_R)
 
 
 ## A boss's solid part that is not a round hit zone (a hammer's ram) touched
@@ -999,7 +1036,7 @@ func on_spear(n: int) -> void:
 func homing_targets(from: Vector3) -> Array:
 	var list: Array = []
 	for e in enemies:
-		if e.dead or e.intangible or e.armored or not e.visible or not on_field(e.hit_pos, -0.3):
+		if e.dead or e.intangible or e.armored or not e.lock or not e.visible or not on_field(e.hit_pos, -0.3):
 			continue
 		list.append(e)
 	list.sort_custom(func(a: Enemy, b: Enemy) -> bool: return a.hit_pos.distance_squared_to(from) < b.hit_pos.distance_squared_to(from))
@@ -1010,7 +1047,7 @@ func nearest_target(from: Vector3) -> Object:
 	var best: Enemy = null
 	var bd := INF
 	for e in enemies:
-		if e.dead or e.intangible or e.armored or not e.visible or not on_field(e.hit_pos, -0.3):
+		if e.dead or e.intangible or e.armored or not e.lock or not e.visible or not on_field(e.hit_pos, -0.3):
 			continue
 		var d := e.hit_pos.distance_squared_to(from)
 		if d < bd:

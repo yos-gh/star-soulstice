@@ -67,6 +67,10 @@ static func _ship(f: Formations, d: StageDef) -> Array:
 ## The first stage that uses `kind` (an enemy kind or a boss): its subject
 ## is shown over that stage's ground and scenery. Stage 1 if none does.
 static func _home(kind: String, stages: Array[StageDef]) -> StageDef:
+	# a kind no wave lists (the drifting giant rocks) may name its stage
+	var home := int(EnemyKinds.info(kind).get("stage", 0))
+	if home > 0 and home <= stages.size():
+		return stages[home - 1]
 	for d in stages:
 		if d.boss == kind:
 			return d

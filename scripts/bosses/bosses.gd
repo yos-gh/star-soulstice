@@ -10,6 +10,8 @@ const KINDS := {
 	"star_cortex": preload("res://scripts/bosses/star_cortex.gd"),
 	"ouroboros": preload("res://scripts/bosses/ouroboros.gd"),
 	"vulcan_press": preload("res://scripts/bosses/vulcan_press.gd"),
+	"lodestar": preload("res://scripts/bosses/lodestar.gd"),
+	"titan_dredge": preload("res://scripts/bosses/titan_dredge.gd"),
 }
 
 
