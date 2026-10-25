@@ -11,6 +11,7 @@ const DIM := Color(1, 1, 1, 0.55)
 
 var viewer: Viewer
 var font: Font
+var _wrapped := {}  # "size|width|text" -> its lines (see _wrap)
 
 
 func _ready() -> void:
@@ -167,8 +168,14 @@ func _num(f: float) -> String:
 
 
 ## Breaks s into lines no wider than max_w pixels (character by character,
-## so Japanese without spaces wraps too).
+## so Japanese without spaces wraps too). Measuring every character is
+## slow for a long text, and the panel redraws every frame (a boss's long
+## description took the viewer down to a few frames a second, so the
+## whole world crawled): each text is wrapped once and kept.
 func _wrap(s: String, size: int, max_w: float) -> Array:
+	var key := "%d|%d|%s" % [size, int(max_w), s]
+	if _wrapped.has(key):
+		return _wrapped[key]
 	var out := []
 	var line := ""
 	for i in s.length():
@@ -180,4 +187,5 @@ func _wrap(s: String, size: int, max_w: float) -> Array:
 			line += c
 	if line != "":
 		out.append(line)
+	_wrapped[key] = out
 	return out
