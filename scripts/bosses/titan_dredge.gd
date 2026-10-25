@@ -1,14 +1,15 @@
 extends BossBase
 ## Stage 3 boss TITAN DREDGE: a strip-mining machine dug into a giant
 ## asteroid at the top of the screen. Its two cutter wheels dig at the
-## asteroid's face between attacks, and what they cut comes out of a mine
-## adit on the left onto the ore belt: the boulders ride it down the left
-## side and across the front of the core (the only weak point, the gauge;
-## they take the shots meant for it: break them, or wait for a gap) to the
-## hopper on the right, where they drop in to load the mass driver beside
-## it (a loaded boulder shows on the driver). The driver turns on the ship
-## and fires them down a marked line to the bottom edge: every boulder
-## broken on the belt is one it can't fire.
+## asteroid's face between attacks, and what they cut is loaded into ore
+## skips that come out of a mine adit on the left: armoured cars on the
+## belt, down the left side and across the front of the core (the only
+## weak point, the gauge) to the loader on the right. They can't be broken:
+## shots glance off them as they pass, so the core is shut off now and
+## then and open in the gaps between them (it is softer for it). Every
+## skip that reaches the loader tips its rock into the mass driver beside
+## it (a loaded boulder shows on the driver), which turns on the ship and
+## fires it down a marked line to the bottom edge.
 ## The cutter wheels (tough; breaking them is the player's choice) take
 ## turns to sweep. The boom reaches out to the ship's distance from its
 ## pivot (at least MIN_R): a lock-on and the whole path marked (out to the
@@ -27,24 +28,22 @@ extends BossBase
 
 const INFO := {
 	"name": "TITAN DREDGE", "role": "boss",
-	"desc": "巨大な小惑星に食い込んだ採掘機。弱点は前の真ん中で回る核だけ。カッターホイールが小惑星を掘り、削った岩塊が左の坑道からベルトコンベアに出てきて、左側を下り、核の前を横切って弾を受け止める（壊せる）。右端のホッパーに落ちた岩は隣の質量投射機に装填され、予兆（線）のあと自機のいた所へ下端まで撃ち出される（ベルトで壊した分だけ減る）。2 つのカッターホイール（硬い）が交互に、自機までの距離にブームを伸ばし（最小半径あり）、予兆（道筋全体）のあと画面の端から自機の向こうまで弧を描いて薙ぎ払い、物理弾の砂利を外へまいて同じ弧を戻る：弧の帯から外れるか、最小半径の内側（支点の下）に潜るか、弧の終わりの先へ。端の噴出口は扇状の物理弾、核は針弾。ホイールを両方失うか時間で発狂（RAMPAGE）：迫り出して揺れ、ベルトが速まり、核から渦巻き弾、小惑星から岩塊がばらけた列に予兆つきで落ちてくる（1 つは自機の近く）、投射機は 3 方向、広い針弾、残ったホイールは 2 つ同時に薙ぎ払う",
+	"desc": "巨大な小惑星に食い込んだ採掘機。弱点は前の真ん中で回る核だけ。カッターホイールが小惑星を掘り、削った岩を積んだ装甲トロッコが左の坑道から出てきて、ベルトで左側を下り、核の前を横切る。トロッコは壊せず弾を弾くので、核は通る間だけふさがり、隙間から撃ち込む（そのぶん核は柔らかい）。右端の積み込み口に着いたトロッコの岩は隣の質量投射機に装填され、予兆（線）のあと自機のいた所へ下端まで撃ち出される。2 つのカッターホイール（硬い）が交互に、自機までの距離にブームを伸ばし（最小半径あり）、予兆（道筋全体）のあと画面の端から自機の向こうまで弧を描いて薙ぎ払い、物理弾の砂利を外へまいて同じ弧を戻る：弧の帯から外れるか、最小半径の内側（支点の下）に潜るか、弧の終わりの先へ。端の噴出口は扇状の物理弾、核は針弾。ホイールを両方失うか時間で発狂（RAMPAGE）：迫り出して揺れ、ベルトが速まり、核から渦巻き弾、小惑星から岩塊がばらけた列に予兆つきで落ちてくる（1 つは自機の近く）、投射機は 3 方向、広い針弾、残ったホイールは 2 つ同時に薙ぎ払う",
 	"demos": [["FULL", ""], ["SWEEP", "A"], ["RAMPAGE", "C"]],
 }
-const CORE_HP := 1500.0
+const CORE_HP := 1200.0
 const CORE_SCORE := 60000
 const WHEEL_HP := 520.0
 const WHEEL_SCORE := 8000
-const ORE_HP := 24.0
-const ORE_SCORE := 400
-const ORE_R := 1.2
+const SKIP_R := 1.3
 const CORE_OFF := Vector3(0, 0, 1.4)
 const PIVOT_OFF := [Vector3(-8.5, 0, -1.0), Vector3(8.5, 0, -1.0)]
 ## the ore belt: out of the adit in the asteroid, down the left side and
-## across the front of the core to the hopper
+## across the front of the core to the loader
 const BELT := [Vector3(-12.4, 0, -5.2), Vector3(-12.4, 0, 4.3), Vector3(11.4, 0, 4.3)]
 const EMERGE := 1.4  # along the belt: coming out of the adit
 const HOPPER := Vector3(12.7, 0, 4.0)
-const DROP_T := 0.45  # falling into the hopper
+const DROP_T := 0.45  # going into the loader
 const DRIVER_OFF := Vector3(11.8, 0, 6.2)
 const VENT_OFF := [Vector3(-8.5, 0, 2.3), Vector3(8.5, 0, 2.3)]
 const ARMOUR := [[Vector3(-4.6, 0, 0.2), 2.6], [Vector3(4.6, 0, 0.2), 2.6], [Vector3(-10.0, 0, -0.4), 2.3], [Vector3(10.0, 0, -0.4), 2.3], [Vector3(0, 0, -2.4), 2.4]]
@@ -73,7 +72,7 @@ var core: Enemy
 var driver: Enemy
 var loaded: MeshInstance3D  # a boulder in the driver's breech
 var armour: Array[Enemy] = []
-var ores: Array[Dictionary] = []  # boulders on the belt: {e, s (along it), drop (s falling in, -1)}
+var skips: Array[Dictionary] = []  # ore skips on the belt: {e, s (along it), drop (s going into the loader, -1)}
 var lanes: Array[Enemy] = []  # where the rockfall comes down (marked)
 var fan_marks: Array[Enemy] = []  # the driver's three-way lines (marked)
 ## {wheel, boom, jib, side, a, l, state, st, from_a, from_l, reach, start, end, sweep_t, spray_t, dead}
@@ -87,8 +86,7 @@ var cycle_t := 0.0
 var cycle := 0
 var fired := {}
 var ammo := 1
-var ore_t := 0.0
-var ore_k := 0
+var skip_t := 0.0
 var aim_to := Vector3.ZERO
 var fan_to: Array[Vector3] = []
 var falls: Array = []  # this round's rockfall: [x, ...]
@@ -153,26 +151,22 @@ func setup(g: Game) -> void:
 	hull = MeshInstance3D.new()
 	hull.mesh = Vox.get_mesh("dredge_hull")
 	add_child(hull)
-	# the belt already loaded as it comes in
+	# the belt already running as it comes in
 	for s: float in [6.0, 13.0, 20.0, 27.0]:
-		_add_ore(s)
+		_add_skip(s)
 	_arm(true)
 	_place(0.0)
 
 
-## A boulder on the belt, `s` along it (0 = deep in the adit).
-func _add_ore(s: float) -> void:
-	var e := game.spawn_part(self, "meteor_a" if ore_k % 2 == 0 else "meteor_b", ORE_R)
-	ore_k += 1
-	e.hp = ORE_HP
-	e.max_hp = ORE_HP
-	e.score = ORE_SCORE
-	e.energy_drop = 5.0
-	e.blast = 1.8
-	e.model.rotation = Vector3(randf() * TAU, randf() * TAU, 0)
-	e.armored = phase == 0
-	ores.append({"e": e, "s": s, "drop": -1.0})
-	_place_ore(ores[-1], 0.0)
+## An ore skip on the belt, `s` along it (0 = deep in the adit): armoured,
+## solid, never broken.
+func _add_skip(s: float) -> void:
+	var e := game.spawn_part(self, "dredge_skip", SKIP_R)
+	e.armored = true
+	e.hp = 1e9
+	e.score = 0
+	skips.append({"e": e, "s": s, "drop": -1.0})
+	_place_skip(skips[-1], 0.0)
 
 
 ## While it comes in nothing can be hurt.
@@ -181,8 +175,6 @@ func _arm(on: bool) -> void:
 	for b in booms:
 		if not b["dead"]:
 			(b["wheel"] as Enemy).armored = on
-	for o in ores:
-		(o["e"] as Enemy).armored = on
 
 
 func on_hit(_e: Enemy, dmg: float) -> float:
@@ -193,11 +185,6 @@ func on_part_killed(e: Enemy) -> void:
 	if e == core:
 		_die()
 		return
-	for o in ores:
-		if o["e"] == e:
-			ores.erase(o)
-			e.queue_free()
-			return
 	for b in booms:
 		if b["wheel"] == e:
 			b["dead"] = true
@@ -485,23 +472,23 @@ func _spray(b: Dictionary, dt: float) -> void:
 
 # ------------------------------------------------------------ belt and driver
 
-## The belt brings the boulders the wheels cut out of the adit, down the
-## left side and across the front of the core; at the far end each drops
-## into the hopper and loads the driver.
+## The belt brings the ore skips out of the adit, down the left side and
+## across the front of the core; at the far end each runs into the loader
+## and its rock loads the driver.
 func _belt(dt: float) -> void:
 	var v := 4.5 if phase == 3 else 3.0
 	if phase != 4:
-		ore_t -= dt
-		if ore_t <= 0.0:
-			ore_t = 1.2 if phase == 3 else 2.4
-			_add_ore(0.0)
+		skip_t -= dt
+		if skip_t <= 0.0:
+			skip_t = 1.6 if phase == 3 else 3.2
+			_add_skip(0.0)
 	var length := _belt_len()
-	for o in ores.duplicate():
+	for o in skips.duplicate():
 		var e: Enemy = o["e"]
 		if o["drop"] >= 0.0:
 			o["drop"] += dt
 			if o["drop"] >= DROP_T:
-				ores.erase(o)
+				skips.erase(o)
 				game.remove_enemy(e)
 				e.queue_free()
 				ammo = mini(ammo + 1, 3)
@@ -509,11 +496,11 @@ func _belt(dt: float) -> void:
 		else:
 			o["s"] += v * dt
 			if o["s"] >= length and phase != 4:
-				# over the end and into the hopper: no longer a target
+				# into the loader: out of the way
 				o["drop"] = 0.0
 				e.intangible = true
 				e.ram = false
-		_place_ore(o, dt)
+		_place_skip(o, dt)
 
 
 func _belt_len() -> float:
@@ -523,31 +510,34 @@ func _belt_len() -> float:
 	return l
 
 
-## A boulder's place: along the belt, growing as it comes out of the adit,
-## or falling into the hopper.
-func _place_ore(o: Dictionary, dt: float) -> void:
+## A skip's place: along the belt, facing the way it goes (turning round
+## the corner), coming up out of the adit, or sinking into the loader.
+func _place_skip(o: Dictionary, dt: float) -> void:
 	var e: Enemy = o["e"]
 	var s: float = o["s"]
 	var p: Vector3 = BELT[BELT.size() - 1]
+	var dir := Vector3(1, 0, 0)
 	var acc := 0.0
 	for k in BELT.size() - 1:
 		var seg: float = (BELT[k + 1] - BELT[k]).length()
 		if s <= acc + seg:
 			p = (BELT[k] as Vector3).lerp(BELT[k + 1], (s - acc) / seg)
+			dir = ((BELT[k + 1] as Vector3) - BELT[k]).normalized()
 			break
 		acc += seg
-	var sc := lerpf(0.35, 1.0, _smooth(s / EMERGE))
+	var sc := lerpf(0.6, 1.0, _smooth(s / EMERGE))
 	var y := 0.0
 	if o["drop"] >= 0.0:
 		var f := _smooth(o["drop"] / DROP_T)
 		p = p.lerp(HOPPER, f)
-		sc *= 1.0 - 0.7 * f
-		y = -0.9 * f
+		sc *= 1.0 - 0.4 * f
+		y = -0.8 * f
 	e.position = center + p
 	e.hit_pos = e.position
 	e.model.scale = Vector3.ONE * sc
 	e.model.position.y = y
-	e.model.rotation.y += dt * 0.6
+	var want := atan2(-dir.x, -dir.z)
+	e.rotation.y = want if dt <= 0.0 else lerp_angle(e.rotation.y, want, clampf(5.0 * dt, 0.0, 1.0))
 
 
 func _muzzle(dir: Vector3) -> Vector3:
@@ -694,7 +684,7 @@ func _place(dt: float) -> void:
 
 func _parts() -> Array:
 	var out: Array = [core, driver] + armour + lanes + fan_marks
-	for o in ores:
+	for o in skips:
 		out.append(o["e"])
 	for b in booms:
 		out.append(b["wheel"])
@@ -737,7 +727,7 @@ func debug_state() -> String:
 	var bs := []
 	for b in booms:
 		bs.append("%s r%.0f" % [b["state"], b["reach"]])
-	return "phase %s %.1fs  core %d/%d  wheels %s  belt %d  ammo %d  round %d %.1fs" % [names[phase], st, int(maxf(core.hp, 0.0)), int(CORE_HP), " / ".join(bs), ores.size(), ammo, cycle, cycle_t]
+	return "phase %s %.1fs  core %d/%d  wheels %s  belt %d  ammo %d  round %d %.1fs" % [names[phase], st, int(maxf(core.hp, 0.0)), int(CORE_HP), " / ".join(bs), skips.size(), ammo, cycle, cycle_t]
 
 
 func _die() -> void:

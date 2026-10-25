@@ -9,7 +9,7 @@ extends Models
 ## (LODESTAR) and mining yellow on steel (TITAN DREDGE). The boulders that
 ## are carried, slung and fired are the drifting big rock (rock_l).
 
-const NAMES := ["giant_rock_a", "giant_rock_b", "grappler", "grappler_claw", "lode_hull", "lode_core", "lode_pylon", "dredge_hull", "dredge_core", "dredge_wheel", "dredge_boom", "dredge_jib", "dredge_driver", "belt_rock_a", "belt_rock_b", "belt_rock_c", "deep_rock_a", "deep_rock_b", "meteor_a", "meteor_b"]
+const NAMES := ["giant_rock_a", "giant_rock_b", "grappler", "grappler_claw", "lode_hull", "lode_core", "lode_pylon", "dredge_hull", "dredge_core", "dredge_wheel", "dredge_boom", "dredge_jib", "dredge_driver", "dredge_skip", "belt_rock_a", "belt_rock_b", "belt_rock_c", "deep_rock_a", "deep_rock_b", "meteor_a", "meteor_b"]
 
 const STONE := Color(0.34, 0.31, 0.28)
 const STONE_L := Color(0.45, 0.41, 0.36)
@@ -54,6 +54,8 @@ static func make(name: String) -> ArrayMesh:
 			return _dredge_jib()
 		"dredge_driver":
 			return _dredge_driver()
+		"dredge_skip":
+			return _dredge_skip()
 		"belt_rock_a":
 			return _lump(5, 9.0, 5.0, 8.0, 2, true, 0.5).mesh(0.35, Vector3(0, _cy(5.0), 0))
 		"belt_rock_b":
@@ -237,152 +239,169 @@ static func _grappler_claw() -> ArrayMesh:
 
 # ------------------------------------------------------------ LODESTAR
 
-## LODESTAR's hull, a warship built round a horseshoe magnet (faces
-## down-screen, +z). Behind: a spine with a raised dorsal ridge, lit window
-## rows and two turret domes, three engine nozzles glowing pale gold, and
-## swept wings with panel seams, hardpoints and an engine nacelle at each
-## tip. In front: the horseshoe's two arms curve out and down round the
-## core in stepped layers (a lit inner rail, copper coil windings and steel
-## plates, a raised armour rim outside with slabs on the flanks and
-## heat-sink fins), ending in the pole sockets of the lower pylons; the top
-## pylon's socket sits at the front of the spine. The bottom of the
-## horseshoe stays open (the way in to the core), and a drum with cool
-## lamps holds the core.
+## LODESTAR's hull (faces down-screen, +z), a heavy magnetic tug: an
+## armoured body wrapped round the back and sides of the core's bay, built
+## up in stepped layers (a bevelled rim, a plated deck with seams and dark
+## vent slots, a raised keel down the middle with lit windows either side),
+## a dorsal socket for the top pylon, two gun turrets and a block of three
+## exhaust slits at the back; a big engine pod on each flank, ringed in
+## bands with a pale gold exhaust; and two pincer arms reaching forward
+## from the front corners, each a jointed boom (a heavy joint disc in
+## copper and steel, a hydraulic ram along it) ending in a pole socket for
+## a lower pylon. The bay stays open toward the bottom of the screen (the
+## way in to the core) behind a ring with cool lamps.
 static func _lode_hull() -> ArrayMesh:
-	var v := Vox.new(128, 10, 152)
-	# the swept wings, a nacelle at each tip
-	for s: int in [-1, 1]:
-		for z in range(-60, -20):
-			for xa in range(9, 58):
-				var lead := -24.0 - (xa - 9) * 0.42  # leading edge, swept back
-				var trail := -48.0 - (xa - 9) * 0.16
-				if z > lead or z < trail:
-					continue
-				var x := s * xa - (1 if s < 0 else 0)
-				v.put(x, 1, z, GUN_D)
-				var top := STEEL_M if posmod(xa, 6) != 0 and posmod(z, 7) != 0 else GUN
-				if z > lead - 1.5:
-					top = DUSK_L  # the leading edge
-				v.put(x, 2, z, top)
-				if (xa > 20 and xa < 26 or xa > 38 and xa < 43) and z > -44 - xa * 0.2 and z < -36 - xa * 0.2:
-					v.put(x, 3, z, GUN_D if (xa + z) % 2 == 0 else DUSK_L)  # a hardpoint
-		# the nacelle along the wingtip
-		for z in range(-62, -40):
-			for dy in range(-3, 4):
-				for dx in range(-3, 4):
-					var r := Vector2(dx, dy).length()
-					if r > 3.2:
-						continue
-					var x := s * 56 + dx
-					var c := STEEL_L if r > 2.4 else GUN
-					if z == -62 and r < 2.0:
-						v.put(x, dy + 3, z, ARC, true)
-					else:
-						v.put(x, dy + 3, z, c if posmod(z, 5) != 0 else DUSK_L)
-		v.put(s * 56, 6, -41, ARC, true)
-	# the spine
-	for z in range(-64, -11):
-		var w := int(lerpf(11.0, 7.0, (z + 64.0) / 52.0))
-		for x in range(-w, w + 1):
-			var edge := absi(x) == w
-			v.fill(x, 0, z, x, 0, z, GUN_D)
-			v.fill(x, 1, z, x, 2, z, GUN)
-			var top := DUSK_L if edge else (STEEL_M if posmod(z, 7) != 0 else GUN)
-			v.put(x, 3, z, top)
-			if absi(x) <= 2 and z > -58 and z < -16:
-				v.put(x, 4, z, STEEL_L if absi(x) < 2 else GUN)
-			if absi(x) == w - 1 and posmod(z, 3) == 0 and z < -16:
-				v.put(x + signi(x), 2, z, LAMP, true)
-	# turret domes on the spine, barrels forward
-	for s: int in [-1, 1]:
-		v.blob(s * 5, 4, -34, 2.6, 1.4, 2.6, STEEL_M)
-		v.fill(s * 5, 5, -32, s * 5, 5, -27, GUN_D)
-		v.put(s * 5, 5, -26, AMBER, true)
-	# antenna masts at the back
-	for s: int in [-1, 1]:
-		v.fill(s * 4, 4, -60, s * 4, 8, -60, STEEL_L)
-		v.put(s * 4, 9, -60, ARC, true)
-	# the engines: three nozzles
-	for ex: int in [-8, 0, 8]:
-		for z in range(-72, -63):
-			for dy in range(-4, 5):
-				for dx in range(-4, 5):
-					var r := Vector2(dx, dy).length()
-					if r > 3.8 or dy + 4 < 0:
-						continue
-					if z == -72 and r < 2.6:
-						v.put(ex + dx, dy + 4, z, ARC, true)
-					else:
-						v.put(ex + dx, dy + 4, z, STEEL_L if r > 3.0 else GUN)
-	# the horseshoe's arms round the core, open at the bottom, in layers
-	for z in range(-40, 40):
-		for x in range(-40, 40):
+	var v := Vox.new(72, 10, 130)
+	var shape := [Vector2(0, -50), Vector2(9, -50), Vector2(15, -42), Vector2(19, -28), Vector2(20, -10), Vector2(18, 1), Vector2(14, 5)]
+	var dorsal := Vector2(0, -31.5)
+	for z in range(-52, 8):
+		for x in range(-22, 22):
+			var q := Vector2(absf(x + 0.5), z + 0.5)
+			if not _in_shape(q, shape):
+				continue
 			var r := Vector2(x + 0.5, z + 0.5).length()
-			var a := atan2(z + 0.5, x + 0.5)  # screen angle, +z down
-			if a > PI / 6.0 - 0.02 and a < PI * 5.0 / 6.0 + 0.02:
-				continue
-			if r < 25.0 or r > 38.5:
-				continue
-			var ad := rad_to_deg(a)
-			var side_a := ad if x < 0 else 180.0 - ad  # mirrored: 180 = the flank, 270 = the top
-			if side_a < 0.0:
-				side_a += 360.0
+			if r < 14.5:
+				continue  # the bay
+			var edge := _shape_dist(q, shape)
+			var ax := absf(x + 0.5)
 			v.put(x, 0, z, GUN_D)
 			v.fill(x, 1, z, x, 2, z, GUN)
-			if r < 27.5:
-				# the inner rail, lit every so often
-				v.put(x, 3, z, DUSK_L)
-				if posmod(int(round(ad)), 12) == 0:
-					v.put(x, 4, z, ARC, true)
-			elif r < 34.0:
-				# copper windings (the electromagnet) or steel plates
-				if side_a > 150.0 and side_a < 230.0 and posmod(int(round(side_a)), 24) > 3:
-					var band := posmod(int(floor(ad * 1.6)), 2) == 0
-					v.fill(x, 3, z, x, 4, z, COPPER_L if band else COPPER_D)
-				else:
-					v.put(x, 3, z, STEEL_M if posmod(int(round(ad * 0.9)), 8) != 0 else GUN)
-			else:
-				# the raised armour rim outside
-				v.put(x, 3, z, GUN)
-				v.put(x, 4, z, STEEL_L if posmod(int(round(ad * 1.2)), 9) != 0 else GUN_D)
-				if side_a > 168.0 and side_a < 194.0:
-					v.put(x, 5, z, GUN if posmod(z, 4) != 0 else GUN_D)  # flank slabs
-				elif side_a > 234.0 and side_a < 262.0 and posmod(int(round(ad * 1.4)), 3) == 0:
-					v.put(x, 5, z, DUSK_L)  # heat-sink fins
-	# the drum round the core, open in the middle, with a ring of cool lamps
-	for z in range(-15, 15):
-		for x in range(-15, 15):
-			var ax := absf(x + 0.5)
-			var az := absf(z + 0.5)
-			var oct := maxf(maxf(ax, az), (ax + az) * 0.72)
-			if oct > 14.0 or oct < 9.5:
+			if edge < 1.5:
+				v.put(x, 3, z, DUSK_L)  # the bevelled rim
 				continue
-			var h := 4 if oct > 12.5 else 5
-			for y in h:
-				v.put(x, y, z, STEEL_M if y == h - 1 else GUN)
-			if absf(oct - 11.2) < 0.55:
-				v.put(x, h - 1, z, DUSK_D)
-	for k in 12:
-		var a := (k + 0.5) * TAU / 12.0
-		v.put(int(round(cos(a) * 13.0)), 4, int(round(sin(a) * 13.0)), LAMP, true)
-	# braces from the drum to the arms at the flanks
+			# two-tone plates with dark seams
+			var panel := posmod(int(floor(ax / 6.0)) + int(floor((z + 60) / 7.0)), 2) == 0
+			var top := STEEL_M if panel else GUN.lightened(0.06)
+			if posmod(z + 60, 7) == 0 or posmod(int(ax), 6) == 0:
+				top = GUN_D
+			v.fill(x, 3, z, x, 3, z, GUN)
+			v.put(x, 4, z, top)
+			if edge < 3.5:
+				continue
+			# vent slots on the deck
+			if posmod(z, 6) == 2 and ax > 9.0 and ax < 15.0 and z < -6:
+				v.put(x, 4, z, DUSK_D)
+			# the keel
+			if ax < 4.5 and z < -15:
+				v.put(x, 5, z, STEEL_L if ax < 3.0 else GUN)
+				if absf(ax - 3.5) < 0.6 and posmod(z, 3) == 0:
+					v.put(x, 5, z, LAMP, true)
+	# the dorsal socket (the top pylon sits in it)
+	for z in range(-39, -24):
+		for x in range(-8, 8):
+			var r := Vector2(x + 0.5, z + 0.5 - dorsal.y).length()
+			if r > 7.0:
+				continue
+			v.clear_box(x, 3, z, x, 6, z)
+			v.put(x, 2, z, COPPER_D if r > 5.8 else DUSK_L)
+	# turrets on the back deck, barrels forward
 	for s: int in [-1, 1]:
-		for xa in range(14, 26):
-			var x := s * xa - (1 if s < 0 else 0)
-			v.fill(x, 1, -1, x, 2, 1, GUN)
-			v.put(x, 3, 0, STEEL_L)
-	# the pylon sockets: the arm ends and the front of the spine
-	for pa: float in [PI * 1.5, PI / 6.0, PI * 5.0 / 6.0]:
-		var c := Vector2(cos(pa), sin(pa)) * 31.5
+		var tx := s * 10 - (1 if s < 0 else 0)
+		v.blob(tx, 5, -42, 2.6, 1.3, 2.6, STEEL_M)
+		v.fill(tx, 6, -40, tx, 6, -35, GUN_D)
+		v.put(tx, 6, -34, AMBER, true)
+	# the exhaust block at the back: three slits
+	v.fill(-9, 1, -54, 8, 5, -50, GUN)
+	for sx: int in [-6, -1, 4]:
+		v.fill(sx, 2, -55, sx + 1, 4, -55, ARC, true)
+	# engine pods on the flanks
+	for s: int in [-1, 1]:
+		for z in range(-40, -4):
+			for dy in range(0, 7):
+				for dx in range(-5, 5):
+					var e := Vector2((dx + 0.5) / 5.0, (dy + 0.5 - 3.2) / 3.4).length()
+					if e > 1.0:
+						continue
+					var px := s * 23 + dx - (1 if s < 0 else 0)
+					var c := GUN if e > 0.75 else GUN_D
+					if dy >= 5:
+						c = STEEL_M  # the lit top of the pod
+					if posmod(z, 6) == 0:
+						c = DUSK_L
+					if z >= -10 and z <= -8:
+						c = COPPER_D  # a coil band at the front
+					v.put(px, dy, z, c)
+		for dy in range(1, 6):
+			for dx in range(-3, 3):
+				v.put(s * 23 + dx - (1 if s < 0 else 0), dy, -41, ARC, true)
+		v.fill(s * 23 - 2 - (1 if s < 0 else 0), 2, -3, s * 23 + 1 - (1 if s < 0 else 0), 4, -3, DUSK_D)
+	# the pincer arms: from the front corners out to the lower pylons
+	for s: int in [-1, 1]:
+		var a0 := Vector2(s * 15.0, 2.0)
+		var j := Vector2(s * 21.5, 7.5)
+		var a1 := Vector2(s * 27.3, 15.75)
+		for seg: Array in [[a0, j, 3.2], [j, a1, 2.6]]:
+			var p0: Vector2 = seg[0]
+			var p1: Vector2 = seg[1]
+			var hw: float = seg[2]
+			var d := (p1 - p0).normalized()
+			var n := Vector2(-d.y, d.x)
+			var l := p0.distance_to(p1)
+			for z in range(-6, 26):
+				for x in range(-34, 34):
+					var q := Vector2(x + 0.5, z + 0.5) - p0
+					var u := q.dot(d)
+					var w := absf(q.dot(n))
+					if u < -1.0 or u > l + 1.0 or w > hw:
+						continue
+					v.put(x, 0, z, GUN_D)
+					v.fill(x, 1, z, x, 2, z, GUN)
+					v.put(x, 3, z, DUSK_L if w > hw - 1.0 else (STEEL_M if posmod(int(u), 5) != 0 else GUN))
+			# the hydraulic ram along the outer side of the boom
+			var side := n * (hw + 0.8) * (1.0 if n.x * s > 0.0 else -1.0)
+			for k in int(l):
+				var q := p0 + d * k + side
+				v.put(int(floor(q.x)), 4, int(floor(q.y)), STEEL_L if k < l * 0.6 else GUN)
+		# the joint disc
+		for z in range(-5, 6):
+			for x in range(-5, 6):
+				var r := Vector2(x, z).length()
+				if r > 4.2:
+					continue
+				var px := int(round(j.x)) + x
+				var pz := int(round(j.y)) + z
+				v.fill(px, 0, pz, px, 4, pz, GUN)
+				v.put(px, 5, pz, COPPER if r > 3.0 else (STEEL_L if r > 1.5 else GUN_D))
+		# the pole socket at the arm's end
 		for z in range(-7, 8):
 			for x in range(-7, 8):
 				var r := Vector2(x, z).length()
 				if r > 6.5:
 					continue
-				var px := int(round(c.x)) + x
-				var pz := int(round(c.y)) + z
-				v.fill(px, 0, pz, px, 3, pz, COPPER_D if r > 5.5 else DUSK_L)
+				var px := int(round(a1.x)) + x
+				var pz := int(round(a1.y)) + z
+				v.fill(px, 0, pz, px, 2, pz, COPPER_D if r > 5.5 else DUSK_L)
+	# the bay's ring, cool lamps round it
+	for z in range(-15, 15):
+		for x in range(-15, 15):
+			var r := Vector2(x + 0.5, z + 0.5).length()
+			if r > 14.5 or r < 10.0:
+				continue
+			v.fill(x, 0, z, x, 3, z, GUN)
+			v.put(x, 4, z, STEEL_M if r > 12.0 else DUSK_D)
+	for k in 12:
+		var a := (k + 0.5) * TAU / 12.0
+		v.put(int(round(cos(a) * 12.8)), 5, int(round(sin(a) * 12.8)), LAMP, true)
 	return v.mesh(U * 1.2, Vector3(0.5, 2.0, 0.5))
+
+
+## Is q (x >= 0) inside the half outline `pts` (mirrored about x = 0,
+## listed from the back of the middle round to the front)?
+static func _in_shape(q: Vector2, pts: Array) -> bool:
+	var poly := PackedVector2Array()
+	for p: Vector2 in pts:
+		poly.append(p)
+	poly.append(Vector2(0, pts[pts.size() - 1].y))
+	return Geometry2D.is_point_in_polygon(q, poly)
+
+
+## Distance from q to the half outline's outer edge (not the centre line).
+static func _shape_dist(q: Vector2, pts: Array) -> float:
+	var best := INF
+	for k in pts.size() - 1:
+		var c := Geometry2D.get_closest_point_to_segment(q, pts[k], pts[k + 1])
+		best = minf(best, q.distance_to(c))
+	return best
 
 
 ## LODESTAR's core: a squat ball of pale gold light inside a copper coil
@@ -690,4 +709,33 @@ static func _dredge_driver() -> ArrayMesh:
 	for z in range(-28, -6, 5):
 		v.fill_sym(0, 2, z, 4, 5, z, GUN_D)
 	v.fill_sym(0, 3, -31, 1, 3, -31, LAMP, true)
+	return v.mesh(U * 1.2, Vector3(0.5, 2.0, 0.5))
+
+
+## An ore skip (rides the belt; faces -z, the way it goes): a dark chassis
+## on four wheels, a steel bucket banded in yellow and heaped with broken
+## rock, bumpers fore and aft, a cool lamp in front. It is armoured: shots
+## glance off it.
+static func _dredge_skip() -> ArrayMesh:
+	var v := Vox.new(22, 9, 28)
+	v.fill_sym(0, 0, -11, 7, 1, 10, GUN_D)
+	for wz: int in [-9, 6]:
+		v.fill_sym(8, 0, wz, 9, 2, wz + 3, DUSK_D)
+		v.fill_sym(9, 1, wz + 1, 9, 1, wz + 2, STEEL_L)
+	v.fill_sym(0, 2, -10, 7, 2, 9, GUN)
+	v.fill_sym(6, 3, -10, 7, 5, 9, STEEL_M)
+	v.fill_sym(0, 3, -10, 7, 5, -10, STEEL_M)
+	v.fill_sym(0, 3, 9, 7, 5, 9, STEEL_M)
+	v.fill_sym(6, 4, -10, 7, 4, 9, MINE_D)
+	v.fill_sym(0, 4, -10, 7, 4, -10, MINE_D)
+	v.fill_sym(0, 4, 9, 7, 4, 9, MINE_D)
+	v.fill_sym(6, 6, -10, 7, 6, 9, STEEL_L)
+	# the load: a heap of broken rock
+	v.blob(0, 4, 0, 5.4, 2.6, 8.4, STONE)
+	v.blob(-2, 5, -3, 2.6, 1.8, 2.8, STONE_L)
+	v.blob(2, 5, 3, 2.4, 1.6, 3.0, STONE_D)
+	v.blob(1, 6, -1, 1.6, 1.2, 1.8, STONE)
+	v.fill_sym(0, 1, -13, 4, 2, -12, GUN)
+	v.fill_sym(0, 1, 11, 4, 2, 12, GUN)
+	v.fill(-1, 3, -12, 0, 3, -12, LAMP, true)
 	return v.mesh(U * 1.2, Vector3(0.5, 2.0, 0.5))

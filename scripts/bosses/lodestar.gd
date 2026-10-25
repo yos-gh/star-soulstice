@@ -1,15 +1,15 @@
 extends BossBase
-## Mid-boss of stage 3, a magnetic ore-catcher of the mining belt: a
-## warship built round a horseshoe magnet (a spine with engines and swept
-## wings behind, the horseshoe's arms round a reactor core, the weak point
-## and the gauge), three electromagnet pylons on the arms, and six boulders
-## held in orbit round it by their field. The boulders shield it (they take the shots as they
-## pass; each can be broken) and they are its ammunition: it slings them
+## Mid-boss of stage 3, a magnetic ore-catcher of the mining belt: a heavy
+## armoured tug (engine pods on its flanks, pincer arms reaching forward)
+## round a reactor core in an open bay (the weak point, the gauge), three
+## electromagnet pylons (one on its back, one at each pincer tip), and six
+## boulders held in orbit round it by their field. The boulders shield it
+## (they take the shots as they pass; each can be broken) and they are its ammunition: it slings them
 ## one at a time down a marked line through where the ship is, right to the
 ## bottom edge. The pylons spray shell fans (big, then small), the core
 ## fires telegraphed needle bursts. With two boulders or fewer left it reels
 ## more in from the belt (they fly in from the top corners, harmless until
-## they are in orbit). Armour covers the frame's flanks only: from below,
+## they are in orbit). Armour covers the hull's flanks only: from below,
 ## the way to the core stays open between the passing boulders.
 ## OVERLOAD (all three pylons broken): the field runs wild. What boulders
 ## are left whirl in a tight, fast ring and are slung more often, the core
@@ -30,13 +30,13 @@ const ROCK_HP := 24.0
 const ROCK_SCORE := 300
 const ROCKS := 6
 const ROCK_R := 1.4
-const RING_R := 3.4  # the pylons and the armour, on the ring
+const RING_R := 3.4  # the pylons, round the core
 const ORBIT_R := 5.8
 const ORBIT_W := 0.9  # rad/s, clockwise on screen
 const WILD_R := 4.6  # OVERLOAD's tight ring
 const WILD_W := 2.2
 const PYLON_A := [PI * 1.5, PI / 6.0, PI * 5.0 / 6.0]  # top, lower right, lower left (+z is down)
-const ARMOUR_A := [0.0, PI]
+const ARMOUR_OFF := [Vector3(-2.6, 0, -1.2), Vector3(2.6, 0, -1.2)]  # the flanks
 const SLING_SPEED := 17.0
 const REEL_T := 1.6  # a reeled-in boulder's flight into its slot
 const ROUND_A := 7.0
@@ -86,8 +86,8 @@ func setup(g: Game) -> void:
 	core.score = SCORE
 	core.energy_drop = 30.0
 	core.blast = 4.0
-	for a: float in ARMOUR_A:
-		var e := game.spawn_part(self, "", 1.4)
+	for o: Vector3 in ARMOUR_OFF:
+		var e := game.spawn_part(self, "", 1.5)
 		e.armored = true
 		e.hp = 1e9
 		armour.append(e)
@@ -403,8 +403,7 @@ func _place(dt: float) -> void:
 			var a: float = PYLON_A[k]
 			pylons[k].position = center + Vector3(cos(a), 0, sin(a)) * RING_R
 	for k in armour.size():
-		var a: float = ARMOUR_A[k]
-		armour[k].position = center + Vector3(cos(a), 0, sin(a)) * RING_R
+		armour[k].position = center + ARMOUR_OFF[k]
 
 
 func _leave() -> void:
