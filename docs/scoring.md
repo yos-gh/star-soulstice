@@ -37,7 +37,7 @@
 | 中ボス LODESTAR の磁石の柱（3 本） | 3,000 | 150 | `scripts/bosses/lodestar.gd` `PYLON_SCORE` / `PYLON_HP` |
 | 中ボス LODESTAR の核（撃破） | 25,000 | 620 | `scripts/bosses/lodestar.gd` `SCORE` / `CORE_HP` |
 | ボス TITAN DREDGE の鉱石トロッコ | なし | 壊せない（装甲：ショットを弾く） | `scripts/bosses/titan_dredge.gd` `_add_skip` |
-| ボス TITAN DREDGE のカッターホイール（2 基） | 8,000 | 520 | `scripts/bosses/titan_dredge.gd` `WHEEL_SCORE` / `WHEEL_HP` |
+| ボス TITAN DREDGE のカッターホイール（2 基） | 8,000 | 360 | `scripts/bosses/titan_dredge.gd` `WHEEL_SCORE` / `WHEEL_HP` |
 | ボス TITAN DREDGE の核 | 60,000 | 1,200 | `scripts/bosses/titan_dredge.gd` `CORE_SCORE` / `CORE_HP` |
 
 撃破した敵の弾は消えてエネルギーになる（スコアはエネルギー取得分のみ）。

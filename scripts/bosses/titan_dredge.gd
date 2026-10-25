@@ -11,29 +11,31 @@ extends BossBase
 ## it (a loaded boulder shows on the driver), which turns on the ship and
 ## fires it down a marked line to the bottom edge.
 ## The cutter wheels (tough; breaking them is the player's choice) take
-## turns to sweep. The boom reaches out to the ship's distance from its
+## turns to sweep, one after the other with hardly a gap: the next winds
+## up as the last one holds at the end of its arc. The boom reaches out to the ship's distance from its
 ## pivot (at least MIN_R): a lock-on and the whole path marked (out to the
 ## edge of the screen, then the arc through where the ship is and on past
 ## it), the wheel sweeps the arc throwing gravel shells out of it, holds,
 ## comes back along the same arc and stows. Dodge by changing your distance
 ## from the pivot (in or out of the arc's band), by slipping inside the
 ## minimum reach close under the pivot, or out past the arc's end. Gravel
-## vents fire shell fans, the core telegraphed needle bursts, and every
-## round ends in a quiet gap.
+## vents fire shell fans, the core telegraphed needle bursts.
 ## RAMPAGE (both wheels broken, or after a while): it pushes forward and
-## sways, the belt runs fast, the core spins a shell spiral, the asteroid
+## sways, the belt runs fast, and the core opens up: big shells that burst
+## into rings, a shell spiral, rings of shells, three big armoured balls
+## weaving down at the ship (marked), a wide needle burst; the asteroid
 ## sheds boulders down marked lanes scattered across the screen (one near
-## the ship) twice a round, the driver fires three-way, a wide needle
-## burst; wheels still up sweep both at once.
+## the ship) twice a round, the driver fires three-way; wheels still up
+## keep sweeping.
 
 const INFO := {
 	"name": "TITAN DREDGE", "role": "boss",
-	"desc": "巨大な小惑星に食い込んだ採掘機。弱点は前の真ん中で回る核だけ。カッターホイールが小惑星を掘り、削った岩を積んだ装甲トロッコが左の坑道から出てきて、ベルトで左側を下り、核の前を横切る。トロッコは壊せず弾を弾くので、核は通る間だけふさがり、隙間から撃ち込む（そのぶん核は柔らかい）。右端の積み込み口に着いたトロッコの岩は隣の質量投射機に装填され、予兆（線）のあと自機のいた所へ下端まで撃ち出される。2 つのカッターホイール（硬い）が交互に、自機までの距離にブームを伸ばし（最小半径あり）、予兆（道筋全体）のあと画面の端から自機の向こうまで弧を描いて薙ぎ払い、物理弾の砂利を外へまいて同じ弧を戻る：弧の帯から外れるか、最小半径の内側（支点の下）に潜るか、弧の終わりの先へ。端の噴出口は扇状の物理弾、核は針弾。ホイールを両方失うか時間で発狂（RAMPAGE）：迫り出して揺れ、ベルトが速まり、核から渦巻き弾、小惑星から岩塊がばらけた列に予兆つきで落ちてくる（1 つは自機の近く）、投射機は 3 方向、広い針弾、残ったホイールは 2 つ同時に薙ぎ払う",
+	"desc": "巨大な小惑星に食い込んだ採掘機。弱点は前の真ん中で回る核だけ。カッターホイールが小惑星を掘り、削った岩を積んだ装甲トロッコが左の坑道から出てきて、ベルトで左側を下り、核の前を横切る。トロッコは壊せず弾を弾くので、核は通る間だけふさがり、隙間から撃ち込む（そのぶん核は柔らかい）。右端の積み込み口に着いたトロッコの岩は隣の質量投射機に装填され、予兆（線）のあと自機のいた所へ下端まで撃ち出される。2 つのカッターホイールが左右交互に間を空けず、自機までの距離にブームを伸ばし（最小半径あり）、予兆（道筋全体）のあと画面の端から自機の向こうまで弧を描いて薙ぎ払い、物理弾の砂利を外へまいて同じ弧を戻る：弧の帯から外れるか、最小半径の内側（支点の下）に潜るか、弧の終わりの先へ。端の噴出口は扇状の物理弾、核は針弾。ホイールを両方失うか時間で発狂（RAMPAGE）：迫り出して揺れ、ベルトが速まり、核から、はじけて輪になる大きな物理弾・渦巻き弾・物理弾の輪・蛇行する大玉の鉄球弾 3 つ（予兆つき）・広い針弾。小惑星から岩塊がばらけた列に予兆つきで落ちてくる（1 つは自機の近く）、投射機は 3 方向。残ったホイールは薙ぎ払いを続ける",
 	"demos": [["FULL", ""], ["SWEEP", "A"], ["RAMPAGE", "C"]],
 }
 const CORE_HP := 1200.0
 const CORE_SCORE := 60000
-const WHEEL_HP := 520.0
+const WHEEL_HP := 360.0
 const WHEEL_SCORE := 8000
 const SKIP_R := 1.3
 const CORE_OFF := Vector3(0, 0, 1.4)
@@ -58,6 +60,7 @@ const PAST := 0.6  # the arc runs on past the ship by this (radians)
 const SWEEP_W := 1.1  # rad/s on average
 const WIND_T := 1.0
 const HOLD_T := 0.35
+const SWEEP_GAP := 0.7  # after one wheel reaches the end of its arc, the next winds up
 const BACK_T := 1.4
 const STOW_T := 1.2
 const ROUND_A := 10.0
@@ -88,6 +91,9 @@ var fired := {}
 var ammo := 1
 var skip_t := 0.0
 var aim_to := Vector3.ZERO
+var aim_ball := Vector3.ZERO
+var sweep_k := 0  # the wheel to sweep next
+var sweep_wait := 0.8  # until the next sweep may start
 var fan_to: Array[Vector3] = []
 var falls: Array = []  # this round's rockfall: [x, ...]
 var spiral_a := 0.0
@@ -194,6 +200,7 @@ func on_part_killed(e: Enemy) -> void:
 			b["from_l"] = b["l"]
 			(b["jib"] as MeshInstance3D).visible = false
 			game.shake(0.8)
+			sweep_wait = minf(sweep_wait, 0.5)
 
 
 func wheels_alive() -> int:
@@ -219,6 +226,7 @@ func tick(dt: float) -> void:
 		1:
 			fight_t += dt
 			cycle_t += dt
+			_sweeps(dt)
 			_round_a()
 			if cycle_t >= ROUND_A:
 				_next_round()
@@ -227,6 +235,7 @@ func tick(dt: float) -> void:
 		3:
 			fight_t += dt
 			cycle_t += dt
+			_sweeps(dt)
 			_round_c(dt)
 			if cycle_t >= ROUND_C:
 				_next_round()
@@ -272,20 +281,15 @@ func _once(key: String, at: float) -> bool:
 	return false
 
 
-## Phase A: a sweep by one wheel, vent fans, a needle burst, a boulder from
-## the driver, the other wheel's sweep, vent fans, a second boulder, a
-## quiet gap.
+## Phase A: the wheels keep sweeping one after the other (see _sweeps);
+## vent fans, a needle burst and a boulder from the driver twice a round.
 func _round_a() -> void:
-	if _once("b1", 0.8):
-		_sweep(_pick(cycle % 2))
 	if _once("v1", 3.0):
 		_vents(Bullets.BIG)
 	if _once("v1s", 3.25):
 		_vents(Bullets.SMALL)
 	_core_needles("c", 3.9, 5, 18.0)
 	_driver_shot("d1", 4.8)
-	if _once("b2", 5.4):
-		_sweep(_pick((cycle + 1) % 2))
 	if _once("v2", 7.8):
 		_vents(Bullets.BIG)
 	if _once("v2s", 8.05):
@@ -293,35 +297,65 @@ func _round_a() -> void:
 	_driver_shot("d2", 8.4)
 
 
-## RAMPAGE: forward and swaying; a shell spiral from the core, the rockfall
-## twice, a three-way from the driver, a wide needle burst, both wheels
-## sweeping at once if any are left (vent fans if not), a last boulder, a
-## short quiet gap.
+## RAMPAGE: forward and swaying, the wheels still sweeping if any are left.
+## The core opens up: big shells that burst into rings, a shell spiral, rings
+## of shells, three big armoured balls weaving down at the ship (marked), a
+## wide needle burst; the rockfall twice, a three-way and a single boulder
+## from the driver, vent fans.
 func _round_c(dt: float) -> void:
 	center.z = move_toward(center.z, rest_z + RAGE_DOWN, 3.0 * dt)
 	sway_t += dt
 	center.x = move_toward(center.x, sin(sway_t * 0.7) * 3.5, 4.0 * dt)
-	var cp := center + CORE_OFF
-	if ((cycle_t > 0.4 and cycle_t < 2.8) or (cycle_t > 4.8 and cycle_t < 6.6)) and game.can_fire(cp):
+	var cp := center + CORE_OFF + Vector3(0, 0, 1.2)
+	if ((cycle_t > 0.4 and cycle_t < 2.6) or (cycle_t > 4.8 and cycle_t < 6.6)) and game.can_fire(cp):
 		spiral_t -= dt
 		if spiral_t <= 0.0:
-			spiral_t = 0.15
+			spiral_t = 0.14
 			spiral_a += 0.39
 			for arm in 2:
 				game.bullets.fire(cp, spiral_a + arm * PI, 4.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if arm == 0 else Bullets.SMALL)
+	if _once("burst", 0.2) and game.can_fire(cp):
+		# big shells that burst into rings
+		for s in [-1, 0, 1]:
+			game.bullets.fire(cp, game.bullets.aim(cp) + s * deg_to_rad(28.0), 4.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, 1.7)
+			game.bullets.split(0.9, 12)
 	_rockfall("f1", 1.0, 3)
-	_driver_fan("t", 2.6)
-	_core_needles("c", 3.4, 7, 34.0)
+	_big_balls("i", 2.8)
+	for k in 3:
+		if _once("ring%d" % k, 3.6 + k * 0.5) and game.can_fire(cp):
+			game.bullets.ring(cp, 16, 4.6, Bullets.SHELL, self, _ring_a(k))
 	_rockfall("f2", 4.4, 4)
-	if _once("both", 5.4):
-		if wheels_alive() > 0:
-			for b in booms:
-				_sweep(b)
-		else:
-			_vents(Bullets.BIG)
-	if _once("both_s", 5.65) and wheels_alive() == 0:
+	if _once("v", 5.0):
+		_vents(Bullets.BIG)
+	if _once("vs", 5.25):
 		_vents(Bullets.SMALL)
-	_driver_shot("d", 6.6, true)
+	_driver_fan("t", 5.4)
+	_core_needles("c", 6.4, 7, 34.0)
+	_driver_shot("d", 6.9, true)
+
+
+## The angle a ring of the RAMPAGE starts at (each turned from the last).
+func _ring_a(k: int) -> float:
+	return fight_t * 0.7 + k * 0.2
+
+
+## RAMPAGE: three big armoured balls from the core (they can't be shot or
+## erased and stop your shots), weaving down at where the ship was; the
+## line is marked at `at`, they fly 0.8 s later.
+func _big_balls(key: String, at: float) -> void:
+	if _once("w_" + key, at):
+		aim_ball = game.player.position
+		game.warn(core, 0.8, Game.Warn.MOVE, core.radius, aim_ball)
+		game.sfx.play("slam")
+	if _once(key, at + 0.8):
+		var cp := core.position + Vector3(0, 0, 1.8)
+		if not game.can_fire(cp):
+			return
+		var d := aim_ball - cp
+		var base := atan2(d.z, d.x)
+		for k in 3:
+			game.bullets.fire(cp, base + deg_to_rad(22.0) * (k - 1), 5.2, Bullets.IRON, self)
+			game.bullets.snake(2.0, 3.0)
 
 
 func _rampage() -> void:
@@ -365,10 +399,11 @@ func _smooth(f: float) -> float:
 ## (at least MIN_R, at most the bottom of the screen), the arc runs from
 ## the edge of the screen through the ship's direction and PAST on. The
 ## lock-on and the whole path are marked (out to the start, then the arc),
-## then the wind-up starts.
-func _sweep(b: Dictionary) -> void:
-	if b["dead"] or b["state"] != "rest":
-		return
+## then the wind-up starts. A wheel stowing away is caught on its way and
+## goes again. Returns whether it started.
+func _sweep(b: Dictionary) -> bool:
+	if b["dead"] or (b["state"] != "rest" and b["state"] != "stow"):
+		return false
 	var pv := _pivot(b)
 	var sp := game.player.position
 	var d := Vector2(sp.x - pv.x, sp.z - pv.z)
@@ -398,6 +433,7 @@ func _sweep(b: Dictionary) -> void:
 		path.append(_wheel_at(b, lerpf(start, end, k / 8.0), reach))
 	game.warn(b["wheel"], WIND_T, Game.Warn.MOVE, 1.9, path)
 	game.sfx.play("slam")
+	return true
 
 
 func _boom(b: Dictionary, dt: float) -> void:
@@ -422,6 +458,8 @@ func _boom(b: Dictionary, dt: float) -> void:
 			_spray(b, dt)
 			if s >= float(b["sweep_t"]):
 				_go(b, "hold")
+				# the next sweep winds up while this one holds and comes back
+				sweep_wait = SWEEP_GAP
 				# it comes back along the same arc
 				var path := PackedVector3Array()
 				for k in 9:
@@ -454,6 +492,21 @@ func _boom(b: Dictionary, dt: float) -> void:
 func _go(b: Dictionary, s: String) -> void:
 	b["state"] = s
 	b["st"] = 0.0
+
+
+## The wheels sweep one after the other with hardly a gap: the next one
+## winds up as the last one holds at the end of its arc and comes back (a
+## wheel left alone goes again as soon as it is back).
+func _sweeps(dt: float) -> void:
+	if wheels_alive() == 0:
+		return
+	sweep_wait -= dt
+	if sweep_wait > 0.0:
+		return
+	var b := _pick(sweep_k)
+	if _sweep(b):
+		sweep_k = 1 - booms.find(b)
+		sweep_wait = 99.0  # until it reaches the end of its arc (see _boom)
 
 
 ## Gravel thrown out of the cutting wheel as it sweeps: slow shells out of
@@ -711,7 +764,7 @@ func viewer_skip(to: String) -> void:
 	st = 0.0
 	_arm(false)
 	if to == "A":
-		cycle_t = 0.6
+		sweep_wait = 0.2
 	elif to == "C":
 		for b in booms:
 			var w: Enemy = b["wheel"]
