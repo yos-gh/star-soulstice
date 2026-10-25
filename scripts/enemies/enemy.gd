@@ -38,6 +38,7 @@ var drops_power := false
 var leaves := true
 var solid := false  # a wall on the plane (giant rock): stops enemy bullets, shoves the ship aside
 var lock := true  # homing lasers may pick it
+var shootable := true  # false: shots, the Spear and homing pass by it (a ram-only zone: BEHEMOTH's dozer blade)
 var marked := false  # its charges' MOVE warnings mark a line the autopilot keeps out of
 var entered := false
 var dead := false

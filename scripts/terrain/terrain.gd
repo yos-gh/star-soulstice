@@ -13,7 +13,8 @@ var game: Game
 var layouts := {}  # area -> Array[Dictionary] (IslandGen.make results + "anchor")
 var gaps := {}  # area -> [min, max]
 var span_hw := 0.0  # half width between the tunnel walls (0 = open space)
-var _stage_layouts := {}  # stage number -> {layouts, gaps, span}
+var spans := {}  # area -> span_hw there (a stage may fly in from open sky: stage 4)
+var _stage_layouts := {}  # stage number -> {layouts, gaps, spans}
 var first_area := ""
 var title_area := ""
 var islands: Array[Island] = []
@@ -44,12 +45,17 @@ func use_stage(def: StageDef) -> void:
 				s += def.layout_seed_step
 			ls[a] = list
 			gs[a] = def.areas[a].get("gap", [2.0, 6.0])
-		var span := TunnelModels.HW if def.backdrop.has("tunnel") else 0.0
-		_stage_layouts[def.number] = {"layouts": ls, "gaps": gs, "span": span}
+		# between the walls in a tunnel, except where it is open sky
+		var sp := {}
+		var tun: Dictionary = def.backdrop.get("tunnel", {})
+		for a: String in def.areas:
+			var st := String((tun.get("styles", {}) as Dictionary).get(a, tun.get("first", Tunnel.OPEN)))
+			sp[a] = TunnelModels.HW if not tun.is_empty() and st != Tunnel.OPEN else 0.0
+		_stage_layouts[def.number] = {"layouts": ls, "gaps": gs, "spans": sp}
 	var e: Dictionary = _stage_layouts[def.number]
 	layouts = e["layouts"]
 	gaps = e["gaps"]
-	span_hw = e["span"]
+	spans = e["spans"]
 	first_area = def.first_area
 	title_area = def.title_area
 
@@ -59,6 +65,7 @@ func reset(spawn: bool) -> void:
 	spawning = spawn
 	turrets = spawn
 	area = first_area if spawn else title_area
+	span_hw = spans.get(area, 0.0)
 	next_in = 4.0
 	rng.seed = 7
 	tally.clear()
@@ -76,6 +83,7 @@ func clear() -> void:
 func set_area(a: String) -> void:
 	if layouts.has(a):
 		area = a
+		span_hw = spans.get(a, 0.0)
 
 
 # ------------------------------------------------------------ tick

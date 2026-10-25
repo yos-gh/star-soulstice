@@ -18,16 +18,35 @@ extends Models
 ##            lamps; feature: crates on the belts and assembly arms
 ##   furnace  dark plates, molten channels, glowing heat vents; feature: a
 ##            crucible pit
-## Props (the fan) are separate meshes; Tunnel turns them.
+##   hangar   (stage 4, the enemy base) slate slabs with painted guide
+##            lines, ribbed bay doors and a gantry walkway on the walls, pale
+##            green lamps; feature: a lift pad
+##   core     dark grating, a conduit trench down the middle, heavy pipes on
+##            the walls; feature: a power coupling ring (its rotor turns)
+##   arena    the floor raised to just under the ground sections (y -3): the
+##            deck the stage 4 boss drives on; its gate steps the floor up
+## A stage that flies in from open sky has an "open" stretch first (no
+## segments, see Tunnel): where the base begins the style's gate comes with
+## a facade, the armoured face of the base round the opening, deep enough
+## to hide the sky below it (the "mouth" variant: the gate plus the facade
+## prop).
+## Props (the fan, the rotor, the facade) are separate meshes; Tunnel turns
+## the ones that spin.
 
-const STYLES := ["duct", "line", "furnace"]
+const STYLES := ["duct", "line", "furnace", "hangar", "core", "arena"]
 const VARIANTS := ["plain", "rib", "feature", "gate"]
 const NAMES := [
 	"tunnel_duct_plain", "tunnel_duct_rib", "tunnel_duct_feature", "tunnel_duct_gate",
 	"tunnel_line_plain", "tunnel_line_rib", "tunnel_line_feature", "tunnel_line_gate",
 	"tunnel_furnace_plain", "tunnel_furnace_rib", "tunnel_furnace_feature", "tunnel_furnace_gate",
-	"tunnel_fan",
+	"tunnel_hangar_plain", "tunnel_hangar_rib", "tunnel_hangar_feature", "tunnel_hangar_gate",
+	"tunnel_core_plain", "tunnel_core_rib", "tunnel_core_feature", "tunnel_core_gate",
+	"tunnel_arena_plain", "tunnel_arena_rib", "tunnel_arena_feature", "tunnel_arena_gate",
+	"tunnel_fan", "tunnel_rotor", "tunnel_facade",
 ]
+## the arena's deck: voxel rows 12-13 (top at y = -3)
+const DECK_ROW := 13
+const MARK := Color(0.44, 0.41, 0.3)  # painted floor lines (muted)
 
 const HW := 14.5  # inner half width (the wall faces)
 const FLOOR := -9.0  # floor top
@@ -61,12 +80,33 @@ const PALS := {
 		"frame": Color(0.25, 0.22, 0.2), "accent": Color(0.28, 0.25, 0.22), "light": Color(0.42, 0.12, 0.06), "lamp": Color(0.36, 0.1, 0.05),
 		"molten": Color(0.36, 0.08, 0.035), "ember": Color(0.3, 0.07, 0.03),
 	},
+	# stage 4, the enemy base: cool slate and gunmetal under pale green lamps
+	"hangar": {
+		"floor_a": Color(0.24, 0.27, 0.26), "floor_b": Color(0.2, 0.225, 0.22), "seam": Color(0.08, 0.09, 0.09),
+		"wall": Color(0.21, 0.235, 0.23), "wall_d": Color(0.13, 0.15, 0.145), "top": Color(0.1, 0.11, 0.11), "beam": Color(0.18, 0.2, 0.2),
+		"frame": Color(0.28, 0.31, 0.3), "accent": Color(0.33, 0.36, 0.34), "light": Color(0.34, 0.6, 0.42), "lamp": Color(0.2, 0.36, 0.26), "gate_lamp": Color(0.38, 0.64, 0.46),
+	},
+	"core": {
+		"floor_a": Color(0.2, 0.21, 0.23), "floor_b": Color(0.165, 0.175, 0.19), "seam": Color(0.07, 0.07, 0.08),
+		"wall": Color(0.18, 0.19, 0.21), "wall_d": Color(0.11, 0.115, 0.13), "top": Color(0.09, 0.09, 0.1), "beam": Color(0.16, 0.17, 0.19),
+		"frame": Color(0.26, 0.27, 0.29), "accent": Color(0.3, 0.31, 0.33), "light": Color(0.3, 0.54, 0.4), "lamp": Color(0.18, 0.32, 0.24), "gate_lamp": Color(0.38, 0.64, 0.46),
+		"conduit": Color(0.17, 0.36, 0.26),
+	},
+	"arena": {
+		"floor_a": Color(0.25, 0.265, 0.265), "floor_b": Color(0.215, 0.23, 0.23), "seam": Color(0.08, 0.085, 0.09),
+		"wall": Color(0.2, 0.215, 0.22), "wall_d": Color(0.12, 0.13, 0.135), "top": Color(0.09, 0.095, 0.1), "beam": Color(0.17, 0.18, 0.19),
+		"frame": Color(0.27, 0.29, 0.29), "accent": Color(0.32, 0.34, 0.34), "light": Color(0.3, 0.54, 0.4), "lamp": Color(0.18, 0.32, 0.24), "gate_lamp": Color(0.38, 0.64, 0.46),
+	},
 }
 
 
 static func make(name: String) -> ArrayMesh:
 	if name == "tunnel_fan":
 		return _fan()
+	if name == "tunnel_rotor":
+		return _rotor()
+	if name == "tunnel_facade":
+		return _facade()
 	var parts := name.split("_")
 	if parts.size() == 3 and STYLES.has(parts[1]) and VARIANTS.has(parts[2]):
 		return _segment(parts[1], parts[2])
@@ -77,6 +117,10 @@ static func make(name: String) -> ArrayMesh:
 static func props(style: String, variant: String) -> Array:
 	if style == "duct" and variant == "feature":
 		return [["tunnel_fan", Vector3(0, FLOOR - 0.45, 0), 2.4]]
+	if style == "core" and variant == "feature":
+		return [["tunnel_rotor", Vector3(0, FLOOR - 0.45, 0), 0.9]]
+	if variant == "mouth":
+		return [["tunnel_facade", Vector3.ZERO, 0.0]]
 	return []
 
 
@@ -93,11 +137,19 @@ static func _segment(style: String, variant: String) -> ArrayMesh:
 			_line(v, pal, variant == "feature")
 		"furnace":
 			_furnace(v, pal, variant == "feature")
+		"hangar":
+			_hangar(v, pal, variant == "feature")
+		"core":
+			_core(v, pal, variant == "feature")
+		"arena":
+			_arena(v, pal, variant)
+	# the arena's frames stand on its raised deck
+	var base := DECK_ROW + 1 if style == "arena" else 2
 	match variant:
 		"rib":
-			_rib(v, pal)
+			_rib(v, pal, base)
 		"gate":
-			_gate(v, pal)
+			_gate(v, pal, base)
 	return v.mesh(R, Vector3(0, OY, 0))
 
 
@@ -242,31 +294,210 @@ static func _furnace(v: Vox, pal: Dictionary, feature: bool) -> void:
 					v.fill(x, 2, z, x, 3 if r < 6.4 else 2, z, pal["frame"] if r < 6.4 else pal["accent"])
 
 
-## A bulkhead frame: a raised band across the floor, a pillar up each wall
-## with a lamp, and a lintel over the wall tops.
-static func _rib(v: Vox, pal: Dictionary) -> void:
+## Stage 4's base, the hangar shaft: slate slabs with painted guide lines
+## (dashed down the middle, solid down the lanes), ribbed bay doors up the
+## walls with a gantry walkway along them; feature: a lift pad in the middle
+## (a hazard-striped square round a sunken plate with a ring marked on it
+## and dim lamps at its corners).
+static func _hangar(v: Vox, pal: Dictionary, feature: bool) -> void:
+	for z in range(-NZ / 2, NZ / 2):
+		var zi := z + NZ / 2
+		# guide lines
+		if zi % 6 < 3:
+			_put2(v, 0, 1, z, MARK)
+		_put2(v, 17, 1, z, MARK.darkened(0.15))
+		# bay doors: vertical ribs up the inner wall face
+		if zi % 4 == 0:
+			for y in range(4, 13):
+				_put2(v, IW - 1, y, z, pal["wall_d"])
+		# the gantry walkway (a ledge with a railing)
+		_put2(v, IW - 2, 11, z, pal["accent"])
+		_put2(v, IW - 3, 11, z, pal["frame"])
+		if zi % 3 == 0:
+			_put2(v, IW - 3, 12, z, pal["frame"])
+	if feature:
+		for z in range(-10, 10):
+			for x in range(-10, 10):
+				var ax := absi(x if x >= 0 else -1 - x)
+				var az := absi(z if z >= 0 else -1 - z)
+				var e := maxi(ax, az)
+				if e >= 8:
+					v.put(x, 2, z, HAZ_A if ((x + z + 40) / 2) % 2 == 0 else HAZ_B)
+				else:
+					v.put(x, 1, z, pal["floor_b"].darkened(0.2))
+					var r := Vector2(x + 0.5, z + 0.5).length()
+					if absf(r - 5.0) < 0.7:
+						v.put(x, 1, z, MARK.darkened(0.1))
+		for c: Vector2i in [Vector2i(-10, -10), Vector2i(9, -10), Vector2i(-10, 9), Vector2i(9, 9)]:
+			v.put(c.x, 3, c.y, pal["lamp"], true)
+
+
+## Stage 4's base, the deep levels: dark grating (vent slats near the
+## walls), a conduit trench down the middle with dim green light in it,
+## two heavy pipes along each wall and conduit strips up it; feature: a
+## power coupling ring in the floor round a pit (its rotor is a prop).
+static func _core(v: Vox, pal: Dictionary, feature: bool) -> void:
+	for z in range(-NZ / 2, NZ / 2):
+		var zi := z + NZ / 2
+		# vent slats near the walls
+		if zi % 2 == 0:
+			for xi in range(19, 27):
+				_put2(v, xi, 1, z, pal["seam"])
+		# the conduit trench
+		for xi in range(0, 2):
+			v.erase(xi, 1, z)
+			v.erase(-1 - xi, 1, z)
+			_put2(v, xi, 0, z, pal["conduit"] if zi % 4 != 0 else pal["seam"], zi % 4 != 0)
+		_put2(v, 2, 2, z, pal["frame"])
+		# pipes along the walls
+		for y in [5, 6, 9]:
+			_put2(v, IW - 1, y, z, pal["accent"])
+		_put2(v, IW - 2, 5, z, pal["frame"])
+		if zi % 8 == 2:
+			for y in range(3, 13):
+				_put2(v, IW - 1, y, z, pal["conduit"], y % 3 != 0)
+	if feature:
+		for z in range(-NZ / 2, NZ / 2):
+			for x in range(-11, 11):
+				var p := Vector2(x + 0.5, z + 0.5)
+				var r := p.length()
+				if r < 7.6:
+					v.erase(x, 1, z)
+					v.put(x, 0, z, Color(0.05, 0.055, 0.06))
+				elif r < 10.0:
+					var stud := absf(wrapf(atan2(p.y, p.x) * 12.0 / TAU, -0.5, 0.5)) < 0.14 and r > 8.6
+					v.fill(x, 1, z, x, 2, z, pal["frame"] if r > 8.4 else pal["accent"])
+					if stud:
+						v.put(x, 2, z, pal["lamp"], true)
+
+
+## The arena: the stage 4 boss's deck, raised to rows 12-13 (top at y -3)
+## from wall to wall: broad plates with seams, painted lane lines and
+## tie-down studs; the gate steps the floor up halfway along (the old floor
+## in front, the deck beyond).
+static func _arena(v: Vox, pal: Dictionary, variant: String) -> void:
+	for z in range(-NZ / 2, NZ / 2):
+		if variant == "gate" and z >= 0:
+			continue
+		var zi := z + NZ / 2
+		for xi in IW:
+			var seam := xi % 10 == 9 or zi % 12 == 11
+			var plate := ((xi / 10) + (zi / 12)) % 2 == 0
+			_put2(v, xi, DECK_ROW - 1, z, pal["seam"])
+			var c: Color = pal["seam"] if seam else (pal["floor_a"] if plate else pal["floor_b"])
+			if xi == 12 or xi == 13:
+				c = MARK.darkened(0.2)
+			_put2(v, xi, DECK_ROW, z, c)
+			if xi % 10 == 4 and zi % 12 == 5:
+				_put2(v, xi, DECK_ROW + 1, z, pal["frame"])
+		if variant == "gate" and z == -1:
+			# the step's lit edge
+			for xi in IW:
+				if xi % 6 == 2:
+					_put2(v, xi, DECK_ROW, z, pal["lamp"], true)
+
+
+## The core's power coupling rotor: three arms round a hub.
+static func _rotor() -> ArrayMesh:
+	var v := Vox.new(16, 2, 16)
+	v.ground = true
+	for z in range(-8, 8):
+		for x in range(-8, 8):
+			var p := Vector2(x + 0.5, z + 0.5)
+			var r := p.length()
+			if r > 7.4:
+				continue
+			if r < 1.8:
+				v.fill(x, 0, z, x, 1, z, Color(0.13, 0.14, 0.15))
+				continue
+			var a := absf(wrapf(atan2(p.y, p.x) * 3.0 / TAU, -0.5, 0.5))
+			if a < 0.09 + 0.3 / r:
+				v.put(x, 0, z, Color(0.26, 0.28, 0.3) if r < 6.6 else Color(0.2, 0.36, 0.27))
+	return v.mesh(R, Vector3(0, 0, 0))
+
+
+## The face of the enemy base where the tunnel begins (a prop on the first
+## segment, which is the style's gate): a slab of armour across the whole
+## view at the segment's near (+z) end, from just under the play plane down
+## to y -36, open where the tunnel goes in, with an apron over the top
+## beyond the tunnel's wall tops. Armour bands, vertical ribs, a
+## hazard-striped surround and dim lamps round the opening. It hides the
+## open sky below and behind it.
+static func _facade() -> ArrayMesh:
+	const HX := 96  # half width in voxels (48 units)
+	const ROWS := 70  # y -36 .. -1
+	const OYF := 72
+	var v := Vox.new(HX * 2, ROWS, NZ + 2)
+	v.ground = true
+	v.jitter = 0.05
+	var face := Color(0.26, 0.28, 0.28)
+	var band := Color(0.17, 0.185, 0.185)
+	var rib := Color(0.32, 0.34, 0.34)
+	var top := Color(0.15, 0.16, 0.165)
+	var floor_row := OYF - OY  # the tunnel floor's row 0 here (y -10)
+	for z in range(-NZ / 2 - 1, NZ / 2 + 1):
+		var thick := z >= NZ / 2 - 3
+		for x in range(-HX, HX):
+			var xi := x if x >= 0 else -1 - x
+			var opening := xi < IW
+			# one voxel in front of the segment where its walls are (no faces
+			# on top of each other), thicker out beyond them
+			var front := z == NZ / 2 or (thick and xi >= XW)
+			for y in ROWS:
+				var wy := (y - OYF) * R
+				if front:
+					if opening and y >= floor_row:
+						continue
+					var c := face
+					if y % 10 == 0 or y % 10 == 1:
+						c = band
+					if xi % 14 == 7 and y < ROWS - 2:
+						c = rib
+					# the surround of the opening, striped
+					if (xi >= IW and xi < IW + 3 and y >= floor_row) or (opening and y >= floor_row - 3):
+						c = HAZ_A if ((y + xi) / 2) % 2 == 0 else HAZ_B
+					if y >= ROWS - 2:
+						c = top
+					v.put(x, y, z, c)
+					if z == NZ / 2 and xi % 14 == 3 and y % 10 == 5 and wy < -4.0:
+						v.put(x, y, z, Color(0.22, 0.38, 0.28), true)
+				elif xi >= XW and y >= ROWS - 3:
+					# the apron over the top beyond the tunnel
+					v.put(x, y, z, top if y == ROWS - 1 else band)
+	var m := v.mesh(R, Vector3(0, OYF, 0))
+	# lit near the top, melting into the haze far down (not into the fog)
+	m.surface_set_material(0, PlanetModels.deep_material())
+	return m
+
+
+## A bulkhead frame: a raised band across the floor (row `base`), a pillar
+## up each wall with a lamp, and a lintel over the wall tops.
+static func _rib(v: Vox, pal: Dictionary, base := 2) -> void:
 	for z in [-1, 0]:
 		for xi in IW:
 			var lamp := xi == 10 or xi == 20
-			_put2(v, xi, 2, z, pal["lamp"] if lamp else pal["frame"], lamp)
+			_put2(v, xi, base, z, pal["lamp"] if lamp else pal["frame"], lamp)
 		for xi in range(IW - 3, IW):
-			for y in range(2, 16):
+			for y in range(base, 16):
 				_put2(v, xi, y, z, pal["frame"] if y % 4 != 0 else pal["accent"])
 		for xi in range(IW - 3, XW):
 			_put2(v, xi, 17, z, pal["frame"])
 		for y in [8]:
-			_put2(v, IW - 4, y, z, pal["lamp"], true)
+			if y > base:
+				_put2(v, IW - 4, y, z, pal["lamp"], true)
 
 
-## A blast-door frame: a hazard-striped sill across the floor, heavy posts
-## striped on their inner faces with red lamps, a lintel over the wall tops.
-static func _gate(v: Vox, pal: Dictionary) -> void:
+## A blast-door frame: a hazard-striped sill across the floor (row `base`),
+## heavy posts striped on their inner faces with lamps (red, or the style's
+## `gate_lamp`), a lintel over the wall tops.
+static func _gate(v: Vox, pal: Dictionary, base := 2) -> void:
+	var lamp: Color = pal.get("gate_lamp", LAMP_RED)
 	for z in range(-3, 3):
 		var zi := z + NZ / 2
 		for xi in IW:
-			_put2(v, xi, 2, z, HAZ_A if ((xi + zi) / 2) % 2 == 0 else HAZ_B)
+			_put2(v, xi, base, z, HAZ_A if ((xi + zi) / 2) % 2 == 0 else HAZ_B)
 		for xi in range(IW - 5, IW):
-			for y in range(2, 18):
+			for y in range(base, 18):
 				var c: Color = pal["frame"]
 				if xi == IW - 5:
 					c = HAZ_A if ((y + zi) / 2) % 2 == 0 else HAZ_B
@@ -276,9 +507,10 @@ static func _gate(v: Vox, pal: Dictionary) -> void:
 			_put2(v, xi, 17, z, pal["accent"])
 	for z in [-3, 2]:
 		for y in [12, 13]:
-			_put2(v, IW - 6, y, z, LAMP_RED, true)
+			if y > base:
+				_put2(v, IW - 6, y, z, lamp, true)
 		for xi in [6, 14, 22]:
-			_put2(v, xi, 3, z, LAMP_RED, true)
+			_put2(v, xi, base + 1, z, lamp, true)
 
 
 ## The intake fan: five swept blades round a lit hub.

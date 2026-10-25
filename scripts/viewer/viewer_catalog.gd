@@ -161,6 +161,20 @@ static func _scenery(stages: Array[StageDef]) -> Array:
 	var out := []
 	for d in stages:
 		var tunnel: Dictionary = d.backdrop.get("tunnel", {})
+		var sky: Dictionary = d.backdrop.get("sky", {})
+		if not sky.is_empty():
+			# diving into a planet: each area's stretch of the descent (it
+			# goes on coming down as in play), then the way into the base
+			var from: Dictionary = sky.get("from", {})
+			for a: String in from:
+				out.append({"name": "S%d SKY  %s" % [d.number, a.to_upper()], "type": "backdrop", "stage": d, "area": a, "scroll": d.scroll, "loop": 30.0,
+					"desc": "大気圏の降下（高さ %.2f から %.2f へ）：空・雲海・雲の峰（地形なし）" % [float(from[a]), float((sky.get("to", {}) as Dictionary).get(a, from[a]))]})
+			for a: String in d.areas:
+				var st: String = (tunnel.get("styles", {}) as Dictionary).get(a, "")
+				var prev := d.areas.keys().find(a) - 1
+				if st != Tunnel.OPEN and prev >= 0 and (tunnel.get("styles", {}) as Dictionary).get(d.areas.keys()[prev], "") == Tunnel.OPEN:
+					out.append({"name": "S%d BASE MOUTH" % d.number, "type": "backdrop", "stage": d, "area": d.areas.keys()[prev], "then": [1.0, a], "loop": 9.0, "scroll": d.scroll,
+						"desc": "空から基地の入口（外壁の正面とゲート）へ入るところ"})
 		if tunnel.is_empty():
 			out.append({"name": "S%d SCENERY" % d.number, "type": "backdrop", "stage": d, "desc": "星雲・惑星・星・深層の構造物（地形なし）"})
 			out.append({"name": "S%d SCENERY  FAST" % d.number, "type": "backdrop", "stage": d, "scroll": Game.SCROLL * 4.0, "desc": "4 倍速スクロールで奥行きの流れ方を見る"})
@@ -169,7 +183,7 @@ static func _scenery(stages: Array[StageDef]) -> Array:
 		var seen := {}
 		for a: String in d.areas:
 			var style: String = (tunnel["styles"] as Dictionary).get(a, "")
-			if style == "" or seen.has(style):
+			if style == "" or style == Tunnel.OPEN or seen.has(style):
 				continue
 			seen[style] = true
 			out.append({"name": "S%d TUNNEL  %s" % [d.number, style.to_upper()], "type": "backdrop", "stage": d, "area": a, "scroll": d.scroll,

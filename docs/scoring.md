@@ -39,6 +39,13 @@
 | ボス TITAN DREDGE の鉱石トロッコ | なし | 壊せない（装甲：ショットを弾く） | `scripts/bosses/titan_dredge.gd` `_add_skip` |
 | ボス TITAN DREDGE のカッターホイール（2 基） | 8,000 | 360 | `scripts/bosses/titan_dredge.gd` `WHEEL_SCORE` / `WHEEL_HP` |
 | ボス TITAN DREDGE の核 | 60,000 | 1,200 | `scripts/bosses/titan_dredge.gd` `CORE_SCORE` / `CORE_HP` |
+| 中型機（kestrel、ステージ 4） | 2,500 | 120 | `scripts/enemies/kestrel.gd` `_init_kind` |
+| 中ボス TEMPEST の避雷塔（3 本） | 3,000 | 150 | `scripts/bosses/tempest.gd` `COIL_SCORE` / `COIL_HP` |
+| 中ボス TEMPEST の嵐の発生機（撃破） | 25,000 | 640 | `scripts/bosses/tempest.gd` `SCORE` / `CORE_HP` |
+| ボス BEHEMOTH の冷却ルーバー（2 枚） | 5,000 | 160 | `scripts/bosses/behemoth.gd` `LOUVRE_SCORE` / `LOUVRE_HP` |
+| ボス BEHEMOTH の副砲（2 基） | 4,000 | 200 | `scripts/bosses/behemoth.gd` `SPONSON_SCORE` / `SPONSON_HP` |
+| ボス BEHEMOTH の主砲塔 | 10,000 | 520 | `scripts/bosses/behemoth.gd` `TURRET_SCORE` / `TURRET_HP` |
+| ボス BEHEMOTH の反応炉 | 60,000 | 1,000 | `scripts/bosses/behemoth.gd` `CORE_SCORE` / `CORE_HP` |
 
 撃破した敵の弾は消えてエネルギーになる（スコアはエネルギー取得分のみ）。
 
@@ -73,7 +80,7 @@
 | 編隊機 / 円盤 / 突進機雷 / 後方強襲機 / 側面強襲機 / 周回機 | 2 / 3 / 3 / 2 / 2 / 2 | `scripts/enemies/<種類>.gd` `energy_drop` |
 | 砲台 / コンテナ | 4 / 4 | 〃 |
 | 小惑星 小 / 大 | 3 / 8 | 〃 |
-| 中型機 bulwark / railjack / grappler | 14 / 12 / 12 | 〃 |
+| 中型機 bulwark / railjack / grappler / kestrel | 14 / 12 / 12 / 12 | 〃 |
 | 岩塊 / 巨大岩 / 巨大岩・大 | 4 / 16 / 24 | 〃 |
 | ボスのポッド / シャッター | 12 / 10 | `scripts/bosses/star_cortex.gd` |
 | ラザロ撃破 | 40 | `scripts/bosses/lazaro.gd` |
@@ -81,6 +88,8 @@
 | VULCAN PRESS 砲塔 / ハンマー / 装甲板 | 8 / 14 / 6 | `scripts/bosses/vulcan_press.gd` |
 | LODESTAR 岩塊 / 柱 / 核 / 最期 | 3 / 10 / 30 / 24 ＋岩塊ごとに 3 | `scripts/bosses/lodestar.gd` |
 | TITAN DREDGE ホイール | 14 | `scripts/bosses/titan_dredge.gd` |
+| TEMPEST 避雷塔 / 発生機 / 最期 | 10 / 30 / 24 | `scripts/bosses/tempest.gd` |
+| BEHEMOTH ルーバー / 副砲 / 主砲塔 | 10 / 10 / 16 | `scripts/bosses/behemoth.gd` |
 | タイル コンテナ / タンク / 倉庫 | 2 / 5 / 10 | `scripts/terrain/island.gd` `TILE_ENERGY` |
 | 消した弾（撃破・スピア） | 1 発につき 1 | `scripts/game.gd` |
 
@@ -107,6 +116,8 @@
 | 2（ステージ 2 から始めて、第 1 形態から） | 約 39 万 | 約 51 万（うちスター 55 個） | 約 18 万 | 約 119 秒 |
 | 3（ステージ 2 から続けて） | 約 49 万 | 約 54 万（うちスター 38 個） | 約 18 万 | 約 118 秒 |
 | 3（ステージ 3 から始めて、第 1 形態から） | 約 47 万 | 約 42 万（うちスター 44 個） | 約 18 万 | 約 120 秒 |
+| 4（ステージ 3 から続けて） | 約 44 万 | 約 71 万（うちスター 54 個） | 約 16 万 | 約 137 秒 |
+| 4（ステージ 4 から始めて、第 1 形態から） | 約 44 万 | 約 50 万（うちスター 54 個） | 約 16 万 | 約 134 秒 |
 
 自動操縦はほぼ秒間 7.5 回連打するので、ショットはおおむね ×8（最大）。
 
@@ -119,7 +130,10 @@
 | 1 | 18.6 | DEBRIS 10.5、HULL 30.5、（ラザロ）13.0、CORE 28.1、ボス戦 9.6 |
 | 2 | 13.9 | INTAKE DUCT 14.9、ASSEMBLY LINE 19.2、（OUROBOROS）14.1、FURNACE ROW 17.3、ボス戦 8.1 |
 | 3 | 13.9 | DRIFT FIELD 15.7、QUARRY ROCKS 17.6、（LODESTAR）10.3、CRUSH ZONE 16.5、ボス戦 6.9（ステージ 3 から始めた値） |
+| 4 | 14.9 | UPPER ATMOSPHERE 14.7、STORM LAYER 14.3、（TEMPEST）14.3、HANGAR SHAFT 14.8、CORE ACCESS 15.9、ボス戦なし（闘技場の床の下）（ステージ 4 から始めた値） |
 
 ステージ 2 はスクロールが 1.5 倍なので、区画の間隔（`stage2.gd` の `gap`）を広げて密度を下げている。区画に硬いタイル（倉庫：スターが隠れている率 6%、ほかは 2%）が多いので、密度が同じならスターはステージ 1 より多めに出る。
 
 ステージ 3 はスクロールが 1.25 倍（15）。小惑星（`asteroid`）と露天掘りの小惑星（`quarry`）の区画が主で、タイルの割合が低めなので、区画を大きめ・間隔を狭めにしている。
+
+ステージ 4 はスクロールが 16。前半の空の区画（浮遊プラットフォーム `aerostat`）は大きくタイルが多いので、間隔を広めにしている。敵が多いぶん、密度はステージ 3 より少しだけ高い。ボス戦は闘技場の床が区画の高さまで上がっているので区画が流れず、エネルギーは撃破で補う。

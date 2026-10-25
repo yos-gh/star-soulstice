@@ -11,6 +11,8 @@ const KINDS := {
 	"ouroboros": preload("res://scripts/bosses/ouroboros.gd"),
 	"vulcan_press": preload("res://scripts/bosses/vulcan_press.gd"),
 	"lodestar": preload("res://scripts/bosses/lodestar.gd"),
+	"tempest": preload("res://scripts/bosses/tempest.gd"),
+	"behemoth": preload("res://scripts/bosses/behemoth.gd"),
 	"titan_dredge": preload("res://scripts/bosses/titan_dredge.gd"),
 }
 

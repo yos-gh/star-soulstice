@@ -242,3 +242,10 @@ func grappler(at: float, xn: float, hold := 5.0, stay := 13.0) -> Array:
 ## below the top of the screen (see railjack.gd).
 func railjack(at: float, side: int, hold := 5.5, stay := 12.0) -> Array:
 	return [[at, "railjack", {"side": side, "x": side * (_hw() - 2.4), "z": _top() - 3.0, "hold": _top() + hold, "stay": stay}]]
+
+
+## A VTOL gunship in from the side edge `side` (-1 = left) on a curve, to
+## hover at x (fraction of the half width) `hold` below the top of the
+## screen (see kestrel.gd).
+func kestrel(at: float, side: int, xn: float, hold := 5.5, stay := 12.0) -> Array:
+	return [[at, "kestrel", {"side": side, "hx": xn * _hw(), "x": side * (game.hw_top + 4.0), "z": _top() + 2.0, "hold": _top() + hold, "stay": stay}]]

@@ -14,6 +14,9 @@ extends RefCounted
 ##   quarry    an asteroid being strip-mined (stage 3): an open pit stepping
 ##             down in benches to an ore seam, ore bins (tiles) on the
 ##             benches round it, a conveyor gantry across the pit
+##   aerostat  a floating sky platform (stage 4): a hull deck held up by a
+##             ducted lift fan in each corner, rows of hatches between them
+##             and a lit spine down the middle
 ## Voxels are R units; a cell (one 2 x 2 tile) is K x K voxels. Tiles sit
 ## in sockets half a voxel below the deck. Local y = 0 is the deck top.
 ## A stage picks kinds and sizes per area (StageDef.areas). A new kind
@@ -21,7 +24,7 @@ extends RefCounted
 ## and its surface (_structure, or a builder of its own like _asteroid);
 ## add it to KINDS so the viewer can show it.
 
-const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid", "bridge", "quarry"]
+const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid", "bridge", "quarry", "aerostat"]
 
 const R := 0.5
 const K := 4
@@ -105,6 +108,12 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 						t = 2 if e < 0.35 else (1 if e < 0.7 else 0)
 						if r.randf() < 0.15:
 							t = -1
+				"aerostat":
+					# none in the fan housings or on the spine
+					if j % 3 != 1 and i != mid and _fan_at(i, j, w, h) < 0:
+						t = 2 if e < 0.4 else (1 if e < 0.75 else 0)
+						if r.randf() < 0.12:
+							t = -1
 				"trench":
 					if absi(i - mid) > 1 and absi(i - mid + 1) > 1 and j % 2 == 0:
 						t = 1 if (i + j / 2) % 3 == 0 else 0
@@ -144,6 +153,8 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 			if cell_in[idx] == 0 or cell_e[idx] > 0.85:
 				continue
 			if kind == "trench" and (i == mid or i == mid - 1):
+				continue
+			if kind == "aerostat" and (i == mid or _fan_at(i, j, w, h) >= 0):
 				continue
 			if kind == "reactor" and cell_e[idx] < 0.36 or kind == "quarry" and cell_e[idx] < 0.45:
 				continue
@@ -233,6 +244,8 @@ static func _structure(v: Vox, info: Dictionary) -> void:
 				continue
 			var x := vx - W / 2
 			var z := vz - H / 2
+			if kind == "aerostat" and _aerostat_fan(v, x, z, vx, vz, w, h, top):
+				continue
 			var ed := _edge_dist(vmask, W, H, vx, vz, 6)
 			var c2 := _cell_of(vx, vz, w, h)
 			var lx := (vx - MARGIN) % K
@@ -330,12 +343,59 @@ static func _structure(v: Vox, info: Dictionary) -> void:
 						v.put(x, surf + 2, z, CONDUIT, true)
 				elif c2.y % 4 == 0 and lz == 2:
 					v.put(x, surf + 1, z, SIDE)
+			elif kind == "aerostat" and c2.x == mid:
+				# the spine: a raised keel with lamps along it
+				if lx >= 1 and lx <= 2:
+					v.put(x, surf + 1, z, PIPE if lx == 1 else SIDE)
+					if lx == 2 and vz % 6 == 0:
+						v.put(x, surf + 1, z, CONDUIT, true)
 			elif kind == "bridge":
 				# grated walkway
 				if lx > 0 and lz % 2 == 1:
 					v.put(x, surf, z, SEAM)
 			else:
 				_greeble(v, x, surf, z, lx, lz, (c2.x * 31 + c2.y * 17 + w) % 7)
+
+
+## Which corner's lift fan covers cell (i, j) of an aerostat (0-3), or -1:
+## the 2 x 2 cells in each corner (none on a small deck).
+static func _fan_at(i: int, j: int, w: int, h: int) -> int:
+	if w < 6 or h < 4:
+		return -1
+	var fx := 0 if i < 2 else (1 if i >= w - 2 else -1)
+	var fz := 0 if j < 2 else (1 if j >= h - 2 else -1)
+	if fx < 0 or fz < 0:
+		return -1
+	return fz * 2 + fx
+
+
+## An aerostat's corner: the ducted lift fan in its round housing (a raised
+## rim, a dark duct with three blades, a hub); outside the housing the
+## corner is cut away. Returns true when the voxel column was a fan's.
+static func _aerostat_fan(v: Vox, x: int, z: int, vx: int, vz: int, w: int, h: int, top: int) -> bool:
+	if w < 6 or h < 4:
+		return false
+	var W := w * K + MARGIN * 2
+	var H := h * K + MARGIN * 2
+	var cx := float(MARGIN + K) if vx < W / 2 else float(W - MARGIN - K)
+	var cz := float(MARGIN + K) if vz < H / 2 else float(H - MARGIN - K)
+	var d := Vector2(vx + 0.5 - cx, vz + 0.5 - cz)
+	var outer := (vx < cx) == (vx < W / 2) and (vz < cz) == (vz < H / 2)
+	var r := d.length()
+	if r > 5.4:
+		# the corner beyond the housing is cut away
+		return outer
+	if r > 4.2:
+		v.fill(x, top - 3, z, x, top + 1, z, SIDE)
+		v.put(x, top + 1, z, RIM if posmod(int(atan2(d.y, d.x) * 8.0 / PI), 2) == 0 else HULL_C)
+	elif r > 1.3:
+		v.put(x, top - 4, z, SOCKET)
+		if absf(wrapf(atan2(d.y, d.x) * 3.0 / TAU + r * 0.05, -0.5, 0.5)) < 0.13:
+			v.put(x, top - 2, z, PIPE)
+	else:
+		v.fill(x, top - 4, z, x, top - 1, z, SIDE)
+		v.put(x, top, z, HULL_C)
+	return true
 
 
 ## Machinery on a bare deck cell (4 x 4 voxels).

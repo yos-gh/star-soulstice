@@ -18,6 +18,7 @@ const KINDS := {
 	"bulwark": preload("res://scripts/enemies/bulwark.gd"),
 	"railjack": preload("res://scripts/enemies/railjack.gd"),
 	"grappler": preload("res://scripts/enemies/grappler.gd"),
+	"kestrel": preload("res://scripts/enemies/kestrel.gd"),
 	"giant_rock": preload("res://scripts/enemies/giant_rock.gd"),
 	"boulder": preload("res://scripts/enemies/boulder.gd"),
 	"part": preload("res://scripts/enemies/part.gd"),

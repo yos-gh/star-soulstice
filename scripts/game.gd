@@ -930,7 +930,7 @@ func touch_player(src: String) -> void:
 
 func _enemy_at(p: Vector3, r: float) -> Enemy:
 	for e in enemies:
-		if e.dead or e.intangible or not e.visible:
+		if e.dead or e.intangible or not e.visible or not e.shootable:
 			continue
 		if not on_field(e.hit_pos, 0.5):
 			continue
@@ -1010,7 +1010,7 @@ func _spear(dt: float) -> void:
 		fx.sprite(q + Vector3(0, 0.4, 0), Vector3.ZERO, 0.9, 0.2, 0.2, Color(0.5, 0.9, 1.0), 0.0)
 	var dmg := Player.SPEAR_DPS * dt
 	for e: Enemy in enemies.duplicate():
-		if e.dead or e.intangible or not e.visible:
+		if e.dead or e.intangible or not e.visible or not e.shootable:
 			continue
 		var d := e.hit_pos - pp
 		var in_ring := Vector2(d.x, d.z).length() < Player.SPEAR_R + e.radius
@@ -1036,7 +1036,7 @@ func on_spear(n: int) -> void:
 func homing_targets(from: Vector3) -> Array:
 	var list: Array = []
 	for e in enemies:
-		if e.dead or e.intangible or e.armored or not e.lock or not e.visible or not on_field(e.hit_pos, -0.3):
+		if e.dead or e.intangible or e.armored or not e.shootable or not e.lock or not e.visible or not on_field(e.hit_pos, -0.3):
 			continue
 		list.append(e)
 	list.sort_custom(func(a: Enemy, b: Enemy) -> bool: return a.hit_pos.distance_squared_to(from) < b.hit_pos.distance_squared_to(from))
@@ -1047,7 +1047,7 @@ func nearest_target(from: Vector3) -> Object:
 	var best: Enemy = null
 	var bd := INF
 	for e in enemies:
-		if e.dead or e.intangible or e.armored or not e.lock or not e.visible or not on_field(e.hit_pos, -0.3):
+		if e.dead or e.intangible or e.armored or not e.shootable or not e.lock or not e.visible or not on_field(e.hit_pos, -0.3):
 			continue
 		var d := e.hit_pos.distance_squared_to(from)
 		if d < bd:
@@ -1241,14 +1241,15 @@ func _automation(dt: float) -> void:
 ##   - a charge also streams chevrons toward its target
 ##   - a short rising tone
 ## Breakable shells are never announced: they are the low-threat fodder.
-func warn(node: Node3D, dur: float, kind: int, radius := 1.0, to: Variant = null) -> void:
+func warn(node: Node3D, dur: float, kind: int, radius := 1.0, to: Variant = null, sound := true) -> void:
 	warnings.append({"node": node, "t": dur, "dur": dur, "kind": kind, "r": radius, "to": to})
 	if node is Enemy:
 		var e := node as Enemy
 		e.warn_t = dur
 		e.warn_dur = dur
 		e.warn_col = WARN_COL[kind]
-	sfx.play("warn")
+	if sound:
+		sfx.play("warn")
 
 
 ## Announces an attack by `e`, then runs `fn` after `dur` unless `e` died.

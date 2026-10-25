@@ -65,11 +65,24 @@ func think() -> Array:
 	# a point: a press hammer, a train's strike)
 	# (or a path of points: a boom's sweep; or a thrown rock's line)
 	for w: Dictionary in game.warnings:
-		if w["kind"] != Game.Warn.MOVE or not (w["to"] is Vector3 or w["to"] is PackedVector3Array) or not is_instance_valid(w["node"]):
+		if w["kind"] != Game.Warn.MOVE or not (w["to"] is Vector3 or w["to"] is PackedVector3Array or w["to"] is Dictionary) or not is_instance_valid(w["node"]):
 			continue
 		if not (w["node"] is Enemy) or ((w["node"] as Enemy).controller == null and not (w["node"] as Enemy).marked):
 			continue
 		var nd: Enemy = w["node"]
+		# (or a circle where something lands: out of it)
+		if w["to"] is Dictionary:
+			var off := pp - nd.hit_pos
+			off.y = 0.0
+			var reach := float(w["to"].get("r", 1.0)) + 1.8
+			var od := off.length()
+			if od < reach:
+				# sideways first: circles marching down a column must not pin
+				# it between them
+				var side := signf(off.x) if absf(off.x) > 0.3 else (-signf(pp.x) if absf(pp.x) > 0.5 else 1.0)
+				var away := (off / od if od > 0.05 else Vector3.ZERO) + Vector3(side, 0, 0)
+				push += away.normalized() * (reach - od) * 1.8
+			continue
 		var path := PackedVector3Array([nd.hit_pos, w["to"]]) if w["to"] is Vector3 else (w["to"] as PackedVector3Array)
 		for k in path.size() - 1:
 			var a: Vector3 = path[k]

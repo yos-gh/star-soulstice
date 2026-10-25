@@ -15,7 +15,10 @@ extends RefCounted
 ##            Brain, OUROBOROS a jade train, VULCAN PRESS grey and
 ##            construction-machine orange round its molten core;
 ##            stage 3: an olive mining tug, LODESTAR copper on steel,
-##            TITAN DREDGE mining yellow on steel, rocks in browns)
+##            TITAN DREDGE mining yellow on steel, rocks in browns;
+##            stage 4: the KESTREL gunship in sand on dark grey, TEMPEST
+##            slate with brown glazed insulators and a lilac glow, BEHEMOTH
+##            gunmetal with sand armour and a hazard-striped blade)
 ##   ground   teal-grey fortress steel (see IslandGen); its tiles are
 ##            coloured storehouses (GroundModels)
 ## Ships are built from stacked, bevelled plates so the baked AO and the
@@ -23,7 +26,7 @@ extends RefCounted
 ##
 ## The models live in one script per group (each extends this one, so the
 ## colours below are at hand): ShipModels, EnemyModels, BossModels,
-## ItemModels, GroundModels, TunnelModels, BeltModels. To add a model, add its name to the group's
+## ItemModels, GroundModels, TunnelModels, BeltModels, PlanetModels. To add a model, add its name to the group's
 ## NAMES and build it in the group's make(); Vox.get_mesh(name) finds it
 ## and the viewer's MODELS list shows it.
 
@@ -92,6 +95,7 @@ const BODY := {
 	"press_hammer": ORANGE, "press_vent": ORANGE,
 	"giant_rock_a": Color(0.34, 0.31, 0.28), "giant_rock_b": Color(0.34, 0.31, 0.28), "grappler": Color(0.42, 0.45, 0.24),
 	"lode_core": Color(0.7, 0.42, 0.24), "lode_pylon": Color(0.7, 0.42, 0.24), "dredge_core": GUN, "dredge_wheel": Color(0.84, 0.64, 0.14), "dredge_driver": Color(0.84, 0.64, 0.14), "meteor_a": Color(0.34, 0.31, 0.28), "meteor_b": Color(0.34, 0.31, 0.28),
+	"kestrel": Color(0.52, 0.46, 0.33), "tempest_core": Color(0.3, 0.335, 0.37), "tempest_coil": Color(0.44, 0.27, 0.17), "behemoth_turret": Color(0.33, 0.34, 0.38), "behemoth_sponson": Color(0.52, 0.46, 0.33), "behemoth_louvre": Color(0.4, 0.43, 0.46), "behemoth_core": Color(0.33, 0.34, 0.38),
 }
 
 
@@ -101,7 +105,7 @@ static func body_col(name: String, fallback: Color) -> Color:
 
 ## [group label, script] in viewer order.
 static func groups() -> Array:
-	return [["SHIP", ShipModels], ["ENEMIES", EnemyModels], ["BOSSES", BossModels], ["ITEMS", ItemModels], ["GROUND", GroundModels], ["TUNNEL", TunnelModels], ["BELT", BeltModels]]
+	return [["SHIP", ShipModels], ["ENEMIES", EnemyModels], ["BOSSES", BossModels], ["ITEMS", ItemModels], ["GROUND", GroundModels], ["TUNNEL", TunnelModels], ["BELT", BeltModels], ["PLANET", PlanetModels]]
 
 
 static func build(name: String) -> ArrayMesh:

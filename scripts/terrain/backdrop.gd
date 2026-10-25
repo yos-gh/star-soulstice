@@ -13,7 +13,20 @@ extends Node3D
 ##           layer, at depths spread from near to far (stage 3)
 ##   tunnel  {styles: {area: style}, first, seed}    a tunnel close below
 ##           (see Tunnel); its style follows the stage's area (set_area)
-## Palette sets the colours of the nebula, planet and ring.
+##   sky     {y, size, from: {area: level}, to: {area: level}, rate, rates,
+##           clouds: {count, meshes, far: [y, y], near: [y, y], seed}}
+##           a planet's atmosphere below (stage 4 diving into it): a plane at
+##           y (shaders/sky.gdshader) and cloud banks above it. `level` says
+##           how far down the stage is: 0 in space (the plane is clear and
+##           the stars show), the haze and a cloud sea far below, from 0.7
+##           the deck breaking up over the surface, 1.4 low over it. Each
+##           area eases the level toward its `to` at `rate` a second (or its
+##           own in `rates`; starting an area at once, as a stage start or
+##           the viewer does, puts it at its `from`); the plane's features
+##           grow and quicken and the cloud banks rise from `far` to `near`
+##           as it comes down (out from level 0.22 to 1.02, not in an area
+##           that goes lower than that, nor in a base)
+## Palette sets the colours of the nebula, planet, ring and sky.
 
 var game: Game
 var config := {}
@@ -30,6 +43,14 @@ var belt: Array = []  # {m, a, b, spin}: the rocks layer
 var belt_rng := RandomNumberGenerator.new()
 var tunnel: Tunnel
 var scroll_total := 0.0
+var sky_mat: ShaderMaterial
+var sky := {}  # the sky config (see above)
+var level := 0.0
+var level_to := 0.0
+var level_rate := 0.02  # the area's (sky.rates, else sky.rate)
+var sky_off := Vector2.ZERO
+var clouds: Array = []  # {m, far, near}
+var cloud_rng := RandomNumberGenerator.new()
 
 
 ## Builds the scenery for `cfg` (does nothing if it is already showing).
@@ -46,6 +67,12 @@ func use(cfg: Dictionary) -> void:
 	deep.clear()
 	belt.clear()
 	tunnel = null
+	sky_mat = null
+	sky = {}
+	clouds.clear()
+	level = 0.0
+	level_to = 0.0
+	sky_off = Vector2.ZERO
 	config = cfg
 	built = true
 	build(cfg)
@@ -174,6 +201,8 @@ func build(cfg: Dictionary) -> void:
 			m.rotation = Vector3(belt_rng.randf() * TAU, belt_rng.randf() * TAU, 0)
 			add_child(m)
 			belt.append({"m": m, "a": a, "b": b, "spin": Vector3(belt_rng.randf_range(-0.25, 0.25), belt_rng.randf_range(-0.3, 0.3), 0)})
+	if cfg.has("sky"):
+		_build_sky(cfg["sky"])
 	if cfg.has("tunnel"):
 		tunnel = Tunnel.new()
 		tunnel.game = game
@@ -181,14 +210,140 @@ func build(cfg: Dictionary) -> void:
 		tunnel.build(cfg["tunnel"])
 
 
-## The stage's area changed (a tunnel takes on its style); `now` = at once.
+func _build_sky(sc: Dictionary) -> void:
+	sky = sc
+	var y: float = sc.get("y", -60.0)
+	var sz: float = sc.get("size", 900.0)
+	var plane := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(sz, sz)
+	sky_mat = ShaderMaterial.new()
+	sky_mat.shader = load("res://shaders/sky.gdshader")
+	sky_mat.render_priority = -4  # over the stars (-5)
+	sky_mat.set_shader_parameter("size", sz)
+	pm.material = sky_mat
+	plane.mesh = pm
+	plane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	plane.position = Vector3(0, y, game.screen_to_y(Vector2(480, 360), y).z)
+	add_child(plane)
+	var cc: Dictionary = sc.get("clouds", {})
+	cloud_rng.seed = int(cc.get("seed", 5))
+	var meshes: Array = cc.get("meshes", [])
+	var count: int = cc.get("count", 0)
+	var far: Array = cc.get("far", [-48.0, -62.0])
+	var near: Array = cc.get("near", [-8.0, -30.0])
+	for i in count:
+		if meshes.is_empty():
+			break
+		var f := float(i) / maxf(count - 1.0, 1.0)
+		var c := {"far": lerpf(float(far[0]), float(far[1]), f), "near": lerpf(float(near[0]), float(near[1]), f)}
+		var m := MeshInstance3D.new()
+		m.mesh = Vox.get_mesh(meshes[i % meshes.size()])
+		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		m.rotation.y = cloud_rng.randf() * TAU
+		m.scale = Vector3.ONE * cloud_rng.randf_range(0.8, 1.25)
+		m.visible = false
+		add_child(m)
+		c["m"] = m
+		c["on"] = false
+		clouds.append(c)
+	_place_clouds()
+	_sky_view(0.0, 0.0)
+
+
+## The stage's area changed (a tunnel takes on its style, the sky comes
+## down toward the area's level); `now` = at once.
 func set_area(a: String, now := false) -> void:
 	if tunnel != null:
 		tunnel.set_area(a, now)
+	if not sky.is_empty():
+		var to: Dictionary = sky.get("to", {})
+		var from: Dictionary = sky.get("from", {})
+		level_to = float(to.get(a, level_to))
+		level_rate = float((sky.get("rates", {}) as Dictionary).get(a, sky.get("rate", 0.02)))
+		if now:
+			level = float(from.get(a, level_to))
+			_place_clouds()
+			_sky_view(0.0, 0.0)
+
+
+## The cloud banks are out between these levels, and not inside a base.
+const CLOUDS_FROM := 0.22
+const CLOUDS_TO := 1.02
+
+
+func _clouds_out() -> bool:
+	return level >= CLOUDS_FROM and level < CLOUDS_TO and level_to <= CLOUDS_TO + 0.1 and (tunnel == null or not tunnel.walled())
+
+
+## The depth band of the screen at height y, as seen from the resting
+## camera: where a cloud bank comes in (top) and goes (bottom), and the
+## half width it may come in across.
+func _band(y: float) -> Vector3:
+	var top := game.from_plane(Vector3(0, 0, game.field_top - 4.0), y).z - 16.0
+	var bottom := game.from_plane(Vector3(0, 0, game.field_bottom + 4.0), y).z + 16.0
+	var hw := absf(game.from_plane(Vector3(game.hw_top, 0, game.field_top), y).x) + 6.0
+	return Vector3(top, bottom, hw)
+
+
+## Cloud banks spread over the view (at a level where they are out), or
+## waiting off the top in a queue.
+func _place_clouds() -> void:
+	var out := _clouds_out()
+	var rise := smoothstep(0.25, 1.15, level)
+	for i in clouds.size():
+		var c: Dictionary = clouds[i]
+		var m: MeshInstance3D = c["m"]
+		var y := lerpf(c["far"], c["near"], rise)
+		var b := _band(y)
+		c["on"] = out
+		m.visible = out
+		m.position = Vector3(cloud_rng.randf_range(-b.z, b.z), y, lerpf(b.x, b.y, (i + cloud_rng.randf()) / clouds.size()) if out else b.x)
+
+
+## The sky after `dt` of the scroll at `speed`: the level eases toward the
+## area's, the plane's features grow (zoom) and run past faster the lower
+## it is (the offset moves the same in noise cells whatever the zoom: a
+## cell is bigger, so it crosses the screen sooner). The cloud banks come
+## in once the level reaches CLOUDS_FROM, a queue of them from the top,
+## rise as it comes down, and stop coming at CLOUDS_TO (below the deck) or
+## inside a base: the ones out scroll away off the bottom.
+func _sky_view(dt: float, speed: float) -> void:
+	if sky_mat == null:
+		return
+	level = move_toward(level, level_to, level_rate * dt)
+	sky_off.y -= speed * dt / float(sky.get("cell", 26.0))
+	sky_mat.set_shader_parameter("level", level)
+	sky_mat.set_shader_parameter("zoom", 0.38 * exp(level))
+	sky_mat.set_shader_parameter("off", sky_off)
+	var rise := smoothstep(0.25, 1.15, level)
+	var out := _clouds_out()
+	for i in clouds.size():
+		var c: Dictionary = clouds[i]
+		var m: MeshInstance3D = c["m"]
+		var y := lerpf(c["far"], c["near"], rise)
+		var b := _band(y)
+		m.position.y = y
+		if not c["on"]:
+			if not out:
+				continue
+			# out of the haze: the queue comes in from the top
+			c["on"] = true
+			m.visible = true
+			m.position = Vector3(cloud_rng.randf_range(-b.z, b.z), y, b.x - (b.y - b.x) * i / clouds.size())
+		m.position.z += speed * dt
+		if m.position.z > b.y:
+			if out:
+				m.position.z -= b.y - b.x
+				m.position.x = cloud_rng.randf_range(-b.z, b.z)
+			else:
+				c["on"] = false
+				m.visible = false
 
 
 func tick(dt: float, speed: float) -> void:
 	scroll_total += speed * dt
+	_sky_view(dt, speed)
 	if tunnel != null:
 		tunnel.tick(dt, speed)
 	if nebula_mat != null:

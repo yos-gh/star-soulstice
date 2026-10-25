@@ -293,6 +293,8 @@ func _warnings() -> void:
 			target = g.camera.unproject_position(to)
 		elif to is PackedVector3Array:
 			_path_chevrons(to as PackedVector3Array)
+		elif to is Dictionary and (to as Dictionary).has("r"):
+			_impact_ring(at, float(to["r"]), f)
 		if target != Vector2.INF:
 			var d := target - sp
 			var len := minf(d.length(), 420.0)
@@ -308,6 +310,28 @@ func _warnings() -> void:
 					draw_polyline(pts, Color(0, 0, 0, a * 0.5), 4.0)
 					draw_polyline(pts, col, 2.0)
 					k += 22.0
+
+
+## Where something lands (a lobbed shell): the circle it will blast,
+## dashed and turning, and a second ring closing in on it as the fuse runs
+## down (`f` 0 to 1).
+func _impact_ring(at: Vector3, r: float, f: float) -> void:
+	var g := game
+	var pts := PackedVector2Array()
+	var inner := PackedVector2Array()
+	var n := 28
+	var spin := g.time * 1.5
+	var ri := r * lerpf(2.2, 1.0, 1.0 - pow(1.0 - f, 2.0))
+	for k in n + 1:
+		var a := TAU * k / n + spin
+		pts.append(g.camera.unproject_position(at + Vector3(cos(a), 0, sin(a)) * r))
+		inner.append(g.camera.unproject_position(at + Vector3(cos(a), 0, sin(a)) * ri))
+	for k in n:
+		if k % 2 == 0:
+			var seg := PackedVector2Array([pts[k], pts[k + 1]])
+			draw_polyline(seg, Color(0, 0, 0, 0.55), 4.5)
+			draw_polyline(seg, Color(1, 1, 1, 0.9), 2.0)
+	draw_polyline(inner, Color(1, 1, 1, 0.35 + 0.4 * f), 1.5)
 
 
 ## A big move along a path of points on the plane (a boom's sweep):

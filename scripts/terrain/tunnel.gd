@@ -10,9 +10,20 @@ extends Node3D
 ## other segment is a bulkhead rib and some carry the style's set piece
 ## (in a fixed order per seed: the stage plays the same every time). The
 ## walls also bound the ground sections (Terrain.span_hw).
+## The style "open" is no tunnel at all (the open sky of stage 4 before it
+## dives into the base): empty segments keep the beat. Going from open into
+## a style, the gate comes with the facade of the base round it (the
+## "mouth", TunnelModels._facade); it comes in further off than a segment
+## would, so its face, which reaches far down, is off the screen until it
+## scrolls in.
+
+const OPEN := "open"
+## how far up the screen (z) the mouth comes in: its deep facade must be
+## past the top edge
+const MOUTH_Z := -60.0
 
 var game: Game
-var styles := {}  # area -> TunnelModels style
+var styles := {}  # area -> TunnelModels style (or OPEN)
 var style := ""
 var segs: Array[MeshInstance3D] = []
 var rng := RandomNumberGenerator.new()
@@ -21,6 +32,7 @@ var z_far := 0.0  # a new segment comes in once the farthest one is past this
 var z_near := 0.0  # a segment goes once it is past this
 var count := 0
 var gate := false
+var mouth := false  # the next gate is the base's mouth (out of the open)
 
 
 func build(cfg: Dictionary) -> void:
@@ -41,6 +53,7 @@ func _fill() -> void:
 	rng.seed = seed_
 	count = 0
 	gate = false
+	mouth = false
 	var z := z_near
 	while z > z_far - TunnelModels.LEN:
 		_add(z)
@@ -55,8 +68,14 @@ func set_area(a: String, now := false) -> void:
 		style = s
 		_fill()
 	elif s != style:
+		mouth = style == OPEN and s != OPEN
 		style = s
 		gate = true
+
+
+## Whether the tunnel's walls are there (not the open sky).
+func walled() -> bool:
+	return style != OPEN
 
 
 func tick(dt: float, speed: float) -> void:
@@ -74,29 +93,42 @@ func tick(dt: float, speed: float) -> void:
 			if c.has_meta("spin"):
 				(c as Node3D).rotation.y += float(c.get_meta("spin")) * dt
 		i += 1
+	if mouth and gate:
+		# open sky on out to where the mouth comes in, then the mouth
+		while far - TunnelModels.LEN > MOUTH_Z:
+			far -= TunnelModels.LEN
+			_add(far, OPEN)
+		far -= TunnelModels.LEN
+		_add(far)
 	while far - TunnelModels.LEN * 0.5 > z_far:
 		far -= TunnelModels.LEN
 		_add(far)
 
 
-func _add(z: float) -> void:
+func _add(z: float, as_style := "") -> void:
+	var st := style if as_style == "" else as_style
+	var m := MeshInstance3D.new()
+	m.position = Vector3(0, 0, z)
+	add_child(m)
+	segs.append(m)
+	if st == OPEN:
+		return
 	var variant := "plain"
+	var props_of := ""
 	if gate:
 		variant = "gate"
+		props_of = "mouth" if mouth else "gate"
 		gate = false
+		mouth = false
 	elif count % 2 == 0:
 		variant = "rib"
 	elif rng.randf() < 0.4:
 		variant = "feature"
 	count += 1
-	var m := MeshInstance3D.new()
-	m.mesh = Vox.get_mesh("tunnel_%s_%s" % [style, variant])
-	m.position = Vector3(0, 0, z)
-	add_child(m)
-	for p: Array in TunnelModels.props(style, variant):
+	m.mesh = Vox.get_mesh("tunnel_%s_%s" % [st, variant])
+	for p: Array in TunnelModels.props(st, props_of if props_of != "" else variant):
 		var n := MeshInstance3D.new()
 		n.mesh = Vox.get_mesh(p[0])
 		n.position = p[1]
 		n.set_meta("spin", p[2])
 		m.add_child(n)
-	segs.append(m)

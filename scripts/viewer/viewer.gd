@@ -64,6 +64,7 @@ var break_t := -1.0  # TILE BREAK: seconds until the tiles go
 var dummy: Enemy  # what telegraphs point at
 var stream_t := 0.0
 var kind_layouts := {}  # IslandGen kind -> layout (KIND entries)
+var then_done := false  # the entry's "then" (a later area) has come
 
 # camera
 var cam_yaw := 0.0
@@ -156,6 +157,7 @@ func _clear() -> void:
 	dummy = null
 	idle_t = -1.0
 	break_t = -1.0
+	then_done = false
 	game.flash_a = 0.0
 	game.shake_a = 0.0
 
@@ -318,6 +320,14 @@ func tick(dt: float) -> void:
 func _step(dt: float) -> void:
 	t += dt
 	game.play_t += dt
+	# scenery that moves on to a later area (the way into a base), and
+	# replays after a while
+	if entry.has("then") and not then_done and t >= float(entry["then"][0]):
+		then_done = true
+		game.backdrop.set_area(entry["then"][1])
+	if entry.has("loop") and t >= float(entry["loop"]):
+		_restart_keep_camera()
+		return
 	match entry["type"]:
 		"spawns":
 			_drive_spawns(dt)
