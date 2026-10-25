@@ -23,15 +23,16 @@ extends BossBase
 ## a full turn: the circle it sweeps is marked): the blade and the hull
 ## swing round, the sponsons and the open reactor spray shells outward as
 ## they turn (the reactor out of both flanks), a spiral wound by the turning
-## hull. The barrage creeps down the ship's column, the hull gun fires wide
-## needles.
+## hull. The howitzers fire four barrages a round (one down the ship's
+## column), the reactor spits shell fans while the tank charges, the hull
+## gun fires wide needles.
 
 const INFO := {
 	"name": "BEHEMOTH", "role": "boss",
 	"desc": "敵基地の最深部、闘技場の床（ボス用に高くなっている）を履帯で走る攻城戦車。主砲塔（連装、主兵装）は車体の前にあり、その奥の反応炉（弱点）は砲塔が残っているあいだ砲塔の台座に封じられている：先に砲を落とす。主砲は自機を追って旋回し、予兆（線）のあと下端まで徹甲弾（鉄球弾：撃ち落とせず、スピアでも消えない）を 2 発。後ろの榴弾砲は砲弾を高く放り、予兆（円）のところへ落とす（1 発は自機、残りは散らばる。円の中は爆風、物理弾の輪が広がる）。副砲から物理弾の扇、車体の機銃から針弾。1 周に 1 回、ドーザーブレードから下端まで 5 本の線の予兆のあと画面の下まで突進して戻る（横へ逃げる）。主砲塔を壊すか時間で OVERRUN：反応炉がむき出しになり、履帯で向きを変えて自機の方へ画面の端まで突進（通り道を予兆）、その場で一回転（超信地旋回：届く円を予兆）しながら副砲と反応炉から物理弾を外へ撒く（回る車体が渦を描く）。着弾が自機の列を上から追い、反応炉から広い針弾",
 	"demos": [["FULL", ""], ["CHARGE", "A"], ["OVERRUN", "C"]],
 }
-const CORE_HP := 650.0
+const CORE_HP := 540.0
 const CORE_SCORE := 60000
 const TURRET_HP := 520.0
 const TURRET_SCORE := 10000
@@ -93,7 +94,7 @@ var hub: Enemy  # the tank's centre (the spin's marked circle)
 ## shells in flight: {m, from, to, t, mark}
 var shells: Array[Dictionary] = []
 var blasts: Array[Dictionary] = []  # {at, t}: deadly for a moment
-var plan: Array = []  # this barrage's impact points
+var plans := {}  # each barrage's impact points (by its key)
 var center := Vector3.ZERO
 var yaw := 0.0  # the hull's heading (0 = facing down-screen)
 var rest_z := 0.0
@@ -164,7 +165,7 @@ func setup(g: Game) -> void:
 		e.hp = 1e9
 		e.shootable = false
 		blade.append(e)
-	for k in 8:
+	for k in 14:
 		var m := game.spawn_part(self, "", IMPACT_R)
 		m.intangible = true
 		m.ram = false
@@ -305,13 +306,21 @@ func _round_a() -> void:
 	_main_gun("g2", 8.6)
 
 
-## OVERRUN: the aimed charge, sponson fans, the spin with the spray, the
-## barrage down the ship's column, wide needles; the main gun if it is
-## still there (OVERRUN on time).
+## OVERRUN: the aimed charge (the reactor spitting shells as it goes and
+## comes back), sponson fans, the spin with the spray, four barrages (one
+## as it charges, one down the ship's column, one while it spins, one to
+## end the round), wide needles; the main gun if it is still there
+## (OVERRUN on time).
 func _round_c() -> void:
 	if _once("c", 0.3):
 		var d := game.player.position - center
 		_lunge_warn(clampf(atan2(d.x, d.z), -AIM_MAX, AIM_MAX))
+	# shells raining all round: while it charges, down the ship's column as
+	# it backs off, while it spins, and to end the round
+	_barrage("sc1", 0.5, 5, false)
+	_barrage("col", 2.8, 4, true)
+	_barrage("sp", 6.2, 4, false)
+	_barrage("sc2", 8.6, 4, false)
 	if _once("f", 1.0):
 		_sponson_fans(Bullets.BIG)
 	if _once("fs", 1.25):
@@ -319,8 +328,7 @@ func _round_c() -> void:
 	_main_gun("g", 8.9)
 	if _once("s", 4.8):
 		_spin_warn()
-	_barrage("col", 8.7, 4, true)
-	_hull_gun("mg", 9.2, 7, 34.0)
+	_hull_gun("mg", 9.4, 7, 34.0)
 
 
 func _overrun() -> void:
@@ -385,6 +393,7 @@ func _lunge(dt: float) -> void:
 				game.shake(0.8)
 		"go":
 			var f := clampf(lunge_t / LUNGE_GO, 0.0, 1.0)
+			_flak(dt)
 			center = lunge_from.lerp(lunge_to, f * f * (3.0 - 2.0 * f))
 			if int(lunge_t * 12.0) != int((lunge_t - dt) * 12.0):
 				game.fx.puff(_at(Vector3(randf_range(-8.0, 8.0), 0.2, BLADE_Z)), Vector3(0, 0, 3.0), 0.8, 2.2, 0.6, Fx.SMOKE)
@@ -397,6 +406,7 @@ func _lunge(dt: float) -> void:
 				lunge_t = 0.0
 		"back":
 			var f := clampf(lunge_t / LUNGE_BACK, 0.0, 1.0)
+			_flak(dt)
 			center = lunge_to.lerp(lunge_from, f * f * (3.0 - 2.0 * f))
 			if f >= 1.0:
 				lunge = "turn" if absf(yaw) > 0.01 else ""
@@ -405,6 +415,19 @@ func _lunge(dt: float) -> void:
 			yaw = move_toward(yaw, 0.0, 1.6 * dt)
 			if absf(yaw) < 0.001:
 				lunge = ""
+
+
+## OVERRUN: the open reactor spits fans of shells at the ship while the
+## tank charges and backs off.
+func _flak(dt: float) -> void:
+	if phase != 3:
+		return
+	spray_t -= dt
+	if spray_t > 0.0 or not game.can_fire(core.position):
+		return
+	spray_t = 0.3
+	spray_k += 1
+	game.bullets.fan(core.position, game.bullets.aim(core.position), 3, 30.0, 5.2, Bullets.SHELL, self, Bullets.ROUND, Bullets.BIG if spray_k % 2 == 0 else Bullets.SMALL)
 
 
 ## OVERRUN's spin: the circle it will sweep marked round it, then one full
@@ -447,7 +470,7 @@ func _spray(dt: float) -> void:
 	spray_t -= dt
 	if spray_t > 0.0 or not game.combat_on():
 		return
-	spray_t = 0.1
+	spray_t = 0.07
 	spray_k += 1
 	var sz := Bullets.BIG if spray_k % 2 == 0 else Bullets.SMALL
 	var ha := _heading_a()
@@ -526,7 +549,8 @@ func _main_gun(key: String, at: float) -> void:
 ## after it is fired, its circle marked till then.
 func _barrage(key: String, at: float, n: int, column: bool) -> void:
 	if _once("p_" + key, at):
-		plan.clear()
+		var plan: Array = []
+		plans[key] = plan
 		var sp := game.player.position
 		var lim := game.hw_bottom - 2.0
 		if column:
@@ -546,10 +570,11 @@ func _barrage(key: String, at: float, n: int, column: bool) -> void:
 						ok = false
 				if ok:
 					plan.append(q)
+	var volley: Array = plans.get(key, [])
 	var stagger := 0.26 if column else 0.2
-	for k in plan.size():
+	for k in volley.size():
 		if _once("%s%d" % [key, k], at + 0.1 + k * stagger):
-			_lob(plan[k])
+			_lob(volley[k])
 
 
 func _lob(to: Vector3) -> void:

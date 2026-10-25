@@ -44,7 +44,7 @@
 | 中ボス TEMPEST の嵐の発生機（撃破） | 25,000 | 470 | `scripts/bosses/tempest.gd` `SCORE` / `CORE_HP` |
 | ボス BEHEMOTH の副砲（2 基） | 4,000 | 180 | `scripts/bosses/behemoth.gd` `SPONSON_SCORE` / `SPONSON_HP` |
 | ボス BEHEMOTH の主砲塔（反応炉を封じている） | 10,000 | 520 | `scripts/bosses/behemoth.gd` `TURRET_SCORE` / `TURRET_HP` |
-| ボス BEHEMOTH の反応炉（主砲塔を壊すか OVERRUN で撃てる） | 60,000 | 650 | `scripts/bosses/behemoth.gd` `CORE_SCORE` / `CORE_HP` |
+| ボス BEHEMOTH の反応炉（主砲塔を壊すか OVERRUN で撃てる） | 60,000 | 540 | `scripts/bosses/behemoth.gd` `CORE_SCORE` / `CORE_HP` |
 
 撃破した敵の弾は消えてエネルギーになる（スコアはエネルギー取得分のみ）。
 
@@ -116,7 +116,7 @@
 | 3（ステージ 2 から続けて） | 約 49 万 | 約 54 万（うちスター 38 個） | 約 18 万 | 約 118 秒 |
 | 3（ステージ 3 から始めて、第 1 形態から） | 約 47 万 | 約 42 万（うちスター 44 個） | 約 18 万 | 約 120 秒 |
 | 4（ステージ 3 から続けて） | 約 41 万 | 約 67 万（うちスター 49 個） | 約 16 万 | 約 134 秒 |
-| 4（ステージ 4 から始めて、第 1 形態から） | 約 45 万 | 約 59 万（うちスター 60 個） | 約 14 万 | 約 152 秒 |
+| 4（ステージ 4 から始めて、第 1 形態から） | 約 45 万 | 約 59 万（うちスター 60 個） | 約 13 万 | 約 158 秒 |
 
 自動操縦はほぼ秒間 7.5 回連打するので、ショットはおおむね ×8（最大）。
 

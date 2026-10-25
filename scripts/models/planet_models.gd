@@ -414,101 +414,235 @@ static func _tempest_rotor() -> ArrayMesh:
 # ------------------------------------------------------------ BEHEMOTH
 
 ## BEHEMOTH's hull (faces down-screen, +z; the turret, sponsons, reactor,
-## louvres and treads are separate), sitting on the arena deck (y -3): two
-## tracks (rails either side, the tread between them shows on the back
-## half, sand skirt plates over the front half, sprocket housings at the
-## ends), the hull between them: the engine deck at the back (a grille,
-## two exhaust stacks), the howitzer casemates at the back corners (short
-## fat barrels raised), the turret ring, plated decks with sand armour on
-## the flanks, the reactor's well in front (louvre rails across it), the
-## sponson rings, the glacis with red sensor lamps and the hull gun's port;
-## the dozer blade across the front on its arms, its top edge striped.
+## shutters and treads are separate), on the arena deck (y -3). The tracks:
+## rails, segmented sand skirts with bolts over the front half, the tread
+## bare behind, round sprocket housings at the ends. Between them a machine
+## left open almost everywhere, plated only in places: the stepped glacis
+## (headlamp clusters, the hull gun's ball mount); the geared turret ring
+## round the turret basket (ammunition racks, spokes, a hub: it shows once
+## the turret is gone); geared sponson rings with ammunition chutes in; the
+## reactor's well behind, its rim bolted, shutter rails across it, coolant
+## pipes out to banks of heat-sink fins either side; spare track links and
+## tool bins along the flanks; the engine at the back (a row of cylinder
+## heads, two radiator fans in their ducts, exhaust pipes to two stacks);
+## the howitzer casemates on the back corners (armoured boxes, the short
+## barrel between its recoil cylinders, an ammunition hoist behind); the
+## dozer blade across the front on two arms a side with a hydraulic ram
+## between them, push ribs on its back, hazard stripes on its edge.
 static func _behemoth_hull() -> ArrayMesh:
 	var u := U * 1.5
-	var v := Vox.new(136, 23, 110)
+	var v := Vox.new(136, 23, 112)
 	var oy := 3.0 / u  # row 0 sits on the deck (y -3)
 	var row := func(y: float) -> int: return int(round(y / u + oy))
-	var deck: int = row.call(-0.5)
-	for z in range(-55, 55):
+	var deck: int = row.call(-0.75)
+	for z in range(-56, 56):
 		for x in range(-68, 68):
 			var q := Vector2((x + 0.5) * u, (z + 0.5) * u)
 			var ax := absf(q.x)
-			var cols := []  # [from row, to row, colour, glow]
-			# the tracks
+			var sq := Vector2(ax, q.y)  # the right half (mirrored)
+			var cols := []  # [from row, to row, top colour, glow]
+			# ---- the tracks
 			if ax >= 6.3 and ax <= 8.9 and q.y >= -6.5 and q.y <= 6.3:
 				if q.y < -5.4 or q.y > 5.2:
-					# sprocket housings at the ends
-					var r := Vector2(ax - 7.6, q.y - (-5.95 if q.y < 0.0 else 5.75)).length()
-					cols.append([0, row.call(-0.8), STEEL_M if r < 0.35 else GUN, false])
+					# sprocket housings, round, a hub in the middle
+					var c := Vector2(7.6, -5.95 if q.y < 0.0 else 5.75)
+					var r := Vector2((ax - c.x) / 1.3, (q.y - c.y) / 0.6).length()
+					if r < 1.0:
+						cols.append([0, row.call(-0.8), STEEL_M if r < 0.3 else (DUSK_L if r < 0.45 else GUN), false])
+					else:
+						cols.append([0, row.call(-1.2), DUSK, false])
 				elif ax > 8.6 or ax < 6.55:
-					cols.append([0, row.call(-1.2), DUSK, false])
+					var bolt := posmod(z, 4) == 0
+					# return rollers on the rails behind the skirts
+					var roller := q.y < -0.4 and absf(fposmod(q.y + 10.0, 1.6) - 0.8) < 0.3 and ax < 6.55
+					cols.append([0, row.call(-1.0 if roller else -1.2), STEEL_M if roller else (DUSK_D if bolt else DUSK), false])
 				else:
 					cols.append([0, row.call(-1.35), DUSK_D, false])
-				# sand skirts over the front half
+				# segmented sand skirts over the front half, on the outer part:
+				# the bogies' coil springs show inside them
 				if q.y > -0.4 and q.y <= 5.2:
-					var seam := absf(fmod(q.y + 0.4, 1.4)) < u * 1.1
-					cols.append([row.call(-1.1), row.call(-0.84), DUSK if seam else (SAND if ax > 7.0 else SAND_D), false])
-			# the hull
-			if ax < 6.3 and q.y >= -6.2 and q.y <= 5.4:
-				var top := GUN
+					if ax > 7.55:
+						var seg := fposmod(q.y + 0.4, 1.4)
+						var c := SAND if ax > 7.9 else SAND_D
+						if seg < u * 1.1:
+							c = DUSK
+						elif (seg < u * 2.2 or seg > 1.4 - u * 1.2) and ax > 8.75:
+							c = DUSK_D  # bolts at the corners
+						cols.append([row.call(-1.1), row.call(-0.84), c, false])
+					elif ax < 6.85 and absf(fposmod(q.y + 0.4, 1.4) - 0.7) < 0.45:
+						cols.append([row.call(-1.3), row.call(-0.95), STEEL_M if posmod(z, 2) == 0 else DUSK, false])
+			# ---- the hull (its back corners cut off past the casemates)
+			if ax < 6.3 and q.y >= -6.2 and q.y <= 5.4 and not (ax > 5.3 and q.y < -4.6 and (ax - 5.3) + (-4.6 - q.y) > 0.9):
 				var h: int = deck
+				var top := GUN
 				var glow := false
+				# bare deck plates with seams
 				var panel := posmod(int(floor((q.x + 10.0) / 1.6)) + int(floor((q.y + 10.0) / 1.6)), 2) == 0
 				top = DUSK_L if panel else GUN
-				if absf(fmod(q.x + 10.0, 1.6)) < u or absf(fmod(q.y + 10.0, 1.6)) < u:
+				if fposmod(q.x + 10.0, 1.6) < u or fposmod(q.y + 10.0, 1.6) < u:
 					top = DUSK
-				# sand armour on the flank decks
-				if ax > 4.6 and q.y > -3.0 and q.y < 1.2:
-					top = SAND if absf(fmod(q.y + 10.0, 1.4)) > u * 1.2 else SAND_D
-				# the engine deck: a grille between two exhaust stacks
-				if q.y < -3.8:
-					if ax < 2.8:
-						h = deck - 1
-						top = DUSK_D if posmod(z, 2) == 0 else GUN
-					if Vector2(ax - 2.2, q.y + 5.6).length() < 0.5:
-						h = deck + 3
-						top = DUSK_D if Vector2(ax - 2.2, q.y + 5.6).length() < 0.3 else GUN
-				# the howitzer casemates and their raised barrels
-				if absf(ax - 4.2) < 1.1 and q.y > -5.9 and q.y < -3.9:
-					h = deck + 3
-					top = SAND_D if absf(ax - 4.2) < 0.9 else DUSK
-				if absf(ax - 4.2) < 0.32 and q.y >= -3.9 and q.y < -3.2:
-					h = deck + 4
-					top = GUN
-				# the turret ring
-				var rt := Vector2(q.x, q.y - 2.3).length()
-				if rt < 2.75 and rt > 2.45:
-					top = DUSK_D
-				# the reactor's well behind the turret, the shutter rails across it
-				var rr := Vector2(q.x, q.y + 1.9).length()
-				if rr < 1.75:
-					h = deck - 3 if rr < 1.45 else deck
-					top = DUSK_D if rr < 1.45 else STEEL_M
-				if absf(absf(q.y + 1.9) - 1.25) < u * 0.6 and ax < 2.6:
-					h = deck
-					top = DUSK
-				# the sponson rings
-				if Vector2(ax - 5.3, q.y - 4.0).length() < 1.35:
-					top = DUSK_D
-				# the glacis, its sensor lamps, the hull gun's port
-				if q.y > 4.6 and rt >= 2.75:
-					h = deck - 1
-					top = SAND_D if absf(fmod(q.x + 10.0, 1.2)) > u else DUSK
-					if absf(ax - 1.6) < 0.2 and q.y > 5.1:
-						top = EYE
-						glow = true
-					if ax < 0.4 and q.y > 4.9:
+				# the glacis, stepping down to the front, bolted along its top
+				if q.y > 4.5:
+					h = deck - (1 if q.y < 4.9 else (2 if q.y < 5.2 else 3))
+					top = SAND_D if fposmod(q.x + 10.0, 1.2) > u else DUSK
+					if q.y < 4.62 and posmod(x, 3) == 0:
+						top = DUSK_D
+					# headlamp clusters
+					if ax > 2.55 and ax < 3.35 and q.y > 4.85:
+						h = deck
+						top = GUN
+						if q.y > 5.05 and (absf(ax - 2.78) < 0.1 or absf(ax - 3.1) < 0.1):
+							top = EYE
+							glow = true
+					# the hull gun's ball mount
+					if Vector2(q.x, q.y - 5.05).length() < 0.35:
 						h = deck
 						top = DUSK_L
+					# smoke dischargers on the front corners
+					if ax > 5.55 and ax < 6.1 and q.y > 4.65:
+						var tube := posmod(z, 2) == 0
+						h = deck + 1 if tube else deck
+						top = DUSK_L if tube else DUSK_D
+				# the turret ring (geared) round the turret basket
+				var rt := Vector2(q.x, q.y - 2.3).length()
+				var at := atan2(q.y - 2.3, q.x)
+				if rt < 2.95:
+					if rt > 2.6:
+						h = deck
+						top = STEEL_M if posmod(int(floor((at + PI) * 24.0 / PI)), 2) == 0 else DUSK
+					elif rt > 2.45:
+						h = deck
+						top = DUSK_D
+					elif rt > 1.9:
+						# ammunition racks round the basket's wall
+						var rack := posmod(int(floor((at + PI) * 12.0 / PI)), 2) == 0
+						h = deck - (2 if rack else 3)
+						top = DUSK_L if rack else DUSK_D
+					elif rt > 1.3 and rt < 1.5:
+						h = deck - 2
+						top = STEEL_M
+					elif rt < 0.45:
+						h = deck - 1
+						top = DUSK_L
+					elif rt <= 1.3 and minf(absf(q.x), absf(q.y - 2.3)) < 0.12:
+						h = deck - 2
+						top = GUN
+					else:
+						h = deck - 3
+						top = DUSK_D
+				# the sponson rings (geared) and the ammunition chutes into them
+				var rs := Vector2(ax - 5.3, q.y - 4.0).length()
+				if rs < 1.5:
+					h = deck if rs > 1.25 else deck - 1
+					top = (STEEL_M if posmod(int(floor((atan2(q.y - 4.0, ax - 5.3) + PI) * 12.0 / PI)), 2) == 0 else DUSK) if rs > 1.25 else DUSK_D
+				var dc := sq.distance_to(Geometry2D.get_closest_point_to_segment(sq, Vector2(4.25, 3.5), Vector2(3.0, 3.05)))
+				if dc < 0.18 and rt > 2.95:
+					h = deck + 1
+					top = DUSK if posmod(z, 3) == 0 else STEEL_M
+				# the reactor's well: a bolted rim, shutter rails across
+				var rr := Vector2(q.x, q.y + 1.9).length()
+				if rr < 1.8:
+					if rr < 1.45:
+						h = deck - 4
+						top = DUSK_D
+					else:
+						h = deck + 1
+						top = DUSK_L if posmod(int(floor((atan2(q.y + 1.9, q.x) + PI) * 6.0 / PI)), 2) == 0 and rr > 1.62 else STEEL_M
+				if absf(absf(q.y + 1.9) - 1.22) < u * 0.6 and ax < 2.4 and rr >= 1.45:
+					h = deck + 1
+					top = DUSK
+				# heat-sink banks either side of the reactor, fins across
+				if ax > 2.7 and ax < 4.3 and q.y > -3.3 and q.y < -0.6:
+					var frame := ax < 2.85 or ax > 4.15 or q.y < -3.15 or q.y > -0.75
+					var fin := posmod(z, 2) == 0
+					h = deck + 2 if frame or fin else deck
+					top = GUN if frame else (STEEL_M if fin else DUSK_D)
+				# coolant pipes from the reactor's rim out to the heat sinks
+				for pipe: Array in [[Vector2(1.75, -1.5), Vector2(2.75, -1.1)], [Vector2(1.75, -2.3), Vector2(2.75, -2.7)]]:
+					if sq.distance_to(Geometry2D.get_closest_point_to_segment(sq, pipe[0], pipe[1])) < 0.14:
+						h = deck + 2
+						top = STEEL_L
+				# the flanks: spare track links along the edge, tool bins
+				if ax > 5.5 and ax < 6.05 and q.y > -3.2 and q.y < 2.4:
+					var link := posmod(z, 4) < 3
+					h = deck + 1 if link else deck
+					top = DUSK_L if link else DUSK
+				if ax > 4.45 and ax < 5.35 and ((q.y > -2.9 and q.y < -1.5) or (q.y > -0.6 and q.y < 1.1)):
+					var lid := absf(ax - 4.9) < 0.35 and absf(fposmod(q.y + 10.0, 1.6) - 0.8) < 0.5
+					h = deck + 2
+					top = SAND_D if lid else DUSK
+				# the engine at the back: cylinder heads, two radiator fans,
+				# a manifold between them
+				if q.y < -3.75 and ax < 2.9:
+					if q.y > -4.15:
+						var head := fposmod(ax, 0.6) < 0.38
+						h = deck + 2 if head else deck + 1
+						top = STEEL_L if head else GUN
+					else:
+						var rf := Vector2(ax - 1.45, q.y + 5.2).length()
+						if rf < 1.05:
+							var af := atan2(q.y + 5.2, ax - 1.45)
+							if rf > 0.87:
+								h = deck + 1
+								top = GUN
+							elif rf < 0.25:
+								h = deck + 1
+								top = DUSK_L
+							elif absf(wrapf((af + rf * 1.2) * 3.0 / TAU, -0.5, 0.5)) < 0.12:
+								h = deck
+								top = STEEL_M
+							else:
+								h = deck - 2
+								top = DUSK_D
+						elif ax < 0.3:
+							h = deck + 1
+							top = STEEL_M
+				# exhaust pipes to the two stacks at the back
+				if sq.distance_to(Geometry2D.get_closest_point_to_segment(sq, Vector2(2.3, -5.0), Vector2(2.55, -5.95))) < 0.13:
+					h = deck + 2
+					top = DUSK_L
+				var rx := Vector2(ax - 2.55, q.y + 6.0).length()
+				if rx < 0.34:
+					h = row.call(-0.1)
+					top = DUSK_D if rx < 0.18 else GUN
+				# the howitzer casemates: an armoured box, the barrel between
+				# its recoil cylinders, an ammunition hoist behind
+				var hx := absf(ax - 4.2)
+				if hx < 1.05 and q.y > -5.9 and q.y < -3.9:
+					h = deck + 3
+					top = DUSK if hx > 0.9 or q.y < -5.75 or q.y > -4.05 else SAND_D
+					if Vector2(hx, q.y + 5.2).length() < 0.3:
+						top = DUSK_L
+				if hx < 0.25 and q.y >= -3.9 and q.y < -3.0:
+					h = deck + 4
+					top = DUSK_D if q.y > -3.2 else GUN
+				if hx > 0.3 and hx < 0.45 and q.y >= -3.9 and q.y < -3.4:
+					h = deck + 3
+					top = STEEL_L
+				if hx < 0.6 and q.y >= -6.2 and q.y <= -5.9:
+					h = deck + 2
+					top = DUSK
+				# the bevelled edge round it all
+				if (ax > 6.05 or q.y < -6.0) and h <= deck:
+					h = deck - 1
+					top = DUSK_D if posmod(x + z, 4) == 0 else DUSK
 				cols.append([row.call(-2.2), h, top, glow])
-			# the dozer blade and its arms
+			# ---- the dozer blade, its arms and rams
 			if q.y > 6.35 and q.y <= 7.2 and ax < 8.9:
 				var stripe := posmod(int(floor((q.x + 20.0) / 0.8)), 2) == 0
 				cols.append([row.call(-2.6), row.call(-1.2), HAZARD if stripe else DUSK_D, false])
-				if q.y < 6.6:
-					cols.append([row.call(-2.6), row.call(-1.5), GUN, false])
-			if q.y > 5.4 and q.y <= 6.35 and absf(ax - 7.0) < 0.45:
-				cols.append([row.call(-2.0), row.call(-1.5), DUSK, false])
+				if q.y < 6.55:
+					var rib := fposmod(ax, 1.8) < 0.3
+					cols.append([row.call(-2.6), row.call(-1.3 if rib else -1.5), DUSK_L if rib else GUN, false])
+			if q.y > 5.4 and q.y <= 6.35:
+				if absf(ax - 7.0) < 0.3 or absf(ax - 5.4) < 0.3:
+					cols.append([row.call(-2.0), row.call(-1.5), DUSK, false])
+				elif absf(ax - 6.2) < 0.17:
+					# the hydraulic ram: the cylinder, then the rod
+					if q.y < 5.85:
+						cols.append([row.call(-1.9), row.call(-1.45), STEEL_M, false])
+					else:
+						cols.append([row.call(-1.8), row.call(-1.6), STEEL_L, false])
 			for c: Array in cols:
 				var r0: int = c[0]
 				var r1: int = c[1]
@@ -532,35 +666,73 @@ static func _behemoth_tread() -> ArrayMesh:
 	return v.mesh(U * 1.5, Vector3(0, 0.5, 0))
 
 
-## The main turret (turns; faces +z): a cast hull of rounded corners,
-## gunmetal with sand armour on the front cheeks, a mantlet, a commander's
-## cupola, a sensor box with a red lamp, a bustle at the back with an ammo
-## hatch. The barrels are separate (they recoil).
+## The main turret (turns; faces +z), built up in tiers: a lower skirt of
+## armour round the ring, the roof set in from it in plates with seams,
+## sand cheek armour bolted on the front quarters, a mantlet with its
+## trunnions, recoil cylinders along the roof over the barrels' roots, a
+## commander's cupola ringed with periscopes, vents on the rear roof, a
+## sensor mast with a red lamp, smoke dischargers on the flanks, the
+## autoloader's bustle at the back with its hatch. The barrels are separate
+## (they recoil).
 static func _behemoth_turret() -> ArrayMesh:
-	var v := Vox.new(42, 7, 42)
-	for z in range(-21, 21):
-		for x in range(-21, 21):
+	var v := Vox.new(44, 7, 44)
+	for z in range(-22, 22):
+		for x in range(-22, 22):
 			var p := Vector2(x + 0.5, z + 0.5)
-			var oct := maxf(maxf(absf(p.x), absf(p.y)), (absf(p.x) + absf(p.y)) * 0.74)
+			var ax := absf(p.x)
+			var oct := maxf(maxf(ax, absf(p.y)), (ax + absf(p.y)) * 0.74)
 			if oct > 19.0:
 				continue
-			var c := GUN if oct < 17.5 else DUSK
-			if p.y > 6.0 and absf(p.x) > 5.0:
-				c = SAND if oct < 17.5 else SAND_D
+			v.fill(x, 0, z, x, 2, z, DUSK)
+			# the lower tier, its lip
+			var top := 3
+			var c := DUSK_L if oct > 17.6 else GUN
+			# the roof, set in from the edge, in plates
+			if oct < 15.5:
+				top = 5
+				c = DUSK_L if posmod(int(floor(p.x / 7.0)) + int(floor(p.y / 7.0)), 2) == 0 else GUN
+				if posmod(x, 7) == 0 or posmod(z, 7) == 0:
+					c = DUSK
+			# sand cheek armour on the front quarters, bolted
+			if p.y > 4.0 and ax > 6.0 and oct > 12.5:
+				top = 5 if oct < 17.6 else 4
+				c = SAND if oct < 16.8 else SAND_D
+				if posmod(z, 4) == 0 and oct > 15.8 and oct < 16.8:
+					c = DUSK_D
+			# vents on the rear roof
+			if p.y < -6.0 and p.y > -12.0 and ax > 3.0 and ax < 11.0 and oct < 15.0:
+				c = DUSK_D if posmod(z, 2) == 0 else STEEL_M
+			# the autoloader's bustle
 			if p.y < -13.0:
-				c = STEEL_M if posmod(x, 4) != 0 else DUSK
-			v.fill(x, 0, z, x, 4, z, DUSK)
-			v.put(x, 5, z, c)
-	# the mantlet
-	v.fill(-8, 2, 15, 7, 5, 19, DUSK_L)
-	# the cupola and its periscope
-	v.blob(-8, 6, -4, 3.4, 1.2, 3.4, DUSK_L)
-	v.put(-8, 6, -1, DUSK_D)
-	# the sensor box
-	v.fill(6, 6, 2, 10, 6, 6, DUSK)
-	v.put(8, 6, 7, EYE, true)
-	# the ammo hatch on the bustle
-	v.fill(-4, 6, -17, 3, 6, -14, DUSK_D)
+				top = 4
+				c = STEEL_M if posmod(x, 3) != 0 else DUSK
+			for y in range(3, top + 1):
+				v.put(x, y, z, c if y == top else DUSK)
+	# the mantlet and its trunnions
+	v.fill(-9, 1, 14, 8, 5, 19, DUSK_L)
+	v.fill(-9, 5, 14, 8, 5, 15, GUN)
+	v.fill_sym(9, 2, 15, 10, 4, 17, STEEL_L)
+	# recoil cylinders along the roof over the barrels' roots
+	for s: int in [-1, 1]:
+		var cx := s * 4 - (1 if s < 0 else 0)
+		v.fill(cx, 6, 6, cx, 6, 13, STEEL_M)
+		v.put(cx, 6, 6, DUSK_D)
+	# the commander's cupola, periscopes round it
+	v.blob(-8, 5, -4, 3.6, 1.4, 3.6, DUSK_L)
+	for k in 6:
+		var a := TAU * k / 6.0
+		v.put(-8 + int(round(cos(a) * 3.0)), 6, -4 + int(round(sin(a) * 3.0)), DUSK_D)
+	v.put(-8, 6, -4, GUN)
+	# the sensor mast
+	v.fill(8, 5, -9, 10, 5, -7, DUSK)
+	v.fill(9, 6, -8, 9, 6, -8, STEEL_L)
+	v.put(9, 6, -7, EYE, true)
+	# smoke dischargers on the flanks
+	for k in 3:
+		v.fill_sym(16 - k, 3, 3 + k * 2, 16 - k, 4, 3 + k * 2, DUSK_D)
+	# the autoloader hatch
+	v.fill(-4, 5, -18, 3, 5, -15, DUSK_D)
+	v.fill(-4, 5, -15, 3, 5, -15, STEEL_M)
 	return v.mesh(U * 1.5, Vector3(0.5, 3.7, 0.5))
 
 
