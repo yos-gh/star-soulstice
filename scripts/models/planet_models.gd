@@ -247,103 +247,144 @@ static func _kestrel_barrels() -> ArrayMesh:
 # ------------------------------------------------------------ TEMPEST
 
 ## TEMPEST's frame (faces down-screen, +z; the generator, the masts and the
-## rotors are separate): a ring round the generator's well, the machinery
-## block behind it (capacitor banks in rows, a vent grille), a spine back
-## to the aft mast's socket; four truss booms out to the ducted rotor
-## housings (slate rims banded dark with cool lamps, an open duct where the
-## rotor turns, a hail nozzle on the front of each), pads for the front
-## masts on the front booms, cable runs. Machinery left bare, plated only
-## here and there.
+## rotors are separate), machinery left open on a bare frame: the four
+## ducted rotors (segmented duct rings with dim lilac lamps, stator vanes
+## and a hub under the turning rotor, a hail nozzle on the front of each),
+## each hung on a truss boom by a gearbox block with a tilt ram; bus-bar
+## cables along the booms on brown insulator studs; the generator's ring
+## round its well (bare windings in bands, insulators set round it); two
+## transformer drums behind it, wound in bands, capacitor rows and cooling
+## fins between; a truss spine with an insulated bus bar up its middle to
+## the aft mast; bolted mast pads skirted with insulators.
 static func _tempest_hull() -> ArrayMesh:
 	var u := U * 1.2
 	var v := Vox.new(226, 9, 112)
 	var core := Vector2(0.0, 0.8)
-	var rotors := [Vector2(-9.5, -3.0), Vector2(9.5, -3.0), Vector2(-7.0, 3.0), Vector2(7.0, 3.0)]
-	var masts := [Vector2(0.0, -4.4), Vector2(-3.9, 1.6), Vector2(3.9, 1.6)]
-	var booms := [[Vector2(-2.2, -1.2), rotors[0]], [Vector2(2.2, -1.2), rotors[1]], [Vector2(-2.0, 2.0), rotors[2]], [Vector2(2.0, 2.0), rotors[3]]]
+	var rotors := [Vector2(9.5, -3.0), Vector2(7.0, 3.0)]  # (and their mirrors)
+	var masts := [Vector2(0.0, -4.4), Vector2(3.9, 1.6)]
+	var booms := [[Vector2(2.2, -1.2), rotors[0]], [Vector2(2.0, 2.0), rotors[1]]]
+	var dim_lilac := Color(0.55, 0.5, 0.75)
 	for z in range(-56, 56):
 		for x in range(-113, 113):
 			var q := Vector2((x + 0.5) * u, (z + 0.5) * u)
-			var h := 0
+			var ax := absf(q.x)
+			var sq := Vector2(ax, q.y)
+			var h := -1
 			var top := SLATE
 			var glow := false
-			# the booms: two chords and braces between them
+			# the booms: a truss (two chords, braces), a bus bar on studs
 			for bm: Array in booms:
 				var a: Vector2 = bm[0]
 				var b: Vector2 = bm[1]
 				var d := (b - a).normalized()
-				var t := (q - a).dot(d)
-				var s := absf((q - a).dot(Vector2(-d.y, d.x)))
-				if t > 0.0 and t < a.distance_to(b) and s < 0.5:
-					var chord := s > 0.34
-					var brace := absf(fmod(t + s * 1.6, 0.9)) < 0.12
+				var t := (sq - a).dot(d)
+				var s := (sq - a).dot(Vector2(-d.y, d.x))
+				var l := a.distance_to(b) - 2.4
+				if t > 0.0 and t < l and absf(s) < 0.5:
+					var chord := absf(s) > 0.34
+					var brace := absf(fposmod(t + absf(s) * 1.6, 0.9) - 0.45) < 0.08
 					if chord or brace:
 						h = 4
 						top = SLATE_D if chord else DUSK_L
-			# the spine back to the aft mast
-			if absf(q.x) < 0.55 and q.y < -1.0 and q.y > -4.4:
-				h = 5
-				top = SLATE_L if absf(q.x) < 0.3 else SLATE_D
-				if posmod(z, 6) == 0:
-					top = DUSK
-			# the machinery block behind the generator: capacitor banks in
-			# rows (round tops), a vent grille down the middle
-			if absf(q.x) < 2.1 and q.y < -0.9 and q.y > -3.6:
-				var cx := fposmod(q.x + 2.1, 0.7) - 0.35
-				var cz := fposmod(q.y + 3.6, 0.7) - 0.35
-				h = 4
-				top = DUSK
-				if Vector2(cx, cz).length() < 0.26 and absf(q.x) > 0.7:
-					h = 6
-					top = SLATE_L if Vector2(cx, cz).length() < 0.14 else SLATE
-				elif absf(q.x) <= 0.7:
+					if absf(s - 0.12) < 0.07:
+						h = 5
+						top = GLAZE if fposmod(t, 0.6) < 0.14 else DUSK_L
+				# the gearbox block where the boom meets the duct, its tilt ram
+				var gb := a + d * (l + 0.1)
+				var gq := sq - gb
+				if absf(gq.dot(d)) < 0.45 and absf(gq.dot(Vector2(-d.y, d.x))) < 0.55:
 					h = 5
-					top = DUSK_D if posmod(z, 2) == 0 else SLATE_D
-			# the ring round the generator's well
-			var rc := q.distance_to(core)
-			var ra := atan2(q.y - core.y, q.x)
-			if rc < 2.6 and rc > 1.95:
-				h = 5
-				var seg := posmod(int(floor((ra + PI) * 10.0 / PI)), 2) == 0
-				top = SLATE_L if seg else SLATE
-				if rc > 2.45 and posmod(int(floor((ra + PI) * 10.0 / PI)), 5) == 0:
-					top = LAMP
-					glow = true
-			elif rc <= 1.95:
-				h = 1
+					top = GUN if posmod(x + z, 3) != 0 else DUSK
+				var ram := Geometry2D.get_closest_point_to_segment(sq, a + d * (l - 0.9) + Vector2(-d.y, d.x) * 0.45, gb + Vector2(-d.y, d.x) * 0.45)
+				if sq.distance_to(ram) < 0.07:
+					h = 5
+					top = STEEL_L
+			# the spine to the aft mast: a truss, the bus bar up the middle
+			if ax < 0.6 and q.y < -1.2 and q.y > -4.4:
+				if ax > 0.42:
+					h = 4
+					top = SLATE_D
+				elif absf(fposmod(q.y + ax * 1.5, 0.7) - 0.35) < 0.07:
+					h = 3
+					top = DUSK_L
+				if ax < 0.12:
+					h = 5
+					top = GLAZE if fposmod(q.y, 0.6) < 0.14 else DUSK_L
+			# behind the generator: two transformer drums wound in bands,
+			# capacitor rows and cooling fins between
+			if ax < 2.1 and q.y < -0.9 and q.y > -3.6:
+				h = 2
 				top = DUSK_D
-			# the mast pads
+				var rd := Vector2(ax - 1.15, q.y + 2.35).length()
+				if rd < 0.8:
+					h = 5 if rd < 0.7 else 4
+					top = (SLATE_L if posmod(int(floor((q.y + 10.0) / 0.22)), 2) == 0 else SLATE_D) if rd > 0.25 else GUN
+				elif ax < 0.35:
+					var fin := posmod(z, 2) == 0
+					h = 4 if fin else 2
+					top = STEEL_M if fin else DUSK_D
+				elif q.y < -3.15 or q.y > -1.25:
+					var cap := fposmod(ax, 0.42) < 0.26
+					h = 4 if cap else 3
+					top = STEEL_L if cap else GUN
+			# the generator's ring: bare windings in bands, insulators round it
+			var rc := q.distance_to(core)
+			var ac := atan2(q.y - core.y, q.x)
+			if rc < 2.6:
+				if rc > 1.95:
+					var ins := absf(wrapf(ac * 8.0 / TAU, -0.5, 0.5)) < 0.1 and rc > 2.15 and rc < 2.45
+					h = 5 if ins else 4
+					top = GLAZE_L if ins else (SLATE_L if posmod(int(floor((ac + PI) * 20.0 / PI)), 2) == 0 else SLATE)
+				elif rc > 1.85:
+					h = 2
+					top = DUSK_D
+				elif rc <= 1.85:
+					h = 1
+					top = DUSK_D
+			# bus bars from the generator out to the front masts
+			for bar: Array in [[Vector2(1.95, 1.2), Vector2(2.95, 1.45)], [Vector2(0.0, -1.2), Vector2(0.0, -1.0)]]:
+				if sq.distance_to(Geometry2D.get_closest_point_to_segment(sq, bar[0], bar[1])) < 0.1:
+					h = maxi(h, 5)
+					top = DUSK_L
+			# the mast pads: bolted, skirted with insulators
 			for m: Vector2 in masts:
-				var rm := q.distance_to(m)
-				if rm < 1.35:
-					h = maxi(h, 3)
-					top = GLAZE.darkened(0.3) if rm > 1.1 else DUSK
-			# the rotor housings
+				var rm := sq.distance_to(m)
+				if rm < 1.4:
+					if rm > 1.12:
+						h = 4
+						top = GLAZE if absf(wrapf(atan2(sq.y - m.y, sq.x - m.x) * 10.0 / TAU, -0.5, 0.5)) < 0.22 else DUSK
+					else:
+						h = 3
+						top = DUSK if posmod(x + z, 4) != 0 else DUSK_D
+			# the ducted rotors: segmented rings with lamps, stator vanes and
+			# a hub under the rotor, the hail nozzle in front
 			for r: Vector2 in rotors:
-				var rr := q.distance_to(r)
+				var rr := sq.distance_to(r)
+				var ar := atan2(sq.y - r.y, sq.x - r.x)
 				if rr < 2.45:
 					if rr > 1.95:
-						h = 6
-						var ang := atan2(q.y - r.y, q.x - r.x)
-						var band := posmod(int(floor((ang + PI) * 8.0 / PI)), 2) == 0
+						h = 6 if rr > 2.3 else 5
+						var band := posmod(int(floor((ar + PI) * 8.0 / PI)), 2) == 0
 						top = SLATE if band else SLATE_D
-						if rr > 2.3 and posmod(int(floor((ang + PI) * 12.0 / PI)), 6) == 0:
-							top = LAMP
+						if rr > 2.3 and posmod(int(floor((ar + PI) * 12.0 / PI)), 6) == 0:
+							top = dim_lilac
 							glow = true
-					else:
+					elif rr < 0.5:
+						h = 2
+						top = GUN if rr > 0.32 else DUSK_L
+					elif absf(wrapf((ar - PI / 4.0) * 4.0 / TAU, -0.5, 0.5)) < 0.04 * (2.0 / rr):
 						h = 1
+						top = DUSK_L
+					else:
+						h = 0
 						top = DUSK_D
-				# the hail nozzle on the front
-				if q.y > r.y + 1.9 and q.y < r.y + 2.7 and absf(q.x - r.x) < 0.35:
+				if sq.y > r.y + 1.9 and sq.y < r.y + 2.7 and absf(sq.x - r.x) < 0.35:
 					h = 5
-					top = GUN
-			if h == 0:
+					top = GUN if sq.y < r.y + 2.55 else DUSK_D
+			if h < 0:
 				continue
-			for y in h:
-				v.put(x, y, z, top if y == h - 1 else (SLATE_D if y > 0 else DUSK_D), glow and y == h - 1)
-	# cable runs along the front booms
-	for s: int in [-1, 1]:
-		BossModels._pipe(v, Vector2i(s * 20, 20), Vector2i(s * 60, 28), 5)
+			for y in range(0, h + 1):
+				v.put(x, y, z, top if y == h else (SLATE_D if y > h - 2 else DUSK_D), glow and y == h)
 	return v.mesh(u, Vector3(0, 3.0, 0))
 
 
