@@ -3,105 +3,120 @@ extends BossBase
 ## bottom of the base. It rolls in on its tracks (they run on the arena's
 ## deck, which is raised for it) and keeps station facing the ship, creeping
 ## forward and back; the tracks turn with every move.
-## The main turret (twin barrels, the main weapon) turns after the ship: a
-## lock-on and the line marked to the bottom edge, then two armour-piercing
-## slugs (IRON: they can't be shot or erased) down it, and the barrels
-## recoil. Every shot vents the reactor: the cooling louvres over it (in the
-## front of the hull, the only weak point, the gauge) slide aside for a
-## while and the reactor can be hit; the louvres can also be broken. Its
-## signature is the barrage: the two howitzers at the back lob shells high
-## over the screen onto marked circles, one on the ship and the rest
-## scattered; each lands with a blast (deadly inside its circle) and a ring
-## of shells. The sponsons on the front fire shell fans (big, then small),
-## the hull gun telegraphed needles. A quiet gap ends every round.
-## BREAKTHROUGH (the main turret destroyed, or after a while): the reactor
-## overheats and the louvres jam open; the tank charges, the dozer blade
-## pushed down the screen to a marked line (five lines show the ground it
-## covers) and backs off again, the barrage creeps down the ship's column
-## toward the bottom edge, the reactor boils over in rings of shells, wide
-## needles, a scattered barrage.
+## The main turret (twin barrels, the main weapon) stands at the front of
+## the hull, right over the reactor behind it (the weak point): the reactor
+## is sealed under the turret's ring until the turret is destroyed, so the
+## guns go first. The turret turns after the ship: a lock-on and the line
+## marked to the bottom edge, then two armour-piercing slugs (IRON: they
+## can't be shot or erased) down it, and the barrels recoil. The howitzers
+## at the back lob shells high over the screen onto marked circles, one on
+## the ship and the rest scattered; each lands with a blast (deadly inside
+## its circle) and a ring of shells. The sponsons fire shell fans (big,
+## then small), the hull gun telegraphed needles. Once a round it charges:
+## five lines marked from the dozer blade to the bottom edge show the ground
+## it will cover, then it drives the blade down to the bottom of the screen
+## (get out to the side) and backs off.
+## OVERRUN (the main turret destroyed, or after a while): the reactor is
+## laid open and the tank goes wild. It pivots on its tracks to face the
+## ship and charges along that heading to the edge of the screen (the
+## corridor marked first), and it spins round on the spot (neutral steer,
+## a full turn: the circle it sweeps is marked): the blade and the hull
+## swing round, the sponsons and the open reactor spray shells outward as
+## they turn (the reactor out of both flanks), a spiral wound by the turning
+## hull. The barrage creeps down the ship's column, the hull gun fires wide
+## needles.
 
 const INFO := {
 	"name": "BEHEMOTH", "role": "boss",
-	"desc": "敵基地の最深部、闘技場の床（ボス用に高くなっている）を履帯で走る攻城戦車。自機の方を向いて前後に這い、履帯が動く。主砲（連装、主兵装）は自機を追って旋回し、予兆（線）のあと下端まで徹甲弾（鉄球弾：撃ち落とせず、スピアでも消えない）を 2 発撃ち、砲身が後退する。撃つたびに車体前の反応炉（唯一の弱点）の冷却ルーバーが横へ開き、しばらく撃ち込める（ルーバーは壊すこともできる）。後ろの 2 門の榴弾砲は砲弾を画面の上へ高く放り、予兆（円）のところへ落とす：1 発は自機、残りは散らばる。着弾は円の中が爆風（当たると死ぬ）で、物理弾の輪が広がる。前の両脇の副砲から物理弾の扇（大きい弾が先）、車体の機銃から予兆つきの針弾。合間に静かな間。主砲を壊すか時間で BREAKTHROUGH：反応炉が過熱してルーバーが開きっぱなしになり、予兆（5 本の線）のあとドーザーブレードを押し立てて画面の下まで突進して戻る、着弾が自機の列を上から下へ追ってくる、反応炉から物理弾の輪、広い針弾、散らばった着弾",
-	"demos": [["FULL", ""], ["BARRAGE", "A"], ["BREAKTHROUGH", "C"]],
+	"desc": "敵基地の最深部、闘技場の床（ボス用に高くなっている）を履帯で走る攻城戦車。主砲塔（連装、主兵装）は車体の前にあり、その奥の反応炉（弱点）は砲塔が残っているあいだ砲塔の台座に封じられている：先に砲を落とす。主砲は自機を追って旋回し、予兆（線）のあと下端まで徹甲弾（鉄球弾：撃ち落とせず、スピアでも消えない）を 2 発。後ろの榴弾砲は砲弾を高く放り、予兆（円）のところへ落とす（1 発は自機、残りは散らばる。円の中は爆風、物理弾の輪が広がる）。副砲から物理弾の扇、車体の機銃から針弾。1 周に 1 回、ドーザーブレードから下端まで 5 本の線の予兆のあと画面の下まで突進して戻る（横へ逃げる）。主砲塔を壊すか時間で OVERRUN：反応炉がむき出しになり、履帯で向きを変えて自機の方へ画面の端まで突進（通り道を予兆）、その場で一回転（超信地旋回：届く円を予兆）しながら副砲と反応炉から物理弾を外へ撒く（回る車体が渦を描く）。着弾が自機の列を上から追い、反応炉から広い針弾",
+	"demos": [["FULL", ""], ["CHARGE", "A"], ["OVERRUN", "C"]],
 }
-const CORE_HP := 1000.0
+const CORE_HP := 650.0
 const CORE_SCORE := 60000
 const TURRET_HP := 520.0
 const TURRET_SCORE := 10000
-const SPONSON_HP := 200.0
+const SPONSON_HP := 180.0
 const SPONSON_SCORE := 4000
-const LOUVRE_HP := 160.0
-const LOUVRE_SCORE := 5000
-const TURRET_OFF := Vector3(0, 0, -1.8)
-const CORE_OFF := Vector3(0, 0, 3.7)
-const LOUVRE_SHUT := [Vector3(-0.68, 0, 3.7), Vector3(0.68, 0, 3.7)]
-const LOUVRE_OPEN := [Vector3(-2.05, 0, 3.7), Vector3(2.05, 0, 3.7)]
-const SPONSON_OFF := [Vector3(-4.7, 0, 2.6), Vector3(4.7, 0, 2.6)]
+const TURRET_OFF := Vector3(0, 0, 2.3)
+const CORE_OFF := Vector3(0, 0, -1.9)
+const SPONSON_OFF := [Vector3(-5.3, 0, 4.0), Vector3(5.3, 0, 4.0)]
 const HOWITZER_OFF := [Vector3(-4.2, 0, -3.6), Vector3(4.2, 0, -3.6)]  # the muzzles
-const MG_OFF := Vector3(0, 0, 5.6)
+const MG_OFF := Vector3(0, 0, 5.3)
 const TRACK_X := 7.6
-## armoured hit zones: the glacis either side of the reactor, the tracks,
-## the engine deck
-const ARMOUR := [[Vector3(-2.7, 0, 4.7), 1.0], [Vector3(2.7, 0, 4.7), 1.0],
-	[Vector3(-7.6, 0, -4.0), 1.5], [Vector3(7.6, 0, -4.0), 1.5], [Vector3(-7.6, 0, 0.0), 1.5], [Vector3(7.6, 0, 0.0), 1.5],
-	[Vector3(-7.6, 0, 4.0), 1.5], [Vector3(7.6, 0, 4.0), 1.5], [Vector3(0, 0, -5.0), 2.0]]
-const BLADE_X := [-7.2, -3.6, 0.0, 3.6, 7.2]  # the charge's marked lines (from the blade)
+## armoured hit zones: the tracks, the engine deck
+const ARMOUR := [[Vector3(-7.6, 0, -4.0), 1.5], [Vector3(7.6, 0, -4.0), 1.5], [Vector3(-7.6, 0, 0.0), 1.5], [Vector3(7.6, 0, 0.0), 1.5],
+	[Vector3(-7.6, 0, 4.0), 1.5], [Vector3(7.6, 0, 4.0), 1.5], [Vector3(0, 0, -5.3), 1.6]]
+const BLADE_X := [-7.2, -3.6, 0.0, 3.6, 7.2]  # the dozer blade's ram zones (and the charge's marked lines)
 const BLADE_HW := 8.9  # the blade: deadly to touch (it lets shots by: no hit zone)
 const BLADE_Z := 6.8
-const BARREL_LEN := 4.3  # turret centre to the muzzles
+const BARREL_LEN := 4.2  # turret centre to the muzzles
 const BARREL_SEP := 0.55
 const SLUG_SPEED := 15.0
 const TURN_W := 0.9  # the turret's slew (rad/s)
-const TURN_MAX := 1.05  # either side of straight down
-const VENT_T := 3.4
+const TURN_MAX := 1.1  # either side of the hull's heading
 const FLIGHT_T := 1.3
 const IMPACT_R := 1.9
 const LOB_PEAK := 8.0
-const CHARGE := 7.0  # how far the BREAKTHROUGH charge comes down
-const ROUND_A := 9.0
-const ROUND_C := 8.0
-const ENRAGE_T := 55.0
+const LUNGE_WARN := 1.0  # the charge: marked (and the hull pivoting) ...
+const LUNGE_GO := 0.8  # ... down there ...
+const LUNGE_HOLD := 0.3
+const LUNGE_BACK := 1.6  # ... and back
+const AIM_MAX := 0.75  # OVERRUN's charge: how far it pivots toward the ship
+const SPIN_R := 11.8  # the circle a turn on the spot sweeps (the blade's corners)
+const SPIN_WARN := 1.0
+const SPIN_T := 2.6
+const ROUND_A := 10.0
+const ROUND_C := 10.0
+const ENRAGE_T := 60.0
 const TREAD_PITCH := 0.54
 const TREAD_Y := -1.15
 
 var hull: MeshInstance3D
+var shutters: Array[MeshInstance3D] = []  # over the reactor while it is sealed
+var seal_f := 1.0  # 1 shut, 0 slid aside
 var treads: Array[MeshInstance3D] = []
-var tread_z := 0.0
+var tread_z := [0.0, 0.0]
 var turret: Enemy
 var barrels: MeshInstance3D
 var recoil := 0.0
 var turret_a := PI / 2.0  # where the main gun points (PI/2 = down-screen)
 var turret_want := PI / 2.0
 var lock_a := PI / 2.0
-var lock_to := Vector3.ZERO
 var locking := false
 var core: Enemy
-var louvres: Array[Enemy] = []
-var open_f := 0.0  # the louvres: 0 shut, 1 aside
-var vent_t := 0.0
 var sponsons: Array[Enemy] = []
 var armour: Array[Enemy] = []
 var blade: Array[Enemy] = []
-var marks: Array[Enemy] = []  # where the howitzer shells land (and the hull gun)
+var marks: Array[Enemy] = []  # where the howitzer shells land
 var mg: Enemy
+var hub: Enemy  # the tank's centre (the spin's marked circle)
 ## shells in flight: {m, from, to, t, mark}
 var shells: Array[Dictionary] = []
 var blasts: Array[Dictionary] = []  # {at, t}: deadly for a moment
 var plan: Array = []  # this barrage's impact points
 var center := Vector3.ZERO
+var yaw := 0.0  # the hull's heading (0 = facing down-screen)
 var rest_z := 0.0
-var last_z := 0.0
+var last_c := Vector3.ZERO
+var last_yaw := 0.0
 var creep_t := 0.0
-var phase := 0  # 0 enter, 1 A, 3 BREAKTHROUGH, 4 dying
+var phase := 0  # 0 enter, 1 A, 3 OVERRUN, 4 dying
 var st := 0.0
 var fight_t := 0.0
 var cycle_t := 0.0
 var cycle := 0
 var fired := {}
-var charge := ""  # "", warn, go, hold, back
-var charge_t := 0.0
+## the charge: "", warn, go, hold, back, turn (back to facing down)
+var lunge := ""
+var lunge_t := 0.0
+var lunge_yaw := 0.0
+var lunge_from := Vector3.ZERO
+var lunge_to := Vector3.ZERO
+var spin := ""  # "", warn, go
+var spin_t := 0.0
+var spin_dir := 1.0
+var spray_t := 0.0
+var spray_k := 0
 var how_k := 0
 var dying_t := 0.0
 var destroyed := false
@@ -111,25 +126,9 @@ func setup(g: Game) -> void:
 	game = g
 	rest_z = game.field_top + 7.0
 	center = Vector3(0, 0, game.field_top - 14.0)
-	last_z = center.z
+	last_c = center
 	# order matters (a shot hits the first part in the list it touches): the
-	# louvres over the reactor, the reactor, the guns, the armour last
-	for k in 2:
-		var l := game.spawn_part(self, "behemoth_louvre", 0.9)
-		l.hp = LOUVRE_HP
-		l.max_hp = LOUVRE_HP
-		l.score = LOUVRE_SCORE
-		l.energy_drop = 10.0
-		l.blast = 2.0
-		if k == 1:
-			l.model.scale = Vector3(-1, 1, 1)
-		louvres.append(l)
-	core = game.spawn_part(self, "behemoth_core", 1.3)
-	core.hp = CORE_HP
-	core.max_hp = CORE_HP
-	core.score = CORE_SCORE
-	core.blast = 6.0
-	core.ram = false
+	# guns, the reactor, the armour last
 	for o: Vector3 in SPONSON_OFF:
 		var s := game.spawn_part(self, "behemoth_sponson", 1.2)
 		s.hp = SPONSON_HP
@@ -138,7 +137,7 @@ func setup(g: Game) -> void:
 		s.energy_drop = 10.0
 		s.blast = 2.4
 		sponsons.append(s)
-	turret = game.spawn_part(self, "behemoth_turret", 2.5)
+	turret = game.spawn_part(self, "behemoth_turret", 2.4)
 	turret.hp = TURRET_HP
 	turret.max_hp = TURRET_HP
 	turret.score = TURRET_SCORE
@@ -148,6 +147,12 @@ func setup(g: Game) -> void:
 	barrels.mesh = Vox.get_mesh("behemoth_barrels")
 	turret.add_child(barrels)
 	turret.extra.append(barrels)
+	core = game.spawn_part(self, "behemoth_core", 1.4)
+	core.hp = CORE_HP
+	core.max_hp = CORE_HP
+	core.score = CORE_SCORE
+	core.blast = 6.0
+	core.ram = false
 	for a: Array in ARMOUR:
 		var e := game.spawn_part(self, "", a[1])
 		e.armored = true
@@ -167,6 +172,9 @@ func setup(g: Game) -> void:
 	mg = game.spawn_part(self, "", 0.9)
 	mg.intangible = true
 	mg.ram = false
+	hub = game.spawn_part(self, "", 3.0)
+	hub.intangible = true
+	hub.ram = false
 	hull = MeshInstance3D.new()
 	hull.mesh = Vox.get_mesh("behemoth_hull")
 	add_child(hull)
@@ -176,15 +184,31 @@ func setup(g: Game) -> void:
 		hull.add_child(t)
 		t.position = Vector3(s * TRACK_X, TREAD_Y, 0)
 		treads.append(t)
+	for k in 2:
+		var sh := MeshInstance3D.new()
+		sh.mesh = Vox.get_mesh("behemoth_louvre")
+		if k == 1:
+			sh.scale = Vector3(-1, 1, 1)
+		hull.add_child(sh)
+		shutters.append(sh)
 	_arm(true)
 	_place(0.0)
 
 
 ## While it rolls in nothing can be hurt.
 func _arm(on: bool) -> void:
-	for e: Enemy in [core, turret] + sponsons + louvres:
+	for e: Enemy in [turret] + sponsons:
 		if not e.dead:
 			e.armored = on
+	_seal()
+	if on:
+		core.armored = true
+
+
+## The reactor is sealed under the turret's ring while the turret stands
+## (in OVERRUN it is laid open whatever is left).
+func _seal() -> void:
+	core.armored = not turret.dead and phase != 3
 
 
 func on_hit(_e: Enemy, dmg: float) -> float:
@@ -199,15 +223,18 @@ func on_part_killed(e: Enemy) -> void:
 	if e == turret:
 		locking = false
 		if phase == 1:
-			_breakthrough()
+			_overrun()
+		_seal()
 
 
-func _louvres_alive() -> int:
-	var c := 0
-	for l in louvres:
-		if not l.dead:
-			c += 1
-	return c
+## A point on the hull (offset from its centre, turned with it).
+func _at(off: Vector3) -> Vector3:
+	return center + off.rotated(Vector3.UP, yaw)
+
+
+## The hull's heading as a plane angle (0 = +x, PI/2 = down-screen).
+func _heading_a() -> float:
+	return PI / 2.0 - yaw
 
 
 func tick(dt: float) -> void:
@@ -225,16 +252,16 @@ func tick(dt: float) -> void:
 		1:
 			fight_t += dt
 			cycle_t += dt
-			_creep(dt)
+			_moves(dt)
 			_round_a()
 			if cycle_t >= ROUND_A:
 				_next_round()
-			if fight_t > ENRAGE_T:
-				_breakthrough()
+			if fight_t > ENRAGE_T and lunge == "":
+				_overrun()
 		3:
 			fight_t += dt
 			cycle_t += dt
-			_charge(dt)
+			_moves(dt)
 			_round_c()
 			if cycle_t >= ROUND_C:
 				_next_round()
@@ -243,7 +270,6 @@ func tick(dt: float) -> void:
 			if destroyed:
 				return
 	_aim(dt)
-	_vent(dt)
 	_shells(dt)
 	_place(dt)
 	if phase == 1 or phase == 3:
@@ -264,126 +290,232 @@ func _once(key: String, at: float) -> bool:
 	return false
 
 
-## Creeps forward and back a little round its station (eased).
-func _creep(dt: float) -> void:
-	creep_t += dt
-	center.z = move_toward(center.z, rest_z + sin(creep_t * 0.4) * 1.0, 2.0 * dt)
-
-
-## Phase A: sponson fans, the main gun, the barrage, the hull gun, fans
-## again, the main gun again; quiet.
+## Phase A: sponson fans, the main gun, the barrage, the hull gun, the
+## charge to the bottom edge, the main gun again.
 func _round_a() -> void:
-	if _once("f1", 0.5):
+	if _once("f1", 0.4):
 		_sponson_fans(Bullets.BIG)
-	if _once("f1s", 0.75):
+	if _once("f1s", 0.65):
 		_sponson_fans(Bullets.SMALL)
-	_main_gun("g1", 1.2)
-	_barrage("b1", 2.8, 4, false)
-	_hull_gun("mg", 5.0, 3, 14.0)
-	if _once("f2", 5.6):
-		_sponson_fans(Bullets.BIG)
-	if _once("f2s", 5.85):
-		_sponson_fans(Bullets.SMALL)
-	_main_gun("g2", 6.4)
+	_main_gun("g1", 1.0)
+	_barrage("b1", 2.6, 4, false)
+	_hull_gun("mg", 3.6, 3, 14.0)
+	if _once("c", 4.8):
+		_lunge_warn(0.0)
+	_main_gun("g2", 8.6)
 
 
-## BREAKTHROUGH: the charge, the barrage creeping down the ship's column,
-## rings of shells boiling out of the reactor, wide needles, a scattered
-## barrage; sponson fans while they last.
+## OVERRUN: the aimed charge, sponson fans, the spin with the spray, the
+## barrage down the ship's column, wide needles; the main gun if it is
+## still there (OVERRUN on time).
 func _round_c() -> void:
 	if _once("c", 0.3):
-		_charge_warn()
-	if _once("f", 1.2):
+		var d := game.player.position - center
+		_lunge_warn(clampf(atan2(d.x, d.z), -AIM_MAX, AIM_MAX))
+	if _once("f", 1.0):
 		_sponson_fans(Bullets.BIG)
-	if _once("fs", 1.45):
+	if _once("fs", 1.25):
 		_sponson_fans(Bullets.SMALL)
-	# (the main gun, if it is still there: BREAKTHROUGH on time)
-	_main_gun("g", 2.6)
-	var cp := core.position + Vector3(0, 0, 1.2)
-	for k in 3:
-		if _once("ring%d" % k, 3.0 + k * 0.4) and game.can_fire(cp):
-			game.bullets.ring(cp, 16, 4.6, Bullets.SHELL, self, fight_t * 0.8 + k * 0.2, 2, fight_t * 1.9 + k * 1.3)
-	_barrage("col", 4.4, 5, true)
-	_hull_gun("mg", 5.6, 7, 34.0)
-	_barrage("sc", 6.4, 4, false)
+	_main_gun("g", 8.9)
+	if _once("s", 4.8):
+		_spin_warn()
+	_barrage("col", 8.7, 4, true)
+	_hull_gun("mg", 9.2, 7, 34.0)
 
 
-func _breakthrough() -> void:
+func _overrun() -> void:
 	phase = 3
 	st = 0.0
 	_next_round()
-	vent_t = 0.0
-	game.show_msg("BEHEMOTH BREAKTHROUGH", "", 1.5, true)
+	_seal()
+	game.show_msg("BEHEMOTH OVERRUN", "", 1.5, true)
 	game.shake(1.0)
+
+
+# ------------------------------------------------------------ moving
+
+## Creeping at its station, charging, or spinning.
+func _moves(dt: float) -> void:
+	if lunge != "":
+		_lunge(dt)
+	elif spin != "":
+		_spin(dt)
+	else:
+		creep_t += dt
+		center.z = move_toward(center.z, rest_z + sin(creep_t * 0.4) * 1.0, 2.0 * dt)
+		center.x = move_toward(center.x, 0.0, 2.0 * dt)
+		yaw = move_toward(yaw, 0.0, 1.2 * dt)
+
+
+## The charge: the hull pivots to heading `a` (0 = straight down) while
+## five lines are marked from the blade along it to the edge of the screen;
+## then it drives the blade down there, holds, and backs off.
+func _lunge_warn(a: float) -> void:
+	lunge = "warn"
+	lunge_t = 0.0
+	lunge_yaw = a
+	var h := Vector3(sin(a), 0, cos(a))
+	var home := Vector3(0, 0, rest_z)
+	lunge_from = home
+	# how far until the blade's middle reaches the bottom edge (or a side)
+	var b0 := home + Vector3(0, 0, BLADE_Z + 0.4).rotated(Vector3.UP, a)
+	var l := (game.field_bottom + 0.6 - b0.z) / maxf(cos(a), 0.05)
+	if absf(sin(a)) > 0.05:
+		l = minf(l, (game.hw_bottom + 1.5 - absf(b0.x)) / absf(sin(a)))
+	lunge_to = home + h * maxf(l, 2.0)
+	for k in blade.size():
+		var from := home + Vector3(BLADE_X[k], 0, BLADE_Z).rotated(Vector3.UP, a)
+		game.warn(blade[k], LUNGE_WARN, Game.Warn.MOVE, 1.2, from + h * maxf(l, 2.0), k == 2, false)
+	# (for the autopilot: the corridor as one band, which it leaves sideways)
+	game.warn(hub, LUNGE_WARN + LUNGE_GO + LUNGE_HOLD, Game.Warn.MOVE, 3.0, {"lane": PackedVector3Array([b0, b0 + h * maxf(l, 2.0)]), "hw": BLADE_HW + 0.6}, false)
+	game.sfx.play("slam")
+
+
+func _lunge(dt: float) -> void:
+	lunge_t += dt
+	match lunge:
+		"warn":
+			# back to its station, turning to the heading
+			center = center.move_toward(lunge_from, 4.0 * dt)
+			yaw = move_toward(yaw, lunge_yaw, 1.6 * dt)
+			if lunge_t >= LUNGE_WARN:
+				lunge = "go"
+				lunge_t = 0.0
+				yaw = lunge_yaw
+				game.shake(0.8)
+		"go":
+			var f := clampf(lunge_t / LUNGE_GO, 0.0, 1.0)
+			center = lunge_from.lerp(lunge_to, f * f * (3.0 - 2.0 * f))
+			if int(lunge_t * 12.0) != int((lunge_t - dt) * 12.0):
+				game.fx.puff(_at(Vector3(randf_range(-8.0, 8.0), 0.2, BLADE_Z)), Vector3(0, 0, 3.0), 0.8, 2.2, 0.6, Fx.SMOKE)
+			if f >= 1.0:
+				lunge = "hold"
+				lunge_t = 0.0
+		"hold":
+			if lunge_t >= LUNGE_HOLD:
+				lunge = "back"
+				lunge_t = 0.0
+		"back":
+			var f := clampf(lunge_t / LUNGE_BACK, 0.0, 1.0)
+			center = lunge_to.lerp(lunge_from, f * f * (3.0 - 2.0 * f))
+			if f >= 1.0:
+				lunge = "turn" if absf(yaw) > 0.01 else ""
+				lunge_t = 0.0
+		"turn":
+			yaw = move_toward(yaw, 0.0, 1.6 * dt)
+			if absf(yaw) < 0.001:
+				lunge = ""
+
+
+## OVERRUN's spin: the circle it will sweep marked round it, then one full
+## turn on the spot (each time the other way).
+func _spin_warn() -> void:
+	if lunge != "":
+		return
+	spin = "warn"
+	spin_t = 0.0
+	spin_dir = -spin_dir
+	game.warn(hub, SPIN_WARN, Game.Warn.MOVE, 3.0, {"r": SPIN_R})
+	game.sfx.play("slam")
+
+
+func _spin(dt: float) -> void:
+	spin_t += dt
+	match spin:
+		"warn":
+			center = center.move_toward(Vector3(0, 0, rest_z), 4.0 * dt)
+			yaw = move_toward(yaw, 0.0, 1.6 * dt)
+			if spin_t >= SPIN_WARN:
+				spin = "go"
+				spin_t = 0.0
+				yaw = 0.0
+				game.warn(hub, SPIN_T, Game.Warn.MOVE, 3.0, {"r": SPIN_R}, false)
+				game.shake(0.6)
+		"go":
+			var f := clampf(spin_t / SPIN_T, 0.0, 1.0)
+			yaw = spin_dir * TAU * f * f * (3.0 - 2.0 * f)
+			_spray(dt)
+			if f >= 1.0:
+				spin = ""
+				yaw = 0.0
+
+
+## While it spins: the sponsons fire along the hull's heading (a little
+## outward each) and the open reactor out both ends: the turning hull winds
+## them into a spiral (big and small by turns).
+func _spray(dt: float) -> void:
+	spray_t -= dt
+	if spray_t > 0.0 or not game.combat_on():
+		return
+	spray_t = 0.1
+	spray_k += 1
+	var sz := Bullets.BIG if spray_k % 2 == 0 else Bullets.SMALL
+	var ha := _heading_a()
+	for k in sponsons.size():
+		var s := sponsons[k]
+		if not s.dead:
+			game.bullets.fire(s.position, ha + (-0.35 if k == 1 else 0.35), 5.0, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, sz)
+	if spray_k % 2 == 0:
+		for a: float in [ha + PI * 0.5, ha - PI * 0.5]:
+			game.bullets.fire(core.position, a, 4.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if sz == Bullets.SMALL else Bullets.SMALL)
 
 
 # ------------------------------------------------------------ the main gun
 
-## The turret turns after the ship (within its arc); while a shot is
-## locked it turns fast onto the locked line.
+## The turret turns after the ship (within its arc of the hull's heading);
+## while a shot is locked it turns fast onto the locked line.
 func _aim(dt: float) -> void:
+	recoil = maxf(0.0, recoil - dt * 1.6)
 	if turret.dead or phase == 4:
 		return
+	var ha := _heading_a()
+	if spin == "go":
+		# carried round by the hull
+		turret_a = ha
+		return
 	if not locking:
-		var d := game.player.position - (center + TURRET_OFF)
-		turret_want = clampf(atan2(d.z, d.x), PI / 2.0 - TURN_MAX, PI / 2.0 + TURN_MAX)
+		var d := game.player.position - _at(TURRET_OFF)
+		turret_want = ha + clampf(wrapf(atan2(d.z, d.x) - ha, -PI, PI), -TURN_MAX, TURN_MAX)
 	var w := 3.2 if locking else TURN_W
 	turret_a = turret_a + clampf(wrapf(turret_want - turret_a, -PI, PI), -w * dt, w * dt)
-	recoil = maxf(0.0, recoil - dt * 1.6)
-
-
-func _muzzle_dir() -> Vector3:
-	return Vector3(cos(turret_a), 0, sin(turret_a))
 
 
 ## Locks on at `at` (the line marked to the bottom edge), fires two slugs
 ## down it 0.9 s later.
 func _main_gun(key: String, at: float) -> void:
-	if turret.dead:
+	if turret.dead or lunge != "" or spin == "go":
+		if cycle_t >= at:
+			fired[key] = true
+			fired["w_" + key] = true
 		return
 	if _once("w_" + key, at):
 		if not game.can_fire(turret.position):
 			fired[key] = true
 			return
-		var d := game.player.position - (center + TURRET_OFF)
-		lock_a = clampf(atan2(d.z, d.x), PI / 2.0 - TURN_MAX, PI / 2.0 + TURN_MAX)
+		var ha := _heading_a()
+		var d := game.player.position - _at(TURRET_OFF)
+		lock_a = ha + clampf(wrapf(atan2(d.z, d.x) - ha, -PI, PI), -TURN_MAX, TURN_MAX)
 		turret_want = lock_a
 		locking = true
 		var dir := Vector3(cos(lock_a), 0, sin(lock_a))
-		var mz := center + TURRET_OFF + dir * BARREL_LEN
-		lock_to = game.line_to_bottom(mz, mz + dir * 10.0)
-		game.warn(turret, 0.9, Game.Warn.MOVE, turret.radius, lock_to)
+		var mz := _at(TURRET_OFF) + dir * BARREL_LEN
+		game.warn(turret, 0.9, Game.Warn.MOVE, turret.radius, game.line_to_bottom(mz, mz + dir * 10.0))
 		game.sfx.play("slam")
 	if _once(key, at + 0.9):
 		locking = false
 		if turret.dead or not game.combat_on():
 			return
 		turret_a = lock_a
-		var dir := _muzzle_dir()
+		var dir := Vector3(cos(lock_a), 0, sin(lock_a))
 		var side := Vector3(-dir.z, 0, dir.x) * BARREL_SEP
 		for s: float in [-1.0, 1.0]:
-			var mz := center + TURRET_OFF + dir * BARREL_LEN + side * s
+			var mz := _at(TURRET_OFF) + dir * BARREL_LEN + side * s
 			game.bullets.fire(mz, lock_a, SLUG_SPEED, Bullets.IRON, self)
 			game.fx.sprite(mz + Vector3(0, 0.6, 0), dir * 3.0, 1.6, 0.4, 0.14, Color(1.0, 0.85, 0.6), 0.0)
-		game.fx.flash(center + TURRET_OFF + dir * BARREL_LEN, 2.0)
+		game.fx.flash(_at(TURRET_OFF) + dir * BARREL_LEN, 2.0)
 		game.sfx.play("exp_m")
 		game.shake(0.6)
 		recoil = 1.0
-		# the shot vents the reactor
-		vent_t = VENT_T
-
-
-## The louvres slide aside while the reactor vents (and stay aside in
-## BREAKTHROUGH); with both in place and shut the reactor can't be hurt.
-func _vent(dt: float) -> void:
-	vent_t = maxf(0.0, vent_t - dt)
-	var want := 1.0 if (vent_t > 0.0 or phase == 3 or phase == 4) else 0.0
-	open_f = move_toward(open_f, want, dt * 2.5)
-	if phase == 1 or phase == 3:
-		core.armored = open_f < 0.5 and _louvres_alive() == 2
-	if open_f > 0.5 and phase != 4 and randf() < 0.12:
-		# heat haze out of the vent
-		game.fx.puff(core.position + Vector3(randf_range(-0.8, 0.8), 0.5, 0.3), Vector3(0, 0, 2.0), 0.4, 1.2, 0.5, Fx.SMOKE)
 
 
 # ------------------------------------------------------------ the barrage
@@ -434,7 +566,7 @@ func _lob(to: Vector3) -> void:
 	mark.position = to
 	mark.hit_pos = to
 	game.warn(mark, FLIGHT_T, Game.Warn.MOVE, IMPACT_R, {"r": IMPACT_R}, how_k % 2 == 0)
-	var from: Vector3 = center + HOWITZER_OFF[how_k % 2]
+	var from: Vector3 = _at(HOWITZER_OFF[how_k % 2])
 	how_k += 1
 	var m := MeshInstance3D.new()
 	m.mesh = Vox.get_mesh("behemoth_shell")
@@ -509,106 +641,71 @@ func _hull_gun(key: String, at: float, count: int, spread: float) -> void:
 			game.bullets.fan(p, game.bullets.aim(p), count, spread, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 
 
-# ------------------------------------------------------------ the charge
-
-## BREAKTHROUGH's charge: five lines marked from the blade down to where
-## its edge will stop, then it drives down there, holds, and backs off.
-func _charge_warn() -> void:
-	charge = "warn"
-	charge_t = 0.0
-	for k in blade.size():
-		var e := blade[k]
-		game.warn(e, 0.9, Game.Warn.MOVE, 1.2, Vector3(e.position.x, 0, rest_z + CHARGE + BLADE_Z + 0.6), k == 2)
-	game.sfx.play("slam")
-
-
-func _charge(dt: float) -> void:
-	charge_t += dt
-	match charge:
-		"warn":
-			center.z = move_toward(center.z, rest_z, 3.0 * dt)
-			if charge_t >= 0.9:
-				charge = "go"
-				charge_t = 0.0
-				game.shake(0.8)
-		"go":
-			var f := clampf(charge_t / 0.9, 0.0, 1.0)
-			if charge_t <= dt * 1.5:
-				# (the autopilot keeps off the ground it covers while it goes)
-				for e in blade:
-					game.warn(e, 1.3, Game.Warn.MOVE, 1.2, Vector3(e.position.x, 0, rest_z + CHARGE + BLADE_Z + 0.6), false)
-			center.z = rest_z + CHARGE * f * f * (3.0 - 2.0 * f)
-			if int(charge_t * 12.0) != int((charge_t - dt) * 12.0):
-				game.fx.puff(center + Vector3(randf_range(-8.0, 8.0), 0.2, BLADE_Z), Vector3(0, 0, 3.0), 0.8, 2.2, 0.6, Fx.SMOKE)
-			if f >= 1.0:
-				charge = "hold"
-				charge_t = 0.0
-		"hold":
-			if charge_t >= 0.4:
-				charge = "back"
-				charge_t = 0.0
-		"back":
-			var f := clampf(charge_t / 1.8, 0.0, 1.0)
-			center.z = rest_z + CHARGE * (1.0 - f * f * (3.0 - 2.0 * f))
-			if f >= 1.0:
-				charge = ""
-		_:
-			_creep(dt)
-
-
 ## The dozer blade across the front: touching it is a crash (it has no
-## hit zone, so shots go by it on to the reactor).
+## hit zone, so shots go by it on to the guns).
 func _blade_touch() -> void:
-	var p := game.player.position
-	var b := center + Vector3(0, 0, BLADE_Z)
-	if absf(p.x - b.x) < BLADE_HW + Player.HIT_R and absf(p.z - b.z) < 0.5 + Player.HIT_R:
+	var d := (game.player.position - center).rotated(Vector3.UP, -yaw)
+	if absf(d.x) < BLADE_HW + Player.HIT_R and absf(d.z - BLADE_Z) < 0.5 + Player.HIT_R:
 		game.touch_player("dozer")
 
 
 # ------------------------------------------------------------ placing
 
 func _place(dt: float) -> void:
-	# the tracks: the top run moves with the tank over the deck (the deck
-	# scrolls by under it)
-	var vz := (center.z - last_z) / maxf(dt, 0.0001) if dt > 0.0 else 0.0
-	last_z = center.z
-	if phase != 4 or dying_t < 2.5:
-		tread_z += (vz - game.scroll_speed * (1.0 if phase != 4 else maxf(0.0, 1.0 - dying_t / 2.5))) * dt
-	for t in treads:
-		t.position.z = fposmod(tread_z, TREAD_PITCH) - TREAD_PITCH * 0.5
-	hull.position = center
-	core.position = center + CORE_OFF
-	core.model.rotation.y += dt * (2.8 if phase == 3 else 1.0)
+	# the tracks: the top runs move with the tank over the deck (which
+	# scrolls by under it), the two of them opposite ways in a turn
+	if dt > 0.0:
+		var v := (center - last_c) / dt - Vector3(0, 0, game.scroll_speed * (1.0 if phase != 4 else maxf(0.0, 1.0 - dying_t / 2.5)))
+		var fwd := v.dot(Vector3(sin(yaw), 0, cos(yaw)))
+		var w := wrapf(yaw - last_yaw, -PI, PI) / dt
+		for k in 2:
+			tread_z[k] += (fwd + (-1.0 if k == 0 else 1.0) * w * TRACK_X) * dt
+	last_c = center
+	last_yaw = yaw
 	for k in 2:
-		if not louvres[k].dead:
-			louvres[k].position = center + (LOUVRE_SHUT[k] as Vector3).lerp(LOUVRE_OPEN[k], open_f)
+		treads[k].position.z = fposmod(tread_z[k], TREAD_PITCH) - TREAD_PITCH * 0.5
+	hull.position = center
+	hull.rotation.y = yaw
+	# the shutters over the reactor slide aside once it is laid open
+	seal_f = move_toward(seal_f, 1.0 if core.armored else 0.0, dt * 1.5)
+	for k in 2:
+		var s := -1.0 if k == 0 else 1.0
+		shutters[k].position = CORE_OFF + Vector3(s * lerpf(2.1, 0.7, seal_f), 0.25, 0)
+	core.position = _at(CORE_OFF)
+	core.model.rotation.y += dt * (2.8 if phase == 3 else 1.0)
 	for k in 2:
 		if not sponsons[k].dead:
 			var s := sponsons[k]
-			s.position = center + SPONSON_OFF[k]
+			s.position = _at(SPONSON_OFF[k])
 			var d := game.player.position - s.position
-			s.rotation.y = lerp_angle(s.rotation.y, atan2(d.x, d.z), clampf(3.0 * dt, 0.0, 1.0))
+			var want := atan2(d.x, d.z) if spin != "go" else yaw + (0.35 if k == 1 else -0.35)
+			s.rotation.y = lerp_angle(s.rotation.y, want, clampf(6.0 * dt, 0.0, 1.0))
 	if not turret.dead:
-		turret.position = center + TURRET_OFF
+		turret.position = _at(TURRET_OFF)
 		turret.rotation.y = atan2(cos(turret_a), sin(turret_a))
 		barrels.position.z = -0.6 * recoil
 	for k in armour.size():
-		armour[k].position = center + ARMOUR[k][0]
+		armour[k].position = _at(ARMOUR[k][0])
 	for k in blade.size():
-		blade[k].position = center + Vector3(BLADE_X[k], 0, BLADE_Z)
+		blade[k].position = _at(Vector3(BLADE_X[k], 0, BLADE_Z))
 		blade[k].hit_pos = blade[k].position
-	mg.position = center + MG_OFF
+	mg.position = _at(MG_OFF)
 	mg.hit_pos = mg.position
+	hub.position = center
+	hub.hit_pos = center
 
 
 func _parts() -> Array:
-	return [core, turret] + louvres + sponsons + armour + blade + marks + [mg]
+	return [core, turret] + sponsons + armour + blade + marks + [mg, hub]
 
 
+## The gauge: the main turret and the reactor together (the turret goes
+## first, then the reactor).
 func gauge() -> Dictionary:
 	if phase < 1 or phase >= 4:
 		return {}
-	return {"frac": core.hp / core.max_hp, "color": Color(1.0, 0.86, 0.5), "name": INFO["name"], "name_color": Color(1.0, 0.92, 0.7), "x": 0.2, "w": 0.6, "h": 8.0, "name_y": 72.0}
+	var left := maxf(core.hp, 0.0) + (0.0 if turret.dead else maxf(turret.hp, 0.0))
+	return {"frac": left / (CORE_HP + TURRET_HP), "color": Color(1.0, 0.86, 0.5), "name": INFO["name"], "name_color": Color(1.0, 0.92, 0.7), "x": 0.2, "w": 0.6, "h": 8.0, "name_y": 72.0}
 
 
 func force_defeat() -> void:
@@ -617,15 +714,15 @@ func force_defeat() -> void:
 		game.kill(core)
 
 
-## "A": straight into the fight, the barrage about to fly. "C": into
-## BREAKTHROUGH, the main turret gone.
+## "A": straight into the fight, the charge about to come. "C": into
+## OVERRUN, the main turret gone.
 func viewer_skip(to: String) -> void:
 	center.z = rest_z
 	phase = 1
 	st = 0.0
 	_arm(false)
 	if to == "A":
-		cycle_t = 2.6
+		cycle_t = 4.6
 	elif to == "C":
 		turret.dead = true
 		game.remove_enemy(turret)
@@ -634,16 +731,17 @@ func viewer_skip(to: String) -> void:
 
 
 func debug_state() -> String:
-	var names := ["enter", "A", "-", "BREAKTHROUGH", "dying"]
-	return "phase %s %.1fs  core %d/%d  turret %s  louvres %d (open %.1f)  sponsons %d  shells %d  round %d %.1fs" % [names[phase], st, int(maxf(core.hp, 0.0)), int(CORE_HP), "dead" if turret.dead else "%d" % int(turret.hp), _louvres_alive(), open_f, sponsons.filter(func(s: Enemy) -> bool: return not s.dead).size(), shells.size(), cycle, cycle_t]
+	var names := ["enter", "A", "-", "OVERRUN", "dying"]
+	return "phase %s %.1fs  core %d/%d%s  turret %s  sponsons %d  charge %s  spin %s  shells %d  round %d %.1fs" % [names[phase], st, int(maxf(core.hp, 0.0)), int(CORE_HP), " sealed" if core.armored else "", "dead" if turret.dead else "%d" % int(turret.hp), sponsons.filter(func(s: Enemy) -> bool: return not s.dead).size(), lunge, spin, shells.size(), cycle, cycle_t]
 
 
 func _die() -> void:
 	defeated = true
 	phase = 4
 	dying_t = 0.0
-	charge = ""
-	for e: Enemy in [turret] + sponsons + louvres:
+	lunge = ""
+	spin = ""
+	for e: Enemy in [turret] + sponsons:
 		if not e.dead:
 			game.kill(e)
 	for s in shells:
@@ -664,11 +762,11 @@ func _dying(dt: float) -> void:
 	center.z += game.scroll_speed * clampf(dying_t / 2.5, 0.0, 1.0) * 0.45 * dt
 	if int(dying_t * 8.0) != int((dying_t - dt) * 8.0):
 		var off := Vector3(randf_range(-8.5, 8.5), 0, randf_range(-6.0, 6.0))
-		game.fx.explode(center + off, randf_range(1.5, 3.0), Vector3.ZERO, Models.GUN)
+		game.fx.explode(center + off.rotated(Vector3.UP, yaw), randf_range(1.5, 3.0), Vector3.ZERO, Models.GUN)
 		game.sfx.play("exp_m")
 		game.shake(0.4)
 	if dying_t > 3.5:
-		game.big_blast(center + CORE_OFF, 1.0, Models.GUN)
+		game.big_blast(_at(CORE_OFF), 1.0, Models.GUN)
 		for k in 6:
 			game.fx.explode(center + Vector3(randf_range(-8, 8), 0, randf_range(-5, 5)), 4.0, Vector3.ZERO, PlanetModels.SAND)
 		game.sfx.play("exp_l")

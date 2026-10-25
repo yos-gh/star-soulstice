@@ -237,6 +237,10 @@ func _warnings() -> void:
 		var nd = w["node"]
 		if not is_instance_valid(nd):
 			continue
+		# (a "lane" is for the autopilot only: the lines of the same move
+		# show it)
+		if w["to"] is Dictionary and (w["to"] as Dictionary).has("lane"):
+			continue
 		var at: Vector3 = (nd as Enemy).hit_pos if nd is Enemy else (nd as Node3D).global_position
 		var sp := g.camera.unproject_position(at)
 		var rpx := g.camera.unproject_position(at + Vector3(float(w["r"]), 0, 0)).x - sp.x

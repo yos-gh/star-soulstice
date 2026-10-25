@@ -2,7 +2,8 @@ extends Enemy
 ## Mid-size VTOL gunship of the enemy planet (stage 4): two ducted lift
 ## fans on stub wings, a chin turret with a rotary cannon. It flies in from
 ## a side edge on a curve, nose first, banking, and comes to a hover near
-## the top (the fans keep it up; it turns to face the ship). Its signature
+## the top (the fans keep it up; it turns to face the ship), its gun already
+## spinning up and turned: it opens fire as it stops. Its signature
 ## is the hose: the rotary cannon spins up and sweeps a stream of shells
 ## across the screen in one long arc, through where the ship is and on past
 ## it, left to right or back (the shells break: shoot a way through, or go
@@ -21,7 +22,7 @@ const INFO := {
 	],
 }
 
-const T_IN := 2.0  # the curve in
+const T_IN := 1.7  # the curve in
 const T_OUT := 2.4  # and away
 const FAN := Vector3(1.45, 0, 0.0)  # the fans (and the mirror)
 const POD := Vector3(1.45, 0, 0.75)  # the fan pods' muzzles
@@ -98,10 +99,15 @@ func _behave(dt: float) -> void:
 			if v.length_squared() > 1.0:
 				rotation.y = lerp_angle(rotation.y, atan2(v.x, v.z), clampf(8.0 * dt, 0.0, 1.0))
 			rotation.z = -side * 0.35 * (1.0 - f)
+			if f > 0.7:
+				# the gun turns to where the hose starts as it slows down
+				gun_a = game.bullets.aim(position + GUN) - hose_dir * deg_to_rad(HOSE_ARC)
 			if f >= 1.0:
 				leg = 1
 				leg_t = 0.0
-				fire_t = 0.7
+				# the hose opens the moment it is in place
+				step = 1
+				_hose_aim()
 		1:
 			# hover: turn to the ship, a slow bob from where it stopped
 			hover_t += dt
@@ -127,7 +133,7 @@ func _behave(dt: float) -> void:
 			rotation.z = lerpf(rotation.z, side * 0.35, clampf(2.0 * dt, 0.0, 1.0))
 	gun.rotation.y = lerp_angle(gun.rotation.y, _local(gun_a), clampf(10.0 * dt, 0.0, 1.0))
 	# the rotary cannon's barrels spin up for the hose
-	barrels.rotation.z += dt * (30.0 if hose_t >= 0.0 or (leg == 1 and step % 5 == 1) else 4.0)
+	barrels.rotation.z += dt * (30.0 if hose_t >= 0.0 or (leg == 1 and step % 5 == 1) or (leg == 0 and leg_t > T_IN * 0.7) else 4.0)
 
 
 ## The gun's turn (relative to the hull) to point along angle `a`.
@@ -161,9 +167,7 @@ func _attack(dt: float) -> void:
 	match step % 5:
 		0:
 			# spin up, turned to where the arc starts
-			hose_a0 = aim - hose_dir * deg_to_rad(HOSE_ARC)
-			hose_a1 = aim + hose_dir * deg_to_rad(HOSE_ARC)
-			gun_a = hose_a0
+			_hose_aim()
 			fire_t = 0.5
 		1:
 			hose_t = 0.0
@@ -180,6 +184,14 @@ func _attack(dt: float) -> void:
 			_needles()
 			fire_t = 2.2  # quiet gap: come in with the Spear
 	step += 1
+
+
+## The hose's arc: from one side of the ship to the other, through it.
+func _hose_aim() -> void:
+	var aim := game.bullets.aim(position + GUN)
+	hose_a0 = aim - hose_dir * deg_to_rad(HOSE_ARC)
+	hose_a1 = aim + hose_dir * deg_to_rad(HOSE_ARC)
+	gun_a = hose_a0
 
 
 ## A 3-way burst of unbreakable needles at the ship from each fan pod.

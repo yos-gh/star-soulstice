@@ -461,7 +461,7 @@ static func _behemoth_hull() -> ArrayMesh:
 				if ax > 4.6 and q.y > -3.0 and q.y < 1.2:
 					top = SAND if absf(fmod(q.y + 10.0, 1.4)) > u * 1.2 else SAND_D
 				# the engine deck: a grille between two exhaust stacks
-				if q.y < -3.4:
+				if q.y < -3.8:
 					if ax < 2.8:
 						h = deck - 1
 						top = DUSK_D if posmod(z, 2) == 0 else GUN
@@ -476,22 +476,22 @@ static func _behemoth_hull() -> ArrayMesh:
 					h = deck + 4
 					top = GUN
 				# the turret ring
-				var rt := Vector2(q.x, q.y + 1.8).length()
+				var rt := Vector2(q.x, q.y - 2.3).length()
 				if rt < 2.75 and rt > 2.45:
 					top = DUSK_D
-				# the reactor's well, the louvre rails across it
-				var rr := Vector2(q.x, q.y - 3.7).length()
+				# the reactor's well behind the turret, the shutter rails across it
+				var rr := Vector2(q.x, q.y + 1.9).length()
 				if rr < 1.75:
 					h = deck - 3 if rr < 1.45 else deck
 					top = DUSK_D if rr < 1.45 else STEEL_M
-				if absf(absf(q.y - 3.7) - 1.25) < u * 0.6 and ax < 2.6:
+				if absf(absf(q.y + 1.9) - 1.25) < u * 0.6 and ax < 2.6:
 					h = deck
 					top = DUSK
 				# the sponson rings
-				if Vector2(ax - 4.7, q.y - 2.6).length() < 1.35:
+				if Vector2(ax - 5.3, q.y - 4.0).length() < 1.35:
 					top = DUSK_D
 				# the glacis, its sensor lamps, the hull gun's port
-				if q.y > 4.6 and rr >= 1.75:
+				if q.y > 4.6 and rt >= 2.75:
 					h = deck - 1
 					top = SAND_D if absf(fmod(q.x + 10.0, 1.2)) > u else DUSK
 					if absf(ax - 1.6) < 0.2 and q.y > 5.1:
@@ -609,8 +609,8 @@ static func _behemoth_core() -> ArrayMesh:
 	return v.mesh(U * 1.5, Vector3(0.5, 1.5, 0.5), true)
 
 
-## A cooling louvre (the left one; the right is its mirror): a sand frame
-## round steel slats across it.
+## A shutter over the reactor (the left one; the right is its mirror): a
+## sand frame round steel slats; they slide aside when it is laid open.
 static func _behemoth_louvre() -> ArrayMesh:
 	var v := Vox.new(12, 3, 22)
 	for z in range(-11, 11):

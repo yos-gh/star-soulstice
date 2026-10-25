@@ -67,9 +67,25 @@ func think() -> Array:
 	for w: Dictionary in game.warnings:
 		if w["kind"] != Game.Warn.MOVE or not (w["to"] is Vector3 or w["to"] is PackedVector3Array or w["to"] is Dictionary) or not is_instance_valid(w["node"]):
 			continue
+		if not w.get("bot", true):
+			continue
 		if not (w["node"] is Enemy) or ((w["node"] as Enemy).controller == null and not (w["node"] as Enemy).marked):
 			continue
 		var nd: Enemy = w["node"]
+		# (or a corridor something big drives down: out of it sideways)
+		if w["to"] is Dictionary and (w["to"] as Dictionary).has("lane"):
+			var lane: PackedVector3Array = w["to"]["lane"]
+			var ab := lane[1] - lane[0]
+			ab.y = 0.0
+			var f := (pp - lane[0]).dot(ab) / maxf(ab.length_squared(), 0.01)
+			var nrm := Vector3(-ab.z, 0, ab.x).normalized()
+			var off := (pp - lane[0]).dot(nrm)
+			var band := float(w["to"].get("hw", 1.0)) + 1.6
+			if f > -0.3 and f < 1.1 and absf(off) < band:
+				# the nearer side, or toward the middle of the screen
+				var s := signf(off) if absf(off) > 0.3 else (-signf(pp.x) if absf(pp.x) > 0.5 else 1.0)
+				push += nrm * s * (band - absf(off) + 1.0) * 1.5
+			continue
 		# (or a circle where something lands: out of it)
 		if w["to"] is Dictionary:
 			var off := pp - nd.hit_pos

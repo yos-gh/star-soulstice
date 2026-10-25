@@ -1241,8 +1241,8 @@ func _automation(dt: float) -> void:
 ##   - a charge also streams chevrons toward its target
 ##   - a short rising tone
 ## Breakable shells are never announced: they are the low-threat fodder.
-func warn(node: Node3D, dur: float, kind: int, radius := 1.0, to: Variant = null, sound := true) -> void:
-	warnings.append({"node": node, "t": dur, "dur": dur, "kind": kind, "r": radius, "to": to})
+func warn(node: Node3D, dur: float, kind: int, radius := 1.0, to: Variant = null, sound := true, bot := true) -> void:
+	warnings.append({"node": node, "t": dur, "dur": dur, "kind": kind, "r": radius, "to": to, "bot": bot})
 	if node is Enemy:
 		var e := node as Enemy
 		e.warn_t = dur

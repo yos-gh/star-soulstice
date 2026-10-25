@@ -49,7 +49,7 @@ Stages ──> StageDef（stage1.gd …）
    - `INFO`：`name`、`category`（`small` 小型 / `medium` 中型 / `ground` 地上 / `carrier` パワーアップ運搬 / `hazard` 漂流物）、`desc`、`demos`（閲覧モードでの見せ方：`[ラベル, Formations のメソッド名, 引数]`）、`stage`（任意：どのウェーブにも載らない種類（漂ってくる巨大岩など）を、閲覧モードでどのステージの背景の上に出すか）。
    - `_init_kind()` で耐久・半径・スコア・エネルギー・爆発の大きさなど。モデル名が種類名と違うときは `mesh_name`。
    - `_behave(dt)` で動きと攻撃。出現時の指定は `p` に入っている。危険な攻撃の前は `game.warn` / `game.warn_then` で予兆を出す。
-   - `shootable = false` の部位はショット・スピア・ホーミングが素通りし、体当たりだけが残る（BEHEMOTH のドーザーブレード：弱点の前に置いても盾にならない）。
+   - `shootable = false` の部位はショット・スピア・ホーミングが素通りし、体当たりだけが残る（BEHEMOTH のドーザーブレード：前に置いても後ろの部位の盾にならない）。
    - 画面の外で待ってから来る敵（後ろの `chaser`、横の `flanker`）の予兆は、レティクルが画面の縁に出る。1 列の編隊で狙い（自機の位置）と予兆を 1 つにまとめるときは、`Formations.chasers` のように列の全員に同じ辞書（`group`）を渡し、先頭が書いて後続が読む。
    - 決まった道筋を列で飛ぶ編隊は、雛形で道筋（`Curve2D`、平面上の x と z）を作って全員に渡し、各機は先頭から一定の距離だけ後ろを飛ぶ（`Formations.racers` と `racer.gd`）。道筋は画面の割合で描いておき、反転・対角線での折り返しで 4 隅と 2 方向に使い回す。
 2. `scripts/enemies/enemy_kinds.gd` の `KINDS` に足す。
@@ -65,7 +65,7 @@ Stages ──> StageDef（stage1.gd …）
    - `INFO`：`name`（警告と体力ゲージの名前）、`role`（`mid` / `boss`）、`desc`、`demos`（閲覧モードの途中から再生：`[ラベル, 合図]`、合図は `viewer_skip` に渡る）。
    - 部位は `game.spawn_part(self, モデル名, 半径)` で作る（当たり判定は敵と同じ）。部位への被弾は `on_hit`、部位の撃破は `on_part_killed` に来る。
    - `gauge()` で HUD の体力ゲージ、`force_defeat()` は閲覧モードの K（撃破）、`debug_state()` は閲覧モードの状態表示。
-   - 突進・打ち下ろしなどの大技は、`game.warn(部位, 秒, Game.Warn.MOVE, 半径, 狙う地点の Vector3)` で予兆を出すと、矢印がその地点へ流れ、自動操縦はその線から外れる（ボスの部位の予兆と、`marked` を立てた敵の予兆のみ）。弧を描く大技は、狙う地点の代わりに道筋の点の列（`PackedVector3Array`）を渡すと、矢印が道筋に沿って流れ、自動操縦は道筋全体から外れる（TITAN DREDGE の薙ぎ払い、TEMPEST の稲妻）。落ちてくる攻撃は `{"r": 半径}` を渡すと、部位（落ちる地点に置いた見えない部位）のまわりに破線の円と締まっていく輪が出て、自動操縦は円から（なるべく横へ）出る（BEHEMOTH の榴弾）。`warn` の最後の引数 `false` で予兆の音を鳴らさない（同時に何本も出すとき、攻撃中も線を残しておくとき）。
+   - 突進・打ち下ろしなどの大技は、`game.warn(部位, 秒, Game.Warn.MOVE, 半径, 狙う地点の Vector3)` で予兆を出すと、矢印がその地点へ流れ、自動操縦はその線から外れる（ボスの部位の予兆と、`marked` を立てた敵の予兆のみ）。弧を描く大技は、狙う地点の代わりに道筋の点の列（`PackedVector3Array`）を渡すと、矢印が道筋に沿って流れ、自動操縦は道筋全体から外れる（TITAN DREDGE の薙ぎ払い、TEMPEST の稲妻）。落ちてくる攻撃は `{"r": 半径}` を渡すと、部位（落ちる地点に置いた見えない部位）のまわりに破線の円と締まっていく輪が出て、自動操縦は円から（なるべく横へ）出る（BEHEMOTH の榴弾）。予兆の道筋は出したあとでも書き換えられる（`game.warnings` の最後に入った辞書の `to`。TEMPEST の稲妻は充電のあいだ自機を追い、止まってから落ちる）。`warn` の引数 `sound` を `false` にすると予兆の音を鳴らさない（同時に何本も出すとき、攻撃中も線を残しておくとき）。`bot` を `false` にすると自動操縦はその予兆を見ない。大きなものが通る帯は `{"lane": [始点, 終点], "hw": 半幅}` を渡すと、画面には何も出ず、自動操縦だけが帯から横へ出る（BEHEMOTH の突進：画面には 5 本の線、自動操縦には 1 本の帯。平行な線を 1 本ずつ避けると線の間に挟まってしまう）。
    - 体力が尽きて最期の演出に入るときは `disarm()` を呼ぶ（全部位の当たり判定が消え、自機がぶつからず、弾も素通りする）。最後の大爆発は `game.big_blast(位置, 大きさ, 破片の色)`（1 = ボス、0.7 = 中ボス）。
    - ステージのボス（`final`）は、倒れきったら `game.boss_destroyed(self)` を呼ぶとステージクリアになる。中ボスは去るときに `finished = true` にして `game.remove_boss(self)`。
 2. `scripts/bosses/bosses.gd` の `KINDS` に足す。
@@ -134,7 +134,7 @@ Stages ──> StageDef（stage1.gd …）
 | SHIP | 自機の 3 形態、並べた比較、形態ごとの武器（連射・スピア・ホーミング 8 発） |
 | SMALL | 小型機の編隊（`INFO.demos` の数だけ） |
 | MEDIUM | 中型機・コンテナ・小惑星・砲台（その敵が最初に出るステージの地形・背景の上で） |
-| BOSS | 中ボス・ボス（STAR CORTEX は発狂から、OUROBOROS は突進から、VULCAN PRESS は暴走・発狂から、LODESTAR は暴走から、TITAN DREDGE は薙ぎ払いと発狂から、TEMPEST は SUPERCELL から、BEHEMOTH は榴弾と BREAKTHROUGH から、も。そのボスのステージの背景の上で） |
+| BOSS | 中ボス・ボス（STAR CORTEX は発狂から、OUROBOROS は突進から、VULCAN PRESS は暴走・発狂から、LODESTAR は暴走から、TITAN DREDGE は薙ぎ払いと発狂から、TEMPEST は SUPERCELL から、BEHEMOTH は突進と OVERRUN から、も。そのボスのステージの背景の上で） |
 | WAVES | 各ステージの全ウェーブを、そのエリアの地形と砲台つきで。最後にボス |
 | TERRAIN | エリアごとの地形の流れ、全区画を 1 つずつ静止で、IslandGen の全種類 |
 | SCENERY | 背景だけ（ステージ 1 は通常速度と 4 倍速、トンネルのあるステージは様式ごとに本編の速さと 1/4 の速さ、ステージ 4 はエリアごとの降下と基地への突入も） |

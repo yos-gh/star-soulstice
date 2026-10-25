@@ -4,42 +4,48 @@ extends BossBase
 ## the storm generator in the middle (the weak point, the gauge), with
 ## three lightning masts (glazed insulator stacks under steel toroids: one
 ## aft on the spine, one on each front boom).
-## Lightning, its signature: a mast charges (a lock-on and the bolt's whole
-## jagged path marked, from the mast through where the ship is on to the
-## bottom edge), then the bolt strikes down that path for a moment: be off
-## the line by then. The rotor nacelles shed hail in their downwash,
-## columns of shells falling straight down under a pair of rotors at a time
-## (break through them, or keep between). The generator fires telegraphed
-## needle bursts and a squall of shells (big, then small). A quiet gap ends
-## every round. Armour covers the rotors and the back of the hull; from
-## below the generator is open.
+## Lightning, its signature, often: a mast charges and its bolt's whole
+## jagged path is marked, from the mast through the ship to the bottom
+## edge; the path follows the ship (leading it a little) while the mast
+## charges, then holds still for a moment, then the bolt strikes down it:
+## be off the line once it stops. Two masts sometimes strike together, one
+## at the ship and one to the side it is heading for. The rotor nacelles
+## shed hail in their downwash, columns of shells falling straight down
+## under a pair of rotors at a time (break through them, or keep between).
+## The generator fires telegraphed needle bursts and a squall of shells
+## (big, then small). A short quiet gap ends every round. Armour covers the
+## rotors and the back of the hull; from below the generator is open.
 ## SUPERCELL (all three masts broken): the generator takes the lightning
 ## itself and forks it, three bolts at once (one through the ship, one
-## either side of it), the hail falls from all four rotors, rings of shells
-## gust out of the generator, a gap in each, and it sways harder. It leaves
-## after a while; shot down, its rotors die and it goes down burning.
+## either side of it) three times a round, the hail falls from all four
+## rotors, rings of shells gust out of the generator, a gap in each, and it
+## sways harder. It leaves after a while; shot down, its rotors die and it
+## goes down burning.
 
 const INFO := {
 	"name": "TEMPEST", "role": "mid",
-	"desc": "嵐を操る浮遊ステーション：4 基の揚力ローターが X 字の骨組みで真ん中の嵐の発生機（弱点）を支え、3 本の避雷塔（碍子の柱）を持つ。塔が充電すると予兆（稲妻の道筋全体を表示：塔から自機のいた所を通って下端まで）のあと一瞬だけ雷が落ちる。ローターの下から雹（物理弾）の柱が 2 基ずつ真下へ降る（撃ち抜けるし、柱の間にいてもよい）。発生機から狙いの針弾と物理弾の扇。合間に静かな間。装甲はローターと船体の後ろだけで、下から発生機を撃てる。塔を全部壊すと SUPERCELL：発生機が雷を 3 本に分けて落とし（1 本は自機、2 本はその両脇）、雹は 4 基とも、隙間のある物理弾の輪を吹き出し、揺れが大きくなる。時間が来ると去る",
+	"desc": "嵐を操る浮遊ステーション：4 基の揚力ローターが X 字の骨組みで真ん中の嵐の発生機（弱点）を支え、3 本の避雷塔（碍子の柱）を持つ。塔が充電すると稲妻の道筋（塔から自機を通って下端まで）が予兆として出て、充電のあいだ自機を少し先読みして追い、止まった直後に雷が落ちる（止まったら線から出る）。雷は頻繁で、2 本の塔が同時に落とすこともある（1 本は自機、1 本は自機の向かう側）。ローターの下から雹（物理弾）の柱が 2 基ずつ真下へ降る（撃ち抜けるし、柱の間にいてもよい）。発生機から狙いの針弾と物理弾の扇。合間に短い静かな間。装甲はローターと船体の後ろだけで、下から発生機を撃てる。塔を全部壊すと SUPERCELL：発生機が雷を 3 本に分けて 1 周に 3 回落とし（1 本は自機、2 本はその両脇）、雹は 4 基とも、隙間のある物理弾の輪を吹き出し、揺れが大きくなる。時間が来ると去る",
 	"demos": [["FULL", ""], ["SUPERCELL", "B"]],
 }
-const CORE_HP := 640.0
+const CORE_HP := 470.0
 const SCORE := 25000
-const COIL_HP := 150.0
+const COIL_HP := 120.0
 const COIL_SCORE := 3000
 const CORE_OFF := Vector3(0, 0, 0.8)
 const ROTOR_OFF := [Vector3(-9.5, 0, -3.0), Vector3(9.5, 0, -3.0), Vector3(-7.0, 0, 3.0), Vector3(7.0, 0, 3.0)]
 const COIL_OFF := [Vector3(0, 0, -4.4), Vector3(-3.9, 0, 1.6), Vector3(3.9, 0, 1.6)]
 const HULL_ARMOUR := [Vector3(0, 0, -2.4), 2.0]
-const CHARGE_T := 1.0  # a mast's charge, marked: then the bolt
+const TRACK_T := 0.5  # a mast's charge: its marked path follows the ship
+const LOCK_T := 0.55  # then holds still: then the bolt
+const LEAD := 0.3  # seconds of the ship's motion the path leads it by
+const BRACKET := 2.8  # the second of two bolts: this far to the side the ship heads for
 const STRIKE_T := 0.3  # the bolt
 const FADE_T := 0.25  # its afterglow (harmless)
 const BOLT_R := 0.55  # the bolt's deadly half width
 const BOLT_COL := Color(0.86, 0.8, 1.0)
 const HAIL_EVERY := 0.17
 const HAIL_SPEED := 6.0
-const ROUND_A := 7.6
+const ROUND_A := 7.2
 const ROUND_B := 6.2
 const LIFE := 50.0
 
@@ -49,7 +55,9 @@ var coils: Array[Enemy] = []
 var armour: Array[Enemy] = []
 var rotors: Array[MeshInstance3D] = []
 var rotor_spin := 1.0
-## bolts: {node, pts, state (charge, strike, fade), t}
+## bolts: {node, turn (radians round the node, a fork's side bolts), side
+## (lateral offset), jit (the path's jaggedness), pts, warn (its telegraph),
+## state (track, lock, strike, fade), t}
 var bolts: Array[Dictionary] = []
 var bolt_mesh: ImmediateMesh
 var bolt_mi: MeshInstance3D
@@ -67,12 +75,15 @@ var hail_t := 0.0
 var hail_k := 0
 var dying_t := 0.0
 var boom_t := 0.0
+var ship_v := Vector3.ZERO  # the ship's motion (smoothed): the bolts lead it
+var ship_last := Vector3.ZERO
 
 
 func setup(g: Game) -> void:
 	game = g
 	rest_z = game.field_top + 9.0
 	center = Vector3(0, 0, game.field_top - 10.0)
+	ship_last = game.player.position
 	# order matters (a shot hits the first part in the list it touches):
 	# the masts, then the generator, the armour last
 	for k in COIL_OFF.size():
@@ -141,7 +152,7 @@ func on_part_killed(e: Enemy) -> void:
 		game.shake(0.6)
 		# a mast gone mid-charge: no bolt from it
 		for b in bolts.duplicate():
-			if b["node"] == e and b["state"] == "charge":
+			if b["node"] == e and (b["state"] == "track" or b["state"] == "lock"):
 				bolts.erase(b)
 		if coils_alive() == 0 and phase == 1:
 			_supercell()
@@ -160,6 +171,10 @@ func tick(dt: float) -> void:
 		return
 	st += dt
 	life_t += dt
+	if dt > 0.0:
+		var p := game.player.position
+		ship_v = ship_v.lerp((p - ship_last) / dt, clampf(dt * 8.0, 0.0, 1.0))
+		ship_last = p
 	match phase:
 		0:
 			center.z = move_toward(center.z, rest_z, 6.0 * dt)
@@ -207,32 +222,41 @@ func _once(key: String, at: float) -> bool:
 	return false
 
 
-## Phase A: hail under the back rotors, a bolt, a needle burst, hail under
-## the front rotors, another bolt from the next mast, a squall; quiet.
+## Phase A: bolts from the masts in turn all round (one pair at once), hail
+## under the back rotors then the front ones, a needle burst, a squall; a
+## short quiet gap.
 func _round_a(dt: float) -> void:
 	cycle_t += dt
-	_hail_on([0, 1], cycle_t > 0.4 and cycle_t < 2.4)
-	_hail_on([2, 3], cycle_t > 3.6 and cycle_t < 5.6)
-	if _once("b1", 1.0):
+	_hail_on([0, 1], cycle_t > 0.3 and cycle_t < 2.0)
+	_hail_on([2, 3], cycle_t > 3.0 and cycle_t < 4.8)
+	if _once("b1", 0.4):
+		_mast_bolt()
+	if _once("b2", 1.6):
 		_mast_bolt()
 	if _once("w_core", 2.6):
 		game.warn(core, Enemy.WINDUP_SHOT + 0.15, Game.Warn.SHOT, core.radius)
 	if _once("core", 2.6 + Enemy.WINDUP_SHOT + 0.15):
 		_needles(5, 22.0)
-	if _once("b2", 4.2):
+	if _once("b3", 3.4):
+		# two masts at once: at the ship, and to the side it heads for
 		_mast_bolt()
-	if _once("sq", 5.8):
+		_mast_bolt(_heading_side() * BRACKET, false)
+	if _once("b4", 4.8):
+		_mast_bolt()
+	if _once("sq", 5.5):
 		_squall(Bullets.BIG)
-	if _once("sqs", 6.05):
+	if _once("sqs", 5.75):
 		_squall(Bullets.SMALL)
+	if _once("b5", 6.0):
+		_mast_bolt()
 	if cycle_t >= ROUND_A:
 		cycle_t = 0.0
 		fired.clear()
 
 
-## SUPERCELL: forked bolts from the generator twice a round, hail from all
-## four rotors in two bursts, rings of shells with a gap, a wide needle
-## burst; a short quiet gap.
+## SUPERCELL: forked bolts from the generator three times a round, hail
+## from all four rotors in two bursts, rings of shells with a gap, a wide
+## needle burst; a short quiet gap.
 func _round_b(dt: float) -> void:
 	cycle_t += dt
 	var on := (cycle_t > 0.2 and cycle_t < 1.6) or (cycle_t > 2.6 and cycle_t < 4.0)
@@ -241,13 +265,15 @@ func _round_b(dt: float) -> void:
 		_fork()
 	var cp := core.position + Vector3(0, 0, 1.4)
 	for k in 2:
-		if _once("ring%d" % k, 1.9 + k * 0.45) and game.can_fire(cp):
+		if _once("ring%d" % k, 1.6 + k * 0.45) and game.can_fire(cp):
 			game.bullets.ring(cp, 18, 4.6, Bullets.SHELL, self, life_t * 0.9 + k * 0.17, 3, life_t * 2.3 + k)
-	if _once("w_core", 2.9):
+	if _once("f2", 2.4):
+		_fork()
+	if _once("w_core", 3.3):
 		game.warn(core, Enemy.WINDUP_SHOT + 0.15, Game.Warn.SHOT, core.radius)
-	if _once("core", 2.9 + Enemy.WINDUP_SHOT + 0.15):
+	if _once("core", 3.3 + Enemy.WINDUP_SHOT + 0.15):
 		_needles(7, 34.0)
-	if _once("f2", 3.8):
+	if _once("f3", 4.4):
 		_fork()
 	if cycle_t >= ROUND_B:
 		cycle_t = 0.0
@@ -266,15 +292,25 @@ func _supercell() -> void:
 
 # ------------------------------------------------------------ lightning
 
-## The next mast still standing charges a bolt at the ship.
-func _mast_bolt() -> void:
+## -1 or 1: the way the ship is moving across the screen (toward the middle
+## when it is still).
+func _heading_side() -> float:
+	if absf(ship_v.x) > 1.0:
+		return signf(ship_v.x)
+	return -signf(game.player.position.x) if absf(game.player.position.x) > 0.5 else 1.0
+
+
+## The next mast still standing charges a bolt at the ship (`side`: that
+## far to one side of it).
+func _mast_bolt(side := 0.0, sound := true) -> void:
 	for n in COIL_OFF.size():
 		var c := coils[(coil_k + n) % coils.size()]
 		if c.dead or not game.can_fire(c.position):
 			continue
 		coil_k = (coils.find(c) + 1) % coils.size()
-		_charge(c, game.player.position)
-		game.sfx.play("slam")
+		_charge(c, 0.0, side, sound)
+		if sound:
+			game.sfx.play("slam")
 		return
 
 
@@ -283,26 +319,44 @@ func _mast_bolt() -> void:
 func _fork() -> void:
 	if not game.can_fire(core.position):
 		return
-	var d := game.player.position - core.position
 	for a: float in [0.0, -0.42, 0.42]:
-		_charge(core, core.position + d.rotated(Vector3.UP, a), a == 0.0)
+		_charge(core, a, 0.0, a == 0.0)
 	game.sfx.play("slam")
 
 
-## A bolt from `node` charging: its jagged path from the node through
-## `through` to the bottom edge is marked now and struck CHARGE_T later.
-func _charge(node: Enemy, through: Vector3, sound := true) -> void:
+## A bolt from `node` charging (see _bolts): marked now, its path following
+## the ship for TRACK_T, still for LOCK_T, then struck.
+func _charge(node: Enemy, turn: float, side: float, sound := true) -> void:
+	var jit := PackedFloat32Array()
+	for k in 9:
+		jit.append(randf_range(-0.35, 0.35))
+	var b := {"node": node, "turn": turn, "side": side, "jit": jit, "state": "track", "t": TRACK_T}
+	b["pts"] = _bolt_path(b)
+	game.warn(node, TRACK_T + LOCK_T, Game.Warn.MOVE, node.radius, b["pts"], sound)
+	b["warn"] = game.warnings[game.warnings.size() - 1]
+	bolts.append(b)
+
+
+## A bolt's jagged path: from its node through where the ship will be
+## (leading it by LEAD, turned or shifted for the side bolts) on to the
+## bottom edge.
+func _bolt_path(b: Dictionary) -> PackedVector3Array:
+	var node: Enemy = b["node"]
 	var from := node.position
+	var lead := ship_v * LEAD
+	if lead.length() > 3.0:
+		lead = lead.normalized() * 3.0
+	var through := game.player.position + lead + Vector3(float(b["side"]), 0, 0)
+	through = from + (through - from).rotated(Vector3.UP, float(b["turn"]))
 	var to := game.line_to_bottom(from, through)
 	var d := to - from
-	var side := Vector3(-d.z, 0, d.x).normalized()
+	var nrm := Vector3(-d.z, 0, d.x).normalized()
+	var jit: PackedFloat32Array = b["jit"]
 	var pts := PackedVector3Array([from])
-	var n := 10
-	for k in range(1, n):
-		pts.append(from + d * (float(k) / n) + side * randf_range(-0.5, 0.5))
+	for k in range(1, 10):
+		pts.append(from + d * (float(k) / 10.0) + nrm * jit[k - 1])
 	pts.append(to)
-	bolts.append({"node": node, "pts": pts, "state": "charge", "t": CHARGE_T})
-	game.warn(node, CHARGE_T, Game.Warn.MOVE, node.radius, pts, sound)
+	return pts
 
 
 func _bolts(dt: float) -> void:
@@ -310,14 +364,22 @@ func _bolts(dt: float) -> void:
 		b["t"] -= dt
 		var node: Enemy = b["node"]
 		match b["state"]:
-			"charge":
+			"track", "lock":
 				if defeated or not is_instance_valid(node) or node.dead:
 					bolts.erase(b)
 					continue
 				# sparks crawl over the mast as it charges
 				if randf() < 0.35:
 					game.fx.sprite(node.position + Vector3(randf_range(-0.6, 0.6), 0.8, randf_range(-0.6, 0.6)), Vector3.ZERO, 0.5, 0.1, 0.12, BOLT_COL, 0.0)
-				if b["t"] <= 0.0:
+				if b["state"] == "track":
+					# the marked path follows the ship
+					b["pts"] = _bolt_path(b)
+					(b["warn"] as Dictionary)["to"] = b["pts"]
+					if b["t"] <= 0.0:
+						b["state"] = "lock"
+						b["t"] = LOCK_T
+						game.fx.sprite(node.position + Vector3(0, 1.0, 0), Vector3.ZERO, 0.6, 2.2, 0.18, BOLT_COL, 0.0)
+				elif b["t"] <= 0.0:
 					b["state"] = "strike"
 					b["t"] = STRIKE_T
 					game.sfx.play("exp_m")
@@ -353,13 +415,13 @@ func _draw_bolts() -> void:
 	bolt_mesh.clear_surfaces()
 	var any := false
 	for b in bolts:
-		if b["state"] != "charge":
+		if b["state"] == "strike" or b["state"] == "fade":
 			any = true
 	if not any:
 		return
 	bolt_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
 	for b in bolts:
-		if b["state"] == "charge":
+		if b["state"] != "strike" and b["state"] != "fade":
 			continue
 		var a := 1.0 if b["state"] == "strike" else float(b["t"]) / FADE_T
 		var w := 0.75 if b["state"] == "strike" else 0.5
