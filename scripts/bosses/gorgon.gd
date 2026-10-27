@@ -1,66 +1,71 @@
 extends BossBase
 ## Mid-boss of stage 5 (after Star Soldier's Delilah): GORGON, a fortress
-## dug into a great crater on the enemy planet, its face a skull of oxblood
-## armour over bare machinery with two great eyes, left and right: the
-## cores, each with its own durability. Cables like snakes run from its
-## temples down into the ground, and gun silos stand in a ring round the
-## crater's rim.
+## on a stepped platform in a crater of the enemy planet, bare machinery
+## like the stage 1 boss: a lattice frame (a spine down the middle, a
+## crossbar, girders round it), and in a square armoured housing at either
+## end of the crossbar an eye: the cores, each with its own durability.
+## The central gun at the foot of the spine and eight gun bunkers round
+## the platform can be destroyed too. Nothing armoured stands in front of
+## the eyes or the central gun (shots from below reach them).
 ## It lies in the ground, so it comes in with the scroll, which it brings to
-## a stop over itself (Game.scroll_hold); asleep, its armoured lids shut.
-## Then the eyes open, and they follow the ship.
+## a stop over itself (Game.scroll_hold); asleep, its shutters closed over
+## the eyes. Then the shutters slide back and the eyes follow the ship.
 ## Its signature is the gaze: an eye charges, a thin sight from it through
-## the ship (leading it a little) to the bottom edge follows the ship, then
-## holds still as a band as wide as the beam and blinks, and a thick beam
-## burns down it. The eyes fire them in pairs (one through the ship, one
-## to the side it is heading for), and every other round they sweep their
-## beams together across the screen: the sector each sweeps is marked
-## first, faint, with chevrons along its far edge. The maw between the
-## cheeks lobs iron balls (they can't be shot and they stop shots) that
-## burst into rings of shells; the eyes fire needle fans; the silos' guns
-## rise in turn, four at a time, and fire spreads of needles (they hold
-## fire with the ship close, like any ground gun).
-## Hit both eyes together (the side shots of Form III's five, or homing
-## lasers) and break them within TWIN_WINDOW of each other: a TWIN BREAK
-## bonus, and the fortress dies at once. Break one alone and the other
-## goes mad: DEATH STARE, a beam that stays on and follows the ship for
-## seconds while the dead socket sprays shells and every gun left comes
-## up. WRATH, with both eyes alive, once the silos are all destroyed or
-## after a while: the sweeps come every round, wider, with bigger iron
-## volleys, double gazes and all the guns up. It sinks its lids and lets
-## the ground move on after LIFE seconds.
+## the ship (leading it a little) to the edge of the screen follows the
+## ship, then holds still as a band as wide as the beam and blinks, and a
+## thick beam burns down it. The eyes fire them in pairs (one through the
+## ship, one to the side it is heading for), and every other round they
+## sweep their beams together across the screen: the sector each sweeps is
+## marked first, faint, with chevrons along its far edge. The central gun
+## lobs iron balls (they can't be shot and they stop shots) that burst into
+## rings of shells; the eyes fire needle fans; the bunkers' guns rise in
+## turn, four at a time, and fire spreads of needles (they hold fire with
+## the ship close, like any ground gun).
+## Hit both eyes together (the front side shots of Form III's five, the eyes
+## set wide for them, or homing lasers) and break them within TWIN_WINDOW
+## of each other: a TWIN BREAK bonus, and the fortress dies at once. Break
+## one alone and the other goes mad: DEATH STARE, a beam that stays on and
+## follows the ship for seconds while the dead housing sprays shells and
+## every gun left comes up. WRATH, with both eyes alive, once the bunkers
+## are all destroyed or after a while: the sweeps come every round, wider,
+## with bigger iron volleys, double gazes and all the guns up. It shuts its
+## eyes and lets the ground move on after LIFE seconds.
 
 const INFO := {
 	"name": "GORGON", "role": "mid",
-	"desc": "クレーターに埋まった要塞（スターソルジャーのデライラ風）。暗赤の装甲の顔の左右に 2 つの目（核：それぞれ別の耐久）、こめかみから地面へ蛇のような太いケーブル、クレーターの縁に砲台のサイロが 8 つ。地上にあるのでスクロールといっしょに来て、真上でスクロールを止める（来る間はまぶたが閉じている）。目は自機を追う。目玉の極太レーザー（大技）：細い照準が自機を少し先読みして下端まで追い、止まるとビームの幅の帯になって点滅し、ビームが焼く。2 つの目で 1 本は自機、1 本は自機の向かう側。1 周おきに 2 本のビームが扇形に薙ぐ（薙ぐ範囲を薄く、奥の縁に矢印）。口から鉄球弾（撃ち落とせず、ショットを遮る）がはじけて物理弾の輪に。目から針弾の扇。サイロから砲台が 4 基ずつ交代でせり上がって針弾の 3 方向（近いと撃てない）。2 つの目を TWIN_WINDOW 秒以内に壊すと TWIN BREAK のボーナスでそのまま撃破（第 3 形態の 5 方向の斜めのショットかホーミングで同時に）。片目だけ壊すと残りの目が DEATH STARE：ビームが出たまま数秒自機を追い、つぶれた目から物理弾が渦を巻き、残った砲台が全部上がる。両目が残ったままサイロを全部壊すか時間で WRATH：毎周の薙ぎ払いが広く、鉄球が増え、2 本の照準と全砲台。時間が来るとまぶたを閉じて地面ごと流れ去る",
+	"desc": "クレーターの段々の台の上に組まれた剥き出しの機械の要塞（スターソルジャーのデライラ風）：真ん中の背骨と横桁と周りの桁の格子、横桁の両端の四角い装甲の筐体に目が 1 つずつ（核：それぞれ別の耐久）。背骨の根元の中央砲台と、台のまわりの 8 つのトーチカの砲台も壊せる。目と中央砲台の手前には何も置かない（下からショットが届く）。地上にあるのでスクロールといっしょに来て、真上でスクロールを止める（来る間は目の上のシャッターが閉じている）。目は自機を追う。目玉の極太レーザー（大技）：細い照準が自機を少し先読みして画面の端まで追い、止まるとビームの幅の帯になって点滅し、ビームが焼く。2 つの目で 1 本は自機、1 本は自機の向かう側。1 周おきに 2 本のビームが扇形に薙ぐ（薙ぐ範囲を薄く、奥の縁に矢印）。中央砲台から鉄球弾（撃ち落とせず、ショットを遮る）がはじけて物理弾の輪に。目から針弾の扇。トーチカから砲台が 4 基ずつ交代でせり上がって針弾の 3 方向（近いと撃てない）。2 つの目を TWIN_WINDOW 秒以内に壊すと TWIN BREAK のボーナスでそのまま撃破（第 3 形態の 5 方向の前の斜めのショット：目はそのために左右に広く離してある。またはホーミング）。片目だけ壊すと残りの目が DEATH STARE：ビームが出たまま数秒自機を追い、壊れた筐体から物理弾が渦を巻き、残った砲台が全部上がる。両目が残ったままトーチカを全部壊すか時間で WRATH：毎周の薙ぎ払いが広く、鉄球が増え、2 本の照準と全砲台。時間が来ると目を閉じて地面ごと流れ去る",
 	"demos": [["FULL", ""], ["WRATH", "W"], ["DEATH STARE", "L"]],
 }
-const EYE_HP := 480.0
+const EYE_HP := 620.0
 const EYE_SCORE := 10000
 const SCORE := 20000  # both eyes gone: the fortress falls
 const TWIN_BONUS := 50000
 const TWIN_WINDOW := 1.5  # seconds between the two eyes for the TWIN BREAK
 const GUN_HP := 36.0
 const GUN_SCORE := 2000
-const EYE_OFF := [Vector3(-5.4, 0, 0), Vector3(5.4, 0, 0)]
+const EYE_OFF := [Vector3(-8.5, 0, 0), Vector3(8.5, 0, 0)]  # wide apart: Form III's front side shots meet both
 const EYE_Y := -2.2  # the eyeballs' centres
-const MAW_OFF := Vector3(0, 0, 3.5)
-const MAW_Y := -2.6
-## the silos round the rim; two groups take turns (A, B)
-const SILO_OFF := [Vector3(-11.5, 0, -4.5), Vector3(11.5, 0, -4.5), Vector3(-13.0, 0, 1.2), Vector3(13.0, 0, 1.2),
-	Vector3(-10.4, 0, 6.2), Vector3(10.4, 0, 6.2), Vector3(-4.6, 0, 8.0), Vector3(4.6, 0, 8.0)]
+const CANNON_OFF := Vector3(0, 0, 2.6)
+const CANNON_Y := -3.0
+const CANNON_HP := 420.0
+const CANNON_SCORE := 8000
+## the gun bunkers round the platform; two groups take turns (A, B)
+const SILO_OFF := [Vector3(-14.0, 0, -6.5), Vector3(14.0, 0, -6.5), Vector3(-14.3, 0, 1.0), Vector3(14.3, 0, 1.0),
+	Vector3(-12.6, 0, 7.4), Vector3(12.6, 0, 7.4), Vector3(-4.6, 0, 8.0), Vector3(4.6, 0, 8.0)]
 const GROUPS := [[0, 3, 4, 7], [1, 2, 5, 6]]
-const GUN_DOWN := -4.6  # the gun's height down in its silo, and up
-const GUN_UP := -2.2
+const GUN_DOWN := -4.8  # the gun's height down in its bunker, and up
+const GUN_UP := -2.3
 const RISE_T := 0.7
 const SILO_SHIFT := 5.0  # each group's turn
 const BURST := 2.0  # between a gun's bursts (rages: BURST_RAGE)
 const BURST_RAGE := 1.3
 const SEAL := 6.0
-## armoured hit zones: the nose, the maw, the brows, the cheeks, the crown
-const ARMOUR := [[Vector3(0, 0, -1.0), 1.5], [Vector3(0, 0, 3.5), 1.8], [Vector3(-4.8, 0, -3.1), 1.7], [Vector3(4.8, 0, -3.1), 1.7],
-	[Vector3(-5.8, 0, 3.6), 1.9], [Vector3(5.8, 0, 3.6), 1.9], [Vector3(0, 0, -4.6), 2.2], [Vector3(-2.6, 0, 1.6), 1.2], [Vector3(2.6, 0, 1.6), 1.2]]
-const LID_SLIDE := 2.2  # how far the lids part ...
-const LID_SINK := 2.2  # ... and sink into the brow and the cheek
+## armoured hit zones, all behind the eyes and the central gun: the spine
+## over the gun, the crossbar, the back
+const ARMOUR := [[Vector3(0, 0, -1.2), 1.3], [Vector3(-4.2, 0, -3.0), 1.3], [Vector3(4.2, 0, -3.0), 1.3], [Vector3(0, 0, -5.2), 2.0],
+	[Vector3(-8.5, 0, -4.0), 1.4], [Vector3(8.5, 0, -4.0), 1.4]]
+const LID_SLIDE := 2.6  # how far the shutters part ...
+const LID_SINK := 0.75  # ... and drop onto the housing
 const DECEL := 4.2  # the scroll's braking as it comes in (units/s/s)
 const RELEASE := 5.0  # and its pick-up as it lets the ground go
 ## the beams
@@ -84,13 +89,12 @@ const WRATH_T := 38.0
 const LIFE := 64.0
 
 var hull: MeshInstance3D
-var crater: MeshInstance3D
 var eyes: Array[Enemy] = []
 var eye_q: Array[Quaternion] = [Quaternion.IDENTITY, Quaternion.IDENTITY]
 var lids: Array = []  # per eye [upper, lower]
 var lid_f := 1.0  # 1 shut, 0 open
 var sockets: Array = [null, null]  # a burnt-out eye's wreck (MeshInstance3D)
-var maw: Enemy
+var cannon: Enemy
 var armour: Array[Enemy] = []
 ## the silos: {gun, state (down, rise, up, sink), t, burst, dead}
 var silos: Array[Dictionary] = []
@@ -126,9 +130,9 @@ func setup(g: Game) -> void:
 	center = Vector3(0, 0, game.field_top - 22.0)
 	ship_last = game.player.position
 	# order matters (a shot hits the first part in the list it touches): the
-	# eyes, the guns, the maw, the armour last
+	# eyes, the guns, the central gun, the armour last
 	for k in 2:
-		var e := game.spawn_part(self, "gorgon_eye", 1.7)
+		var e := game.spawn_part(self, "gorgon_eye", 1.75)
 		e.hp = EYE_HP
 		e.max_hp = EYE_HP
 		e.score = EYE_SCORE
@@ -156,11 +160,14 @@ func setup(g: Game) -> void:
 		gun.ram = false
 		gun.armored = true
 		silos.append({"gun": gun, "state": "down", "t": 0.0, "burst": 0.0, "dead": false, "y": GUN_DOWN})
-	maw = game.spawn_part(self, "gorgon_maw", 1.6)
-	maw.armored = true
-	maw.hp = 1e9
-	maw.ground = true
-	maw.ram = false
+	cannon = game.spawn_part(self, "gorgon_cannon", 1.6)
+	cannon.hp = CANNON_HP
+	cannon.max_hp = CANNON_HP
+	cannon.score = CANNON_SCORE
+	cannon.energy_drop = 14.0
+	cannon.blast = 2.8
+	cannon.ground = true
+	cannon.ram = false
 	for a: Array in ARMOUR:
 		var e := game.spawn_part(self, "", a[1])
 		e.armored = true
@@ -171,11 +178,6 @@ func setup(g: Game) -> void:
 	hull = MeshInstance3D.new()
 	hull.mesh = Vox.get_mesh("gorgon_hull")
 	add_child(hull)
-	# the crater is ground, not the fortress: it stays out of its wreck
-	# (Vox.sink_node) and goes when it does
-	crater = MeshInstance3D.new()
-	crater.mesh = Vox.get_mesh("gorgon_crater")
-	game.backdrop.add_child(crater)
 	beam_mesh = ImmediateMesh.new()
 	beam_mi = MeshInstance3D.new()
 	beam_mi.mesh = beam_mesh
@@ -192,8 +194,6 @@ func setup(g: Game) -> void:
 
 func _exit_tree() -> void:
 	# (also when the field is cleared under it)
-	if is_instance_valid(crater):
-		crater.queue_free()
 	if is_instance_valid(beam_mi):
 		beam_mi.queue_free()
 
@@ -205,6 +205,18 @@ func _arm(on: bool) -> void:
 			e.armored = on
 
 
+## Out of health: like BossBase.disarm, but the wreck is not sunk under the
+## explosions (Vox.sink_node): it lies deep in the ground already, under
+## them, and sinking a thing that deep scrambled the picture.
+func disarm() -> void:
+	defeated = true
+	for e: Enemy in game.enemies:
+		if e.controller == self:
+			e.intangible = true
+			e.ram = false
+			e.sunk = true
+
+
 func on_hit(_e: Enemy, dmg: float) -> float:
 	return 0.0 if defeated else dmg
 
@@ -213,6 +225,10 @@ func on_part_killed(e: Enemy) -> void:
 	var k := eyes.find(e)
 	if k >= 0:
 		_eye_down(k)
+		return
+	if e == cannon:
+		# its iron stops; it smoulders
+		game.shake(0.7)
 		return
 	for s in silos:
 		if s["gun"] == e:
@@ -328,9 +344,9 @@ func _next_round(len: float) -> void:
 		round_k += 1
 
 
-## Phase A: a pair of gazes, the maw's iron, the eyes' needle fans, then
+## Phase A: a pair of gazes, the central gun's iron, the eyes' needle fans, then
 ## (every other round) a sweep of both beams inward from the sides, or two
-## gazes one after the other; the maw again.
+## gazes one after the other; the central gun again.
 func _round_a(dt: float) -> void:
 	cycle_t += dt
 	if _once("gaze", 0.3):
@@ -356,7 +372,7 @@ func _round_a(dt: float) -> void:
 
 ## WRATH: a scissor sweep (the beams cross, then open out to the sides),
 ## a bigger iron volley, both eyes gazing with fans, the inward sweep, the
-## maw again; all the guns up.
+## central gun again; all the guns up.
 func _round_wrath(dt: float) -> void:
 	cycle_t += dt
 	if _once("open", 0.3):
@@ -376,7 +392,7 @@ func _round_wrath(dt: float) -> void:
 
 
 ## DEATH STARE (one eye left): its beam stays on and follows the ship while
-## the dead socket sprays shells; the maw's iron, a wide needle fan, a
+## the dead housing sprays shells; the central gun's iron, a wide needle fan, a
 ## quick gaze.
 func _round_stare(dt: float) -> void:
 	cycle_t += dt
@@ -486,8 +502,8 @@ func _cross(open: bool) -> void:
 		if e.dead or not game.can_fire(e.hit_pos):
 			continue
 		var s := -1.0 if k == 0 else 1.0
-		var x0 := s * (-5.0 if open else 11.0)
-		var x1 := s * (10.0 if open else 2.2)
+		var x0 := s * (-3.0 if open else 14.0)
+		var x1 := s * (11.0 if open else 3.5)
 		var a0 := _ang_to_bottom(e.hit_pos, x0)
 		var a1 := _ang_to_bottom(e.hit_pos, x1)
 		var b := {"eye": e, "kind": "sweep", "state": "lock", "t": SWEEP_LOCK, "ang": a0, "a0": a0, "a1": a1, "side": 0.0}
@@ -711,13 +727,14 @@ func _chevrons(o: Vector3, a0: float, a1: float) -> void:
 
 # ------------------------------------------------------------ guns
 
-## The maw lobs `n` iron balls over `spread` degrees at the ship (they burst
-## into rings of shells); `snaking` makes them weave.
+## The central gun lobs `n` iron balls over `spread` degrees at the ship
+## (they burst into rings of shells); `snaking` makes them weave. Not once
+## it is destroyed.
 func _maw(n: int, spread: float, snaking: bool) -> void:
-	if not game.can_fire(maw.hit_pos):
+	if cannon.dead or not game.can_fire(cannon.hit_pos):
 		return
-	game.warn_then(maw, 0.7, Game.Warn.SHOT, func() -> void:
-		var muzzle := maw.global_position + Vector3(0, 0.9, 0)
+	game.warn_then(cannon, 0.7, Game.Warn.SHOT, func() -> void:
+		var muzzle := cannon.global_position + Vector3(0, 0.7, 0) - cannon.model.global_basis.z * 1.6
 		var from := game.to_plane(muzzle)
 		var aim := game.bullets.aim(from)
 		for i in n:
@@ -818,7 +835,6 @@ func _spray(dt: float) -> void:
 
 func _place(dt: float) -> void:
 	hull.position = center
-	crater.position = center
 	for k in 2:
 		var e := eyes[k]
 		var p: Vector3 = center + EYE_OFF[k] + Vector3(0, EYE_Y, 0)
@@ -839,8 +855,10 @@ func _place(dt: float) -> void:
 		(lids[k][1] as MeshInstance3D).position = p + Vector3(0, -open * LID_SINK, open * LID_SLIDE)
 		if sockets[k] != null:
 			(sockets[k] as MeshInstance3D).position = p
-	maw.position = center + MAW_OFF + Vector3(0, MAW_Y, 0)
-	maw.model.rotation.y += dt * (1.6 if phase == 3 or phase == 4 else 0.6)
+	cannon.position = center + CANNON_OFF + Vector3(0, CANNON_Y, 0)
+	if not cannon.dead:
+		var dc := game.player.position - cannon.hit_pos
+		cannon.model.rotation.y = lerp_angle(cannon.model.rotation.y, atan2(-dc.x, -dc.z), clampf(3.0 * dt, 0.0, 1.0))
 	for k in armour.size():
 		armour[k].position = center + (ARMOUR[k][0] as Vector3) + Vector3(0, -2.0, 0)
 	for k in silos.size():
@@ -858,6 +876,8 @@ func _place(dt: float) -> void:
 			if sockets[k] != null and not defeated:
 				var at: Vector3 = center + EYE_OFF[k] + Vector3(randf_range(-0.6, 0.6), EYE_Y + 1.0, randf_range(-0.6, 0.6))
 				game.fx.puff(at, Vector3(0, 2.0, 0), 0.9, 1.1, 0.4, Fx.SMOKE)
+		if cannon.dead and not defeated:
+			game.fx.puff(cannon.global_position + Vector3(randf_range(-0.8, 0.8), 1.0, randf_range(-0.8, 0.8)), Vector3(0, 2.0, 0), 0.9, 1.1, 0.4, Fx.SMOKE)
 
 
 # ------------------------------------------------------------ the end
@@ -913,7 +933,7 @@ func _dying(dt: float) -> void:
 			if k % 3 == 2:
 				at = center + SILO_OFF[k % SILO_OFF.size()]
 			else:
-				at = center + Vector3(randf_range(-8.0, 8.0), 0, randf_range(-5.0, 5.0))
+				at = center + Vector3(randf_range(-11.0, 11.0), 0, randf_range(-6.0, 5.0))
 			game.fx.explode(game.to_plane(at + Vector3(0, -2.0, 0)) + Vector3(0, 0.4, 0), 2.4, Vector3.ZERO, Color(0.46, 0.14, 0.15))
 			game.sfx.play("exp_m")
 			game.shake(0.4)
@@ -940,7 +960,7 @@ func _finish() -> void:
 		game.scroll_hold = -1.0
 	var parts: Array[Enemy] = []
 	parts.append_array(eyes)
-	parts.append(maw)
+	parts.append(cannon)
 	parts.append_array(armour)
 	for s in silos:
 		parts.append(s["gun"])

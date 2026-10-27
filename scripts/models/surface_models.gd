@@ -33,7 +33,8 @@ const NAMES := [
 	"surface_regolith_a", "surface_regolith_b", "surface_regolith_c", "surface_regolith_d", "surface_regolith_e", "surface_regolith_gate",
 	"surface_rift_a", "surface_rift_b", "surface_rift_c", "surface_rift_d", "surface_rift_gate",
 	"surface_basin_a", "surface_basin_b", "surface_basin_c", "surface_basin_gate",
-	"gorgon_hull", "gorgon_crater", "gorgon_eye", "gorgon_lid", "gorgon_socket", "gorgon_maw", "gorgon_gun",
+	"gorgon_hull", "gorgon_eye", "gorgon_lid", "gorgon_socket", "gorgon_cannon", "gorgon_gun",
+	"halberd", "halberd_turret",
 ]
 
 const R := 0.5
@@ -75,18 +76,20 @@ static func make(name: String) -> ArrayMesh:
 	match name:
 		"gorgon_hull":
 			return _gorgon_hull()
-		"gorgon_crater":
-			return _gorgon_crater()
 		"gorgon_eye":
 			return _gorgon_eye()
 		"gorgon_lid":
 			return _gorgon_lid()
 		"gorgon_socket":
 			return _gorgon_socket()
-		"gorgon_maw":
-			return _gorgon_maw()
+		"gorgon_cannon":
+			return _gorgon_cannon()
 		"gorgon_gun":
 			return _gorgon_gun()
+		"halberd":
+			return _halberd()
+		"halberd_turret":
+			return _halberd_turret()
 	var parts := name.split("_")
 	if parts.size() == 3 and parts[0] == "surface" and STYLES.has(parts[1]):
 		return _segment(parts[1], parts[2])
@@ -593,8 +596,9 @@ static func _basin(g: Dictionary) -> void:
 
 # ------------------------------------------------------------ GORGON
 
-## GORGON: oxblood armour and bone on bare dark machinery, eyes and
-## conduits glowing pink.
+## GORGON: bare dark machinery in greys like the stage 1 boss, oxblood
+## armour and bone only on the eye housings, the central gun and the
+## bunkers' rims; the eyes and the conduits glow pink.
 const OX := Color(0.36, 0.15, 0.15)
 const OX_L := Color(0.43, 0.19, 0.18)
 const OX_D := Color(0.25, 0.11, 0.11)
@@ -602,156 +606,93 @@ const BONE := Color(0.56, 0.52, 0.45)
 const BONE_D := Color(0.44, 0.41, 0.35)
 const G_PINK := Color(1.0, 0.36, 0.66)
 const G_PINK_D := Color(0.72, 0.22, 0.48)
+const CONCRETE := Color(0.3, 0.31, 0.31)
+const CONCRETE_D := Color(0.25, 0.26, 0.26)
 const GU := 0.25  # the hull's voxel
-const GO := 40  # its origin row: row r's top face at (r + 1 - GO) * GU (y -10 at the bottom)
+const GO := 40  # its origin row: row r spans y (r - GO) * GU .. (r + 1 - GO) * GU (y -10 at the bottom)
+const DECK := -4.5  # the platform's top, and its lower terrace
+const TERRACE := -6.75
 
 
+## The last row whose top face is at or under height y.
 static func _gy(y: float) -> int:
 	return int(round(y / GU)) + GO - 1
 
 
-## The fortress (everything but its moving parts): the face over the
-## crater's pit, its brows and crown, the sockets (geared rings round holes
-## for the eyes), the nose of capacitor rings with conduits to the sockets,
-## the maw's socket, armoured cheeks over a row of bone radiator fins (the
-## teeth), bare machinery behind (two fans, a reactor dome, pipes), three
-## armoured cables like snakes from each side down into the ground, and
-## the silo towers round it (bores open for the guns).
+## A box in units (x0..x1, y0..y1, z0..z1) filled with c.
+static func _gbox(v: Vox, x0: float, x1: float, y0: float, y1: float, z0: float, z1: float, c: Color, glow := false) -> void:
+	v.fill(int(round(x0 / GU)), int(round(y0 / GU)) + GO, int(round(z0 / GU)), int(round(x1 / GU)) - 1, _gy(y1), int(round(z1 / GU)) - 1, c, glow)
+
+
+## The same box and its mirror image across x = 0.
+static func _gbox2(v: Vox, x0: float, x1: float, y0: float, y1: float, z0: float, z1: float, c: Color, glow := false) -> void:
+	_gbox(v, x0, x1, y0, y1, z0, z1, c, glow)
+	_gbox(v, -x1, -x0, y0, y1, z0, z1, c, glow)
+
+
+## The fortress (everything but its moving parts), after the Delilah of
+## Star Soldier and built like the stage 1 boss: a stepped platform (its
+## deck of plates and machinery blocks, a terrace of concrete round it,
+## ribbed walls down to the crater floor); on it a lattice frame: a box
+## girder spine down the middle (a conduit glowing pink inside it), a
+## crossbar from it out to the eye housings, girders down the sides and
+## across the back, a low walkway girder on down to the front edge; the eye
+## housings (square: oxblood plates on top, bone corner rams, shutter rails
+## along them, hydraulic rams out to the side girders, a square hole for
+## the eye); the central gun's mount; the gun bunkers on the terrace (open
+## hatches); at the back machinery blocks, pipes and two scaffold towers.
 static func _gorgon_hull() -> ArrayMesh:
 	var gb = Bosses.KINDS["gorgon"]
-	var eye_x: float = (gb.EYE_OFF[1] as Vector3).x
-	var maw: Vector3 = gb.MAW_OFF
-	var HX := 62
-	var HZ := 44
+	var ex: float = (gb.EYE_OFF[1] as Vector3).x
+	var cn: Vector3 = gb.CANNON_OFF
+	var HX := 64
+	var HZ := 52
 	var W := HX * 2
 	var D := HZ * 2
 	var v := Vox.new(W, 37, D)
 	v.jitter = 0.04
+	# ---- the platform, column by column
 	var top := PackedInt32Array()
 	top.resize(W * D)
 	top.fill(-1)
 	var cols: Array[Color] = []
 	cols.resize(W * D)
-	var glow := PackedByteArray()
-	glow.resize(W * D)
+	var walls: Array[Color] = []
+	walls.resize(W * D)
 	for zi in D:
 		for xi in W:
 			var q := Vector2((xi - HX + 0.5) * GU, (zi - HZ + 0.5) * GU)
 			var ax := absf(q.x)
-			var face := pow(ax / 10.2, 2.6) + pow(absf(q.y + 1.2) / 8.0, 2.6)
-			if face >= 1.0:
+			var deck := ax <= 12.0 and q.y >= -11.5 and q.y <= 6.0 and (ax - 12.0) + (q.y - 6.0) < -1.5 and (ax - 12.0) + (-11.5 - q.y) < -1.0
+			var terrace := ax <= 15.5 and q.y >= -12.8 and q.y <= 9.6 and (ax - 15.5) + (q.y - 9.6) < -2.0
+			if not terrace:
 				continue
-			var h := -3.3
-			var c: Color = GUN if posmod(int(floor(q.x / 1.2)) + int(floor(q.y / 1.2)), 2) == 0 else DUSK_L
-			if fposmod(q.x, 1.2) < GU or fposmod(q.y, 1.2) < GU:
-				c = DUSK
-			var lit := false
-			if face > 0.86:
-				h = -3.8
-				c = DUSK
-			var de := Vector2(ax - eye_x, q.y).length()
-			var dm := Vector2(q.x - maw.x, q.y - maw.z).length()
-			# ---- bare machinery behind the brow
-			if q.y < -4.6:
-				var df := Vector2(ax - 4.3, q.y + 7.4).length()
-				var dr := Vector2(q.x, q.y + 7.7).length()
-				if df < 1.9:
-					if df > 1.6:
-						h = -2.5
-						c = STEEL_M
-					else:
-						h = -3.4
-						var a := fposmod(atan2(q.y + 7.4, ax - 4.3) / TAU * 7.0 + df * 0.25, 1.0)
-						c = DUSK_L if a < 0.45 else DUSK_D
-						if df < 0.4:
-							h = -2.9
-							c = STEEL_L
-				elif dr < 1.6:
-					h = -3.0 + 1.1 * sqrt(maxf(0.0, 1.0 - pow(dr / 1.6, 2.0)))
-					c = STEEL_L if dr < 1.05 else STEEL_M
-					if dr > 1.1 and dr < 1.32:
-						c = G_PINK_D
-						lit = true
-				elif ax > 6.4 and ax < 9.2:
-					var k := fposmod(ax - 6.4, 0.8)
-					h = -2.8 if k < 0.5 else -3.4
-					c = STEEL_M if k < 0.5 else DUSK_D
-					if posmod(int(floor(q.y / 1.5)), 2) == 0 and k < 0.5 and fposmod(q.y, 1.5) < GU * 2.0:
-						c = DUSK_L  # pipe clamps
-			# ---- the brows (oxblood plates, bone along the inner edge)
-			if de > 2.75 and de < 4.4 and q.y < -0.6 and ax > 1.2:
-				h = -1.75
-				var a := atan2(q.y, ax - eye_x)
-				c = OX if posmod(int(floor(a * 8.0 / PI)), 2) == 0 else OX_L
-				if fposmod(a * 8.0 / PI, 1.0) < 0.12:
-					c = OX_D
-				if de < 3.05:
-					c = BONE
-					h = -1.6
-			# ---- the crown between them, a bone crest down the middle
-			if ax < 2.8 and q.y > -5.4 and q.y < -2.4:
-				h = -1.6
-				c = OX if fposmod(q.y, 1.0) > GU else OX_D
-				if ax < 0.3:
-					h = -1.35
-					c = BONE
-			# ---- the nose: capacitor rings up a spine
-			if ax < 1.25 and q.y >= -2.4 and q.y < 2.2:
-				var band := fposmod(q.y + 2.4, 0.8)
-				h = -2.0 if band > GU else -1.85
-				c = STEEL_M if band > GU else BONE_D
-				if band > GU * 1.5 and band < GU * 2.5 and ax < 0.3:
-					c = G_PINK
-					lit = true
-			# ---- conduits from the nose to the sockets
-			if absf(q.y - 0.2) < 0.22 and ax >= 1.25 and ax < 2.8:
-				h = -2.9
-				c = G_PINK_D
-				lit = true
-			# ---- the cheeks
-			if ax > 2.2 and ax < 8.9 and q.y > 1.4 and q.y < 5.0 and de > 2.75 and dm > 1.95:
-				h = -2.3 - floor((ax - 2.2) / 2.2) * 0.25
-				c = OX if posmod(int(floor(ax / 1.2)) + int(floor(q.y / 1.2)), 2) == 0 else OX_L
-				if fposmod(ax, 1.2) < GU or fposmod(q.y, 1.2) < GU:
-					c = OX_D
-				if ax > 8.4:
-					c = BONE_D
-			# ---- the teeth: bone radiator fins under the cheeks
-			if q.y >= 5.0 and q.y < 6.4 and ax < 7.8 and dm > 1.95:
-				if fposmod(ax, 0.5) < 0.25:
-					h = -2.15 - ax * 0.06 - (0.25 if q.y > 6.0 else 0.0)
-					c = BONE if q.y < 5.9 else BONE_D
-				else:
-					h = -3.5
-					c = DUSK_D
-			# ---- the sockets (holes for the eyes, geared rings round them)
-			if de < 2.75:
-				if de < 1.92:
-					h = -4.4
-					c = DUSK_D
-				elif de < 2.5:
-					h = -2.0
-					var a := atan2(q.y, ax - eye_x)
-					c = STEEL_M if posmod(int(floor(a * 14.0 / PI)), 2) == 0 else DUSK
-				else:
-					h = -2.5
-					c = GUN
-			# ---- the maw's socket
-			if dm < 1.95:
-				if dm < 1.3:
-					h = -4.2
-					c = DUSK_D
-				else:
-					h = -2.7
-					var a := atan2(q.y - maw.z, q.x)
-					c = STEEL_L if posmod(int(floor(a * 8.0 / PI)), 2) == 0 and dm > 1.6 else DUSK_L
 			var i := zi * W + xi
+			var h := TERRACE
+			var c := CONCRETE if posmod(int(floor(q.x / 2.0)) + int(floor(q.y / 2.0)), 2) == 0 else CONCRETE_D
+			if fposmod(q.x, 2.0) < GU or fposmod(q.y, 2.0) < GU:
+				c = DUSK
+			var wall := DUSK if posmod(int(floor(q.x / GU)) + int(floor(q.y / GU)), 4) != 0 else DUSK_L
+			if deck:
+				h = DECK
+				var n := Vox._hash(int(floor(q.x)), 21, int(floor(q.y)))
+				c = GUN if posmod(int(floor(q.x / 1.5)) + int(floor(q.y / 1.5)), 2) == 0 else DUSK_L
+				if fposmod(q.x, 1.5) < GU or fposmod(q.y, 1.5) < GU:
+					c = DUSK
+				elif n > 0.82:
+					h += GU  # machinery blocks a step up
+					c = STEEL_M
+				elif n < 0.1:
+					h -= GU  # vents
+					c = DUSK_D
+				wall = DUSK if fposmod(q.x + q.y, 1.0) > GU * 2.0 else DUSK_L
+			elif ax > 14.6 or q.y > 8.7 or q.y < -12.0:
+				# the terrace's edge, hazard-striped
+				c = TunnelModels.HAZ_A if posmod(int(floor((q.x + q.y) / 0.5)), 2) == 0 else TunnelModels.HAZ_B
 			top[i] = _gy(h)
 			cols[i] = c
-			glow[i] = 1 if lit else 0
-	# fill each column down to its lowest neighbour (open sides down into
-	# the pit)
-	var pit := _gy(-8.6)
+			walls[i] = wall
+	var floor_r := _gy(-9.8)
 	for zi in D:
 		for xi in W:
 			var i := zi * W + xi
@@ -763,129 +704,172 @@ static func _gorgon_hull() -> ArrayMesh:
 				var nx := xi + d.x
 				var nz := zi + d.y
 				var nh := top[nz * W + nx] if nx >= 0 and nx < W and nz >= 0 and nz < D else -1
-				lo = mini(lo, nh if nh >= 0 else pit)
-			var c: Color = cols[i]
+				lo = mini(lo, nh if nh >= 0 else floor_r)
 			for y in range(maxi(0, lo - 1), h + 1):
-				v.put(xi - HX, y, zi - HZ, c if y == h else (DUSK if y > h - 3 else DUSK_D), glow[i] == 1 and y == h)
-	# the silo towers round the rim
-	for o: Vector3 in gb.SILO_OFF:
-		_silo_tower(v, Vector2(o.x, o.z))
-	# the snake cables: from the temples and jaws down into the ground
+				v.put(xi - HX, y, zi - HZ, cols[i] if y == h else walls[i])
+	# ---- the spine: a box girder down the middle, the conduit inside it
+	_gbox(v, -0.25, 0.25, DECK - 0.25, DECK, -11.5, 2.0, G_PINK_D, true)
+	for z in range(-11, 2):
+		if posmod(z, 2) == 0:
+			_gbox(v, -0.25, 0.25, DECK - 0.25, DECK, z, z + 0.5, G_PINK, true)
+	_girder_z(v, 1.5, -12.0, 1.0, -1.8)
+	# on past the central gun to the front edge: a low walkway girder
+	_girder_z(v, 1.0, 4.4, 9.6, -3.9)
+	# ---- the crossbar out to the housings, the back crossbar, the side girders
+	_girder_x(v, 1.5, ex - 2.8, -3.0, -2.0)
+	_girder_x(v, 1.5, 12.5, -9.0, -2.2)
 	for s: float in [-1.0, 1.0]:
-		for hose: Array in [[Vector3(7.0, -2.6, -4.4), Vector3(9.8, -3.0, -8.2), Vector3(12.8, -7.5, -9.2)],
-				[Vector3(9.4, -3.0, -1.0), Vector3(12.0, -3.2, -1.8), Vector3(15.0, -8.0, -1.5)],
-				[Vector3(8.8, -3.0, 3.6), Vector3(11.6, -3.4, 3.4), Vector3(13.8, -8.0, 5.0)]]:
-			var a: Vector3 = hose[0]
-			var b: Vector3 = hose[1]
-			var c: Vector3 = hose[2]
-			_hose(v, Vector3(s * a.x, a.y, a.z), Vector3(s * b.x, b.y, b.z), Vector3(s * c.x, c.y, c.z))
+		_girder_z(v, 0.0, -9.6, 4.6, -2.3, s * 12.6)
+	# a low girder across the front, just over the deck
+	_gbox(v, -12.0, 12.0, DECK, DECK + 0.5, 5.25, 5.75, GUN_D)
+	for x in range(-12, 13, 2):
+		_gbox(v, x - 0.25, x + 0.25, DECK, DECK + 0.75, 5.25, 5.75, STEEL_M)
+	# ---- the eye housings
+	for s: float in [-1.0, 1.0]:
+		var hx := s * ex
+		# walls round a square hole, ribbed
+		for z in range(-11, 11):
+			for x in range(-11, 11):
+				var ax := absf(x + 0.5)
+				var az := absf(z + 0.5)
+				var e := maxf(ax, az)  # in voxels from the centre
+				if e > 11.0 or e < 7.8:
+					continue
+				var vx := int(round(hx / GU)) + x
+				var plate := e > 8.4 and e < 10.6
+				var corner := ax > 8.6 and az > 8.6
+				var y_top := _gy(-1.75)
+				for y in range(_gy(DECK) + 1, y_top + 1):
+					var c := DUSK if posmod(x + z, 3) != 0 else DUSK_L
+					if y == y_top:
+						c = (OX if posmod(int(floor((x + 11) / 5.0)) + int(floor((z + 11) / 5.0)), 2) == 0 else OX_L) if plate else OX_D
+						if corner:
+							c = BONE
+					v.put(vx, y, z, c)
+				if corner:
+					v.fill(vx, y_top + 1, z, vx, y_top + 1, z, BONE_D)
+		# the hole's floor, dark, a bone ring at its lip
+		_gbox(v, hx - 1.95, hx + 1.95, DECK - 0.25, DECK, -1.95, 1.95, DUSK_D)
+		# shutter rails along the housing (the shutters slide on them)
+		_gbox(v, hx - 2.4, hx - 2.1, -1.75, -1.5, -5.4, 5.4, STEEL_L)
+		_gbox(v, hx + 2.1, hx + 2.4, -1.75, -1.5, -5.4, 5.4, STEEL_L)
+		for z: float in [-5.4, 5.15]:
+			_gbox(v, hx - 2.4, hx + 2.4, DECK, -1.75, z, z + 0.25, GUN_D)
+		# hydraulic rams out to the side girder
+		var r0 := minf(s * (ex + 2.8), s * 12.4)
+		var r1 := maxf(s * (ex + 2.8), s * 12.4)
+		for z: float in [-1.4, 1.15]:
+			_gbox(v, r0, r1, -2.8, -2.5, z, z + 0.25, STEEL_L)
+		_gbox(v, minf(s * (ex + 2.8), s * (ex + 4.6)), maxf(s * (ex + 2.8), s * (ex + 4.6)), -3.0, -2.3, -1.6, 1.6, DUSK)
+		# conduits from the housing into the spine, under the crossbar
+		_gbox(v, minf(s * 1.75, s * (ex - 2.8)), maxf(s * 1.75, s * (ex - 2.8)), DECK, DECK + 0.25, -3.25, -2.75, G_PINK_D, true)
+	# ---- the central gun's mount
+	_gbox(v, cn.x - 1.9, cn.x + 1.9, DECK, -3.25, cn.z - 1.9, cn.z + 1.9, GUN)
+	_gbox(v, cn.x - 1.6, cn.x + 1.6, -3.25, -3.0, cn.z - 1.6, cn.z + 1.6, STEEL_M)
+	for c: Vector2 in [Vector2(-1.65, -1.65), Vector2(1.4, -1.65), Vector2(-1.65, 1.4), Vector2(1.4, 1.4)]:
+		_gbox(v, cn.x + c.x, cn.x + c.x + 0.25, -3.25, -2.75, cn.z + c.y, cn.z + c.y + 0.25, BONE)
+	# ---- the gun bunkers on the terrace, hatches open
+	for o: Vector3 in gb.SILO_OFF:
+		_bunker(v, o.x, o.z)
+	# ---- the back: machinery blocks, pipes, scaffold towers
+	for b: Array in [[-10.5, -7.0, -11.2, -8.0, -3.4], [-5.8, -3.0, -11.4, -9.6, -3.0], [3.0, 6.4, -11.4, -9.8, -3.2], [7.2, 10.8, -11.0, -8.6, -3.6],
+			[-11.0, -8.6, -7.6, -5.4, -3.8], [8.8, 11.2, -7.4, -5.6, -3.4], [-6.6, -3.4, -7.4, -5.6, -3.9], [3.4, 6.2, -7.6, -5.4, -3.6]]:
+		_gbox(v, b[0], b[1], DECK, b[4], b[2], b[3], GUN)
+		_gbox(v, b[0] + 0.25, b[1] - 0.25, b[4], b[4] + 0.25, b[2] + 0.25, b[3] - 0.25, STEEL_M)
+		_gbox(v, b[0] + 0.25, b[1] - 0.25, b[4], b[4] + 0.25, (b[2] + b[3]) * 0.5 - 0.125, (b[2] + b[3]) * 0.5 + 0.125, DUSK_D)
+	# pipes down either side of the spine, flanged
+	for x: float in [2.6, 3.4]:
+		_gbox2(v, x, x + 0.5, DECK, DECK + 0.5, -11.5, -4.4, GUN.lightened(0.06))
+	for z in range(-11, -4, 2):
+		_gbox2(v, 2.5, 4.0, DECK, DECK + 0.75, z, z + 0.25, STEEL_L)
+	for t: Array in [[-9.6, -10.6], [8.4, -10.4]]:
+		_scaffold_u(v, t[0], t[1], 1.6, 1.4, DECK, -1.5)
 	return v.mesh(GU, Vector3(0, GO, 0))
 
 
-## A silo tower at plane point o: a steel drum up from the pit to just
-## under the guns' height, an oxblood band and bone bolts round its top,
-## its bore open (the gun waits down in it).
-static func _silo_tower(v: Vox, o: Vector2) -> void:
-	var cx := int(round(o.x / GU))
-	var cz := int(round(o.y / GU))
-	var top_r := _gy(-2.7)
-	var foot := _gy(-8.2)
-	var floor_r := _gy(-6.2)
-	for dz in range(-8, 9):
-		for dx in range(-8, 9):
-			var r := Vector2(dx, dz).length() * GU
-			if r > 1.95:
-				continue
-			var a := atan2(float(dz), float(dx))
-			var y1 := top_r if r <= 1.4 else foot  # the flared foot
-			for y in range(_gy(-9.2), y1 + 1):
-				var c: Color = GUN if posmod(y, 6) != 0 else DUSK_L
-				if r < 0.9:
-					if y > floor_r:
-						continue
-					c = DUSK_D
-				elif y == top_r:
-					c = BONE_D if fposmod(a * 6.0 / PI, 1.0) < 0.22 else STEEL_M
-				elif y >= top_r - 3:
-					c = OX_D if y == top_r - 3 else OX
-				elif r < 1.1 and y > top_r - 6:
-					c = DUSK
-				v.put(cx + dx, y, cz + dz, c)
+## A box girder along z at x (two chords `hw` either side of it, from z0 to
+## z1, their tops at y), braced across and diagonally every bay, posts down
+## to the deck. hw 0 = a single heavy girder.
+static func _girder_z(v: Vox, hw: float, z0: float, z1: float, y: float, x := 0.0) -> void:
+	if hw <= 0.0:
+		_gbox(v, x - 0.4, x + 0.4, y - 0.75, y, z0, z1, STEEL_M)
+		_gbox(v, x - 0.4, x + 0.4, y - 1.0, y - 0.75, z0, z1, GUN_D)
+		var z := z0
+		while z < z1:
+			_gbox(v, x - 0.25, x + 0.25, DECK, y - 1.0, z, z + 0.5, GUN_D)
+			z += 3.0
+		return
+	for s: float in [-1.0, 1.0]:
+		_gbox(v, x + s * hw - 0.25, x + s * hw + 0.25, y - 0.75, y, z0, z1, STEEL_M)
+	var bay := 1.5
+	var z := z0
+	var k := 0
+	while z < z1 - 0.1:
+		_gbox(v, x - hw, x + hw, y - 0.5, y - 0.25, z, z + 0.25, GUN)
+		# the diagonal across the bay
+		var n := int(round(bay / GU))
+		for t in n:
+			var f := float(t) / n
+			var px := lerpf(-hw, hw, f if k % 2 == 0 else 1.0 - f)
+			_gbox(v, x + px - 0.125, x + px + 0.125, y - 0.5, y - 0.25, z + f * bay, z + f * bay + GU, GUN_D)
+		if k % 2 == 0:
+			for s: float in [-1.0, 1.0]:
+				_gbox(v, x + s * hw - 0.25, x + s * hw + 0.25, DECK, y - 0.75, z, z + 0.25, GUN_D)
+		z += bay
+		k += 1
 
 
-## A cable from a to c (curving toward b): armoured rings along it.
-static func _hose(v: Vox, a: Vector3, b: Vector3, c: Vector3) -> void:
-	var n := 60
-	for k in n + 1:
-		var t := float(k) / n
-		var p := a.lerp(b, t).lerp(b.lerp(c, t), t)
-		var ring := k % 4 == 0
-		var r := (0.48 if ring else 0.4) / GU
-		var col: Color = DUSK_L if ring else (OX_D if k % 8 < 4 else DUSK)
-		v.blob(int(round(p.x / GU)), _gy(p.y), int(round(p.z / GU)), r, r, r, col)
+## A box girder along x (mirrored either side of the middle) from x0 to x1,
+## its chords 0.5 either side of z, tops at y.
+static func _girder_x(v: Vox, x0: float, x1: float, z: float, y: float) -> void:
+	for s: float in [-1.0, 1.0]:
+		_gbox2(v, x0, x1, y - 0.75, y, z + s * 0.75 - 0.25, z + s * 0.75 + 0.25, STEEL_M)
+	var x := x0
+	var k := 0
+	while x < x1 - 0.1:
+		_gbox2(v, x, x + 0.25, y - 0.5, y - 0.25, z - 0.75, z + 0.75, GUN)
+		var n := 6
+		for t in n:
+			var f := float(t) / n
+			var pz := lerpf(-0.75, 0.75, f if k % 2 == 0 else 1.0 - f)
+			_gbox2(v, x + f * 1.5, x + f * 1.5 + GU, y - 0.5, y - 0.25, z + pz - 0.125, z + pz + 0.125, GUN_D)
+		x += 1.5
+		k += 1
 
 
-## The crater round the fortress, in the ground's material: a raised rim
-## (an ellipse round it), falling inward to the pit and outward to an
-## apron that sinks just under the basin's floor (so their meeting is
-## hidden), strewn with rocks.
-static func _gorgon_crater() -> ArrayMesh:
-	var pal: Dictionary = PALS["basin"]
-	var HX := 44
-	var HZ := 34
-	var W := HX * 2
-	var D := HZ * 2
-	var v := Vox.new(W, 14, D)
-	v.ground = true
-	v.jitter = 0.05
-	v.cull_bottom = true
-	# row r's top face at (r + 1 - 22) * 0.5: row 0 at -10.5, row 13 at -4
-	var top := PackedInt32Array()
-	top.resize(W * D)
-	var cols: Array[Color] = []
-	cols.resize(W * D)
-	for zi in D:
-		for xi in W:
-			var q := Vector2((xi - HX + 0.5) * R, (zi - HZ + 0.5) * R)
-			var e := Vector2(q.x / 16.5, (q.y + 1.5) / 13.5).length()
-			var y := -10.5
-			if e < 0.78:
-				y = -9.0
-			elif e < 1.0:
-				y = lerpf(-9.0, -6.0, (e - 0.78) / 0.22)
-			elif e < 1.35:
-				y = lerpf(-6.0, -9.5, (e - 1.0) / 0.35)
-			elif e < 1.6:
-				y = lerpf(-9.5, -10.6, (e - 1.35) / 0.25)
-			var n := Vox._hash(xi >> 1, 61, zi >> 1)
-			y += (0.5 if n > 0.8 else 0.0) - (0.5 if n < 0.12 else 0.0)
-			var i := zi * W + xi
-			top[i] = clampi(int(round(y / R)) + 21, 0, 13)
-			var c: Color = pal["dust"]
-			if e > 0.92 and e < 1.08:
-				c = pal["dust_l"]
-			elif e < 0.78:
-				c = pal["basalt"]
-			elif Vox._hash(xi, 63, zi) > 0.9:
-				c = pal["rock"]
-			cols[i] = c
-	for zi in D:
-		for xi in W:
-			var i := zi * W + xi
-			var h := top[i]
-			var lo := h
-			for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-				var nx := xi + d.x
-				var nz := zi + d.y
-				if nx >= 0 and nx < W and nz >= 0 and nz < D:
-					lo = mini(lo, top[nz * W + nx])
-			var c: Color = cols[i]
-			for y in range(maxi(0, lo - 1), h + 1):
-				v.put(xi - HX, y, zi - HZ, c if y == h else c.darkened(0.2))
-	return v.mesh(R, Vector3(0, 22, 0))
+## A gun bunker standing on the terrace at (x, z): a square block, an
+## oxblood band under a steel rim with bone corners, its hatch open (a
+## square hole down into it, the gun waits there), the hatch's two leaves
+## folded back along the sides.
+static func _bunker(v: Vox, x: float, z: float) -> void:
+	var t := -2.75
+	for s: Array in [[-1.4, -0.9, -1.4, 1.4], [0.9, 1.4, -1.4, 1.4], [-0.9, 0.9, -1.4, -0.9], [-0.9, 0.9, 0.9, 1.4]]:
+		_gbox(v, x + s[0], x + s[1], TERRACE, t - 0.75, z + s[2], z + s[3], GUN)
+		_gbox(v, x + s[0], x + s[1], t - 0.75, t - 0.25, z + s[2], z + s[3], OX)
+		_gbox(v, x + s[0], x + s[1], t - 0.25, t, z + s[2], z + s[3], STEEL_M)
+	_gbox(v, x - 0.9, x + 0.9, TERRACE, -6.25, z - 0.9, z + 0.9, DUSK_D)
+	for c: Vector2 in [Vector2(-1.4, -1.4), Vector2(1.15, -1.4), Vector2(-1.4, 1.15), Vector2(1.15, 1.15)]:
+		_gbox(v, x + c.x, x + c.x + 0.25, t - 0.25, t, z + c.y, z + c.y + 0.25, BONE)
+	# the hatch leaves, folded back
+	_gbox(v, x - 1.9, x - 1.4, t - 1.4, t - 0.25, z - 1.2, z + 1.2, DUSK_L)
+	_gbox(v, x + 1.4, x + 1.9, t - 1.4, t - 0.25, z - 1.2, z + 1.2, DUSK_L)
 
 
-## An eye: a ball (radius 1.7) looking up (+y) out of its socket: a pale
+## An open scaffold tower (corner posts, rings, a part-plated top) in units.
+static func _scaffold_u(v: Vox, x: float, z: float, w: float, d: float, y0: float, y1: float) -> void:
+	for c: Vector2 in [Vector2(x, z), Vector2(x + w, z), Vector2(x, z + d), Vector2(x + w, z + d)]:
+		_gbox(v, c.x, c.x + 0.25, y0, y1, c.y, c.y + 0.25, STEEL_M)
+	var y := y0 + 0.75
+	while y < y1:
+		_gbox(v, x, x + w + 0.25, y - 0.25, y, z, z + 0.25, GUN_D)
+		_gbox(v, x, x + w + 0.25, y - 0.25, y, z + d, z + d + 0.25, GUN_D)
+		_gbox(v, x, x + 0.25, y - 0.25, y, z, z + d + 0.25, GUN_D)
+		_gbox(v, x + w, x + w + 0.25, y - 0.25, y, z, z + d + 0.25, GUN_D)
+		y += 0.75
+	_gbox(v, x, x + w * 0.5, y1 - 0.25, y1, z, z + d + 0.25, STEEL_L)
+
+
+## An eye: a ball (radius 1.75) looking up (+y) out of its housing: a pale
 ## mauve-grey ball veined in oxblood, a dark limbal ring, a glowing pink
 ## iris with aperture blades and a white-hot pupil.
 static func _gorgon_eye() -> ArrayMesh:
@@ -914,29 +898,28 @@ static func _gorgon_eye() -> ArrayMesh:
 				elif absf(sin(atan2(nrm.z, nrm.x) * 5.0 + nrm.y * 7.0)) < 0.09 and nrm.y > 0.0:
 					c = OX
 				v.put(x, y + rr + 1, z, c, lit)
-	return v.mesh(0.1, Vector3(0, rr + 1, 0), true)
+	return v.mesh(0.103, Vector3(0, rr + 1, 0), true)
 
 
-## An eyelid: an armoured shell over the -z half of the eye (the other lid
-## is the same turned round), oxblood plates, a bone edge where they meet.
+## An eye's shutter (the -z one; the other is the same turned round): a flat
+## armoured plate over half the hole, oxblood with a bone edge where the two
+## meet, bolted, with a lip down its far side; it slides along the rails.
 static func _gorgon_lid() -> ArrayMesh:
-	var rr := 17  # x 0.12: 2.04
-	var v := Vox.new(rr * 2 + 2, rr + 4, rr * 2 + 2)
+	var v := Vox.new(34, 10, 34)
 	v.jitter = 0.04
-	for z in range(-rr - 1, 1):
-		for y in range(0, rr + 2):
-			for x in range(-rr - 1, rr + 1):
-				var p := Vector3(x + 0.5, y + 0.5 - 1.0, z + 0.5)
-				var l := Vector3(p.x, p.y * 1.05, p.z).length()
-				if l > rr or l < rr - 2.2:
-					continue
-				var c: Color = OX if posmod(int(floor(atan2(p.y, p.x) * 5.0 / PI)), 2) == 0 else OX_L
-				if z >= -2:
-					c = BONE
-				elif posmod(int(floor(-p.z / 4.0)), 2) == 1 and absf(p.x) < 2.0:
-					c = OX_D
-				v.put(x, y, z, c)
-	return v.mesh(0.12, Vector3(0, 1, 0))
+	# (units of 0.125: the plate 4.25 wide, 2.1 deep, at y 1.8 over the eye's centre)
+	for z in range(-17, 0):
+		for x in range(-17, 17):
+			var c := OX if posmod(int(floor((x + 17) / 6.0)), 2) == 0 else OX_L
+			if z >= -2:
+				c = BONE
+			elif posmod(x, 6) == 0 and posmod(z, 6) == 3:
+				c = BONE_D
+			v.put(x, 7, z, c)
+			v.put(x, 6, z, OX_D)
+			if z <= -15:
+				v.fill(x, 3, z, x, 5, z, OX_D)
+	return v.mesh(0.125, Vector3(0.5, -8.4, 0.5))
 
 
 ## A burnt-out eye: a cracked dark shell, a few pink sparks still in it.
@@ -963,54 +946,115 @@ static func _gorgon_socket() -> ArrayMesh:
 	return v.mesh(0.1, Vector3(0, rr * 0.35 + 2.0, 0))
 
 
-## The maw: a squat mortar in its socket, a breech ring with four lugs
-## (it turns) round a wide bore glowing pink inside.
-static func _gorgon_maw() -> ArrayMesh:
-	var v := Vox.new(30, 14, 30)
+## The central gun: a squat block turret (forward = -z, it turns to the
+## ship) on a turntable: an oxblood mantlet, three heavy barrels with
+## muzzle collars, recoil cylinders along its roof, the breech glowing pink
+## through vents at the back.
+static func _gorgon_cannon() -> ArrayMesh:
+	var v := Vox.new(28, 12, 40)
 	v.jitter = 0.04
-	for z in range(-15, 15):
-		for x in range(-15, 15):
-			var r := Vector2(x + 0.5, z + 0.5).length()
-			var a := atan2(z + 0.5, x + 0.5)
-			if r > 13.5:
-				continue
-			if r > 11.0:
-				var lug := absf(wrapf(a * 4.0 / TAU, -0.5, 0.5)) < 0.14
-				v.fill(x, 0, z, x, 8 if lug else 5, z, BONE_D if lug else OX)
-			elif r > 7.5:
-				v.fill(x, 0, z, x, 9, z, DUSK_L if posmod(int(floor(a * 12.0 / PI)), 2) == 0 else GUN)
-			elif r > 5.5:
-				v.fill(x, 0, z, x, 11, z, STEEL_M)
-				v.put(x, 12, z, STEEL_L)
-			else:
-				v.fill(x, 0, z, x, 2, z, G_PINK if r < 3.5 else G_PINK_D, true)
-	return v.mesh(0.12, Vector3(0.5, 4.0, 0.5), true)
+	v.fill(-12, 0, -10, 11, 1, 11, DUSK)  # the turntable
+	v.fill(-10, 2, -8, 9, 6, 10, GUN)  # the block
+	v.fill(-10, 7, -8, 9, 7, 10, DUSK_L)
+	v.fill(-11, 2, -11, 10, 7, -8, OX)  # the mantlet
+	v.fill(-11, 8, -11, 10, 8, -9, OX_L)
+	v.fill(-11, 2, -11, 10, 2, -11, BONE_D)
+	for x: int in [-7, -1, 5]:
+		v.fill(x, 3, -20, x + 1, 5, -12, STEEL_M)  # barrels
+		v.fill(x - 1, 2, -20, x + 2, 6, -19, DUSK_L)  # muzzle collars
+		v.fill(x, 4, -20, x + 1, 4, -20, DUSK_D)
+	for x: int in [-5, 3]:
+		v.fill(x, 8, -6, x, 8, 6, STEEL_L)  # recoil cylinders
+	for z: int in [5, 7, 9]:
+		v.fill(-7, 5, z, 6, 6, z, G_PINK_D, true)  # breech vents
+	v.fill(-3, 8, 2, 2, 8, 6, DUSK)
+	return v.mesh(0.12, Vector3(0.5, 0.0, 0.5), true)
 
 
-## A silo gun: an oxblood dome with twin barrels forward (-z), on a steel
-## piston column that runs down into the silo.
+## A bunker gun: a box turret (forward = -z) with an oxblood top plate and
+## twin barrels, on a square steel column that runs down into its bunker.
 static func _gorgon_gun() -> ArrayMesh:
 	var v := Vox.new(18, 36, 24)
 	v.jitter = 0.04
 	# the column
 	for y in range(0, 26):
-		for z in range(-3, 3):
-			for x in range(-3, 3):
-				v.put(x, y, z, STEEL_M if posmod(y, 4) != 0 else DUSK)
-	# the dome on a dark ring
-	v.fill(-8, 25, -8, 7, 26, 7, DUSK)
-	for x in range(-8, 8):
-		for z in range(-8, 8):
-			if Vector2(x + 0.5, z + 0.5).length() > 8.0:
-				v.erase(x, 25, z)
-				v.erase(x, 26, z)
-	v.blob(0, 28, 0, 7.5, 4.5, 7.5, OX_D)
-	v.blob(0, 30, 1, 5.5, 3.0, 5.5, OX)
-	v.blob(0, 32, 2, 2.5, 1.0, 2.5, DUSK_L)
+		v.fill(-3, y, -3, 2, y, 2, STEEL_M if posmod(y, 4) != 0 else DUSK)
+	# the turret box
+	v.fill(-6, 25, -6, 5, 29, 6, GUN)
+	v.fill(-6, 30, -6, 5, 30, 6, OX)
+	v.fill(-6, 30, -6, 5, 30, -6, BONE_D)
+	v.fill(-4, 31, -1, 3, 31, 4, OX_D)
+	v.fill(-6, 25, 6, 5, 27, 7, DUSK_L)
 	# twin barrels forward, a sight between them
-	for s: int in [-3, 2]:
-		v.fill(s, 28, -11, s + 1, 29, -5, GUN)
-		v.fill(s, 28, -11, s + 1, 29, -11, DUSK_D)
-	v.put(0, 32, -4, BONE)
-	v.put(-1, 32, -4, BONE)
+	for s: int in [-4, 2]:
+		v.fill(s, 27, -11, s + 1, 28, -7, STEEL_M)
+		v.fill(s, 27, -11, s + 1, 28, -11, DUSK_D)
+	v.fill(-1, 31, -6, 0, 32, -5, BONE)
 	return v.mesh(0.1, Vector3(0.5, 27.0, 0.5))
+
+
+# ------------------------------------------------------------ HALBERD
+
+## HALBERD (nose +z), bare machinery in the colours of GORGON: a box-girder
+## keel that is the rail gun (two bright rails on top, the channel between
+## them glowing pink in segments, a muzzle block at the nose), oxblood
+## armour plates stepped beside its front, two engine blocks on truss arms
+## (oxblood plates over their fronts, slatted intakes, pink exhausts, a
+## ring mount for each turret), a radiator block and a mast at the back.
+static func _halberd() -> ArrayMesh:
+	var v := Vox.new(48, 11, 62)
+	# the keel
+	v.fill_sym(0, 0, -26, 5, 2, 26, GUN_D)
+	v.fill_sym(0, 3, -24, 5, 5, 25, GUN)
+	v.fill_sym(2, 6, -22, 3, 6, 28, STEEL_L)  # the rails
+	v.fill_sym(0, 5, -22, 1, 5, 25, DUSK_D)  # the channel between them
+	for z in range(-20, 24, 4):
+		v.fill_sym(0, 5, z, 0, 5, z + 1, G_PINK_D, true)
+	for z in range(-24, 24, 6):
+		v.fill_sym(4, 3, z, 5, 6, z + 1, DUSK_L)  # rail clamps
+	v.fill_sym(0, 2, 26, 4, 5, 29, DUSK_L)  # the muzzle block
+	v.fill_sym(0, 3, 29, 1, 4, 30, DUSK_D)
+	# oxblood plates stepped beside the front of the keel
+	v.fill_sym(6, 2, 10, 11, 4, 22, OX)
+	v.fill_sym(6, 5, 12, 9, 5, 20, OX_L)
+	v.fill_sym(6, 2, 22, 9, 3, 24, OX_D)
+	v.fill_sym(11, 4, 10, 11, 4, 22, BONE_D)
+	# truss arms out to the engines
+	for z0: int in [-12, 2]:
+		v.fill_sym(6, 3, z0, 13, 3, z0, STEEL_M)
+		v.fill_sym(6, 3, z0 + 3, 13, 3, z0 + 3, STEEL_M)
+		for x in range(6, 14, 2):
+			v.fill_sym(x, 3, z0, x, 3, z0 + 3, GUN_D)
+	# the engines
+	v.fill_sym(14, 0, -26, 23, 5, 12, GUN)
+	v.fill_sym(14, 6, -10, 23, 6, 12, DUSK_L)
+	v.fill_sym(14, 6, 2, 23, 7, 12, OX)
+	v.fill_sym(15, 8, 4, 22, 8, 11, OX_L)
+	v.fill_sym(14, 6, 12, 23, 7, 13, BONE_D)
+	for z in range(-24, -11, 2):
+		v.fill_sym(15, 6, z, 22, 6, z, DUSK_D)  # slatted intakes
+		v.fill_sym(15, 6, z + 1, 22, 6, z + 1, STEEL_M)
+	for x: int in [16, 19]:
+		v.fill_sym(x, 2, -28, x + 2, 4, -27, G_PINK, true)  # exhausts
+		v.fill_sym(x - 1, 1, -27, x + 3, 5, -27, DUSK)
+	# the radiator and the mast at the back
+	v.fill_sym(0, 6, -26, 4, 7, -20, STEEL_M)
+	for z in range(-26, -19, 2):
+		v.fill_sym(0, 8, z, 4, 8, z, DUSK_L)
+	v.fill(-1, 8, -16, 0, 10, -15, DUSK_L)
+	v.put(0, 10, -16, BONE)
+	return v.mesh(U * 1.55, Vector3(0.5, 2.5, 0.5), true)
+
+
+## A HALBERD engine turret (forward = -z): a box on a ring with twin
+## barrels and an oxblood roof.
+static func _halberd_turret() -> ArrayMesh:
+	var v := Vox.new(14, 6, 20)
+	v.fill(-5, 0, -5, 4, 1, 4, DUSK)
+	v.fill(-4, 2, -4, 3, 3, 4, GUN)
+	v.fill(-4, 4, -4, 3, 4, 3, OX)
+	v.fill(-4, 4, 4, 3, 4, 4, BONE_D)
+	for x: int in [-3, 1]:
+		v.fill(x, 2, -10, x + 1, 3, -5, STEEL_M)
+		v.fill(x, 2, -10, x + 1, 3, -10, DUSK_D)
+	return v.mesh(U * 1.55, Vector3(0.5, 0.5, 0.5))

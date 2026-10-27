@@ -27,8 +27,8 @@ func _init() -> void:
 	layout_seed = 900
 	areas = {
 		"exit": {
-			"sections": [["bridge", 16, 3, 2], ["hull", 6, 6, 2, "wall"], ["bridge", 16, 4, 2]],
-			"gap": [9.0, 14.0],
+			"sections": [["bridge", 16, 3, 2]],
+			"gap": [6.0, 9.0],
 		},
 		"plains": {
 			"label": ["AREA 1", "CRATER PLAINS"],
@@ -55,14 +55,16 @@ func build_waves(f: Formations) -> void:
 	# (the surface's segments and GORGON's parts)
 	for n: String in SurfaceModels.NAMES:
 		Vox.get_mesh(n)
-	# the exit shaft: fighters coming down it, guns on the gantries
-	wave("exit", f.col(0.0, -0.75, 6, 0.16, 1) + f.col(0.5, 0.75, 6, 0.16, -1) + f.col(1.0, -0.55, 5, 0.16, 1) + f.col(1.5, 0.55, 5, 0.16, -1))
-	wave("exit", f.kestrel(0.0, -1, -0.45) + f.kestrel(0.6, 1, 0.45) + f.vform(2.4, 1) + f.vform(2.9, -1), 14.0)
+	# the exit shaft: a few fighters, and out (the tunnel ends at a portal
+	# a few seconds on)
+	wave("exit", f.col(0.0, -0.75, 5, 0.16, 1) + f.col(0.4, 0.75, 5, 0.16, -1), 4.0)
 	# AREA 1: crater plains
+	wave("plains", f.kestrel(0.0, -1, -0.45) + f.kestrel(0.6, 1, 0.45) + f.vform(2.4, 1) + f.vform(2.9, -1), 14.0)
 	wave("plains", f.racers(0.0, "tl", 1, 8) + f.racers(1.2, "tr", 1, 8) + f.rammers(2.6, [0.0], 0.2), 14.0)
 	wave("plains", f.grappler(0.0, -0.5) + f.grappler(0.8, 0.5) + f.sweep(2.0, 1, 7, 0.18) + f.sweep(2.4, -1, 7, 0.18), 14.0)
 	wave("plains", f.chasers(0.0, 4, -1) + f.chasers(1.2, 4, 1) + f.pincer(2.6, 3) + f.swirls(3.6, -1, 5, 0.22), 11.0)
-	wave("plains", f.bulwark(0.0, -0.45) + f.bulwark(0.8, 0.45) + f.col(2.0, -0.8, 6, 0.18, 1) + f.col(2.6, 0.8, 6, 0.18, -1), 15.0)
+	# the heavy gunship
+	wave("plains", f.halberd(0.0, 0.0) + f.sweep(3.0, -1, 7, 0.18) + f.sweep(3.4, 1, 7, 0.18), 16.0)
 	wave("plains", f.swirls(0.0, -1, 6, 0.2) + f.swirls(0.5, 1, 6, 0.2) + f.vform(1.6, 1) + f.vform(2.1, -1) + f.rammers(3.0, [-0.4, 0.4], 0.3), 10.0)
 	wave("plains", f.kestrel(0.0, -1, -0.4) + f.kestrel(1.0, 1, 0.4) + f.flankers(2.4, -1, 4) + f.flankers(3.6, 1, 4), 15.0)
 	# AREA 2: the red rift
@@ -70,6 +72,7 @@ func build_waves(f: Formations) -> void:
 	wave("rift", f.grappler(0.0, -0.35) + f.kestrel(0.8, 1, 0.45) + f.racers(2.6, "tl", 1, 8), 15.0)
 	wave("rift", f.chasers(0.0, 4, -1) + f.chasers(1.0, 4, 1) + f.pincer(2.2, 3) + f.rammers(3.4, [0.0], 0.2), 10.0)
 	wave("rift", f.racers(0.0, "tr", 1, 8) + f.racers(1.0, "tl", 1, 8) + f.sweep(2.4, -1, 7, 0.18), 14.0)
+	wave("rift", f.halberd(0.0, -0.45) + f.halberd(1.4, 0.45, 8.5) + f.swirls(3.6, -1, 5, 0.2) + f.swirls(4.0, 1, 5, 0.2), 18.0)
 	wave("rift", f.bulwark(0.0, 0.0) + f.kestrel(1.0, -1, -0.5) + f.kestrel(1.6, 1, 0.5) + f.swirls(3.2, -1, 5, 0.2) + f.swirls(3.6, 1, 5, 0.2), 16.0)
 	wave("rift", f.sweep(0.0, -1, 7, 0.18) + f.sweep(0.4, 1, 7, 0.18) + f.chasers(1.6, 4) + f.vform(2.6, -1) + f.vform(3.0, 1), 10.0)
 	# out of the canyon into the crater (its walls gone before the fortress

@@ -244,6 +244,12 @@ func railjack(at: float, side: int, hold := 5.5, stay := 12.0) -> Array:
 	return [[at, "railjack", {"side": side, "x": side * (_hw() - 2.4), "z": _top() - 3.0, "hold": _top() + hold, "stay": stay}]]
 
 
+## A heavy gunship down from the top at x (fraction of the half width) to
+## hold `hold` below the top of the screen (see halberd.gd).
+func halberd(at: float, xn: float, hold := 6.0, stay := 14.0) -> Array:
+	return [[at, "halberd", {"x": xn * _hw(), "hold": _top() + hold, "stay": stay}]]
+
+
 ## A VTOL gunship in from the side edge `side` (-1 = left) on a curve, to
 ## hover at x (fraction of the half width) `hold` below the top of the
 ## screen (see kestrel.gd).
