@@ -54,7 +54,7 @@ func use_stage(def: StageDef) -> void:
 		var tun: Dictionary = def.backdrop.get("tunnel", {})
 		for a: String in def.areas:
 			var st := String((tun.get("styles", {}) as Dictionary).get(a, tun.get("first", Tunnel.OPEN)))
-			sp[a] = TunnelModels.HW if not tun.is_empty() and st != Tunnel.OPEN else 0.0
+			sp[a] = Tunnel.span_of(st) if not tun.is_empty() else 0.0
 		_stage_layouts[def.number] = {"layouts": ls, "gaps": gs, "spans": sp, "leads": lds}
 	var e: Dictionary = _stage_layouts[def.number]
 	layouts = e["layouts"]

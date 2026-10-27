@@ -92,7 +92,16 @@ func _boss_gauge(sz: Vector2, left := 0.0) -> void:
 			continue
 		var x: float = gd["x"]
 		var span := sz.x - left
-		_gauge(Rect2(left + span * x, 48, span * float(gd["w"]), gd["h"]), gd["frac"], gd["color"])
+		var r := Rect2(left + span * x, 48, span * float(gd["w"]), gd["h"])
+		if gd.has("fracs"):
+			# one bar per core, side by side (GORGON's two eyes)
+			var fs: Array = gd["fracs"]
+			var gap := 12.0
+			var wseg := (r.size.x - gap * (fs.size() - 1)) / fs.size()
+			for k in fs.size():
+				_gauge(Rect2(r.position.x + k * (wseg + gap), r.position.y, wseg, r.size.y), fs[k], gd["color"])
+		else:
+			_gauge(r, gd["frac"], gd["color"])
 		_text(Vector2(left + span * x, gd["name_y"]), gd["name"], 13, gd["name_color"])
 		return
 

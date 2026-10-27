@@ -183,12 +183,27 @@ static func _scenery(stages: Array[StageDef]) -> Array:
 			out.append({"name": "S%d SCENERY  FAST" % d.number, "type": "backdrop", "stage": d, "scroll": Game.SCROLL * 4.0, "desc": "4 倍速スクロールで奥行きの流れ方を見る"})
 			continue
 		# a tunnel: each of its styles, at the stage's speed and slowed down
+		# (a planet's surface likewise)
 		var seen := {}
-		for a: String in d.areas:
-			var style: String = (tunnel["styles"] as Dictionary).get(a, "")
+		var styles: Dictionary = tunnel["styles"]
+		var keys := d.areas.keys()
+		for i in keys.size():
+			var a: String = keys[i]
+			var style: String = styles.get(a, "")
 			if style == "" or style == Tunnel.OPEN or seen.has(style):
 				continue
 			seen[style] = true
+			var ground := SurfaceModels.STYLES.has(style)
+			# out of a base onto the surface: the portal
+			if ground and i > 0 and not SurfaceModels.STYLES.has(String(styles.get(keys[i - 1], Tunnel.OPEN))) and styles.get(keys[i - 1], Tunnel.OPEN) != Tunnel.OPEN:
+				out.append({"name": "S%d BASE EXIT" % d.number, "type": "backdrop", "stage": d, "area": keys[i - 1], "then": [1.0, a], "loop": 9.0, "scroll": d.scroll,
+					"desc": "基地の最後のトンネルが出口で終わり、惑星の地表へ出るところ"})
+			if ground:
+				out.append({"name": "S%d SURFACE  %s" % [d.number, style.to_upper()], "type": "backdrop", "stage": d, "area": a, "scroll": d.scroll,
+					"desc": "惑星の地表（%s）を本編の速さで。区間をばらばらの順に、半分は向きを変えて並べる。エリアの境のゲート（地形なし）" % style})
+				out.append({"name": "S%d SURFACE  %s  SLOW" % [d.number, style.to_upper()], "type": "backdrop", "stage": d, "area": a, "scroll": d.scroll * 0.25,
+					"desc": "同じ地表を 1/4 の速さで"})
+				continue
 			out.append({"name": "S%d TUNNEL  %s" % [d.number, style.to_upper()], "type": "backdrop", "stage": d, "area": a, "scroll": d.scroll,
 				"desc": "トンネル（%s）を本編の速さで。仕切りのリブ・目玉の区画・エリアの境のゲート（地形なし）" % style})
 			out.append({"name": "S%d TUNNEL  %s  SLOW" % [d.number, style.to_upper()], "type": "backdrop", "stage": d, "area": a, "scroll": d.scroll * 0.25,

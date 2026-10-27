@@ -69,6 +69,9 @@ var bonus := 0
 var lives := START_LIVES
 var next_extend := 0
 var scroll_speed := SCROLL
+## a ground boss holds the scroll (it brings the ground to a stop over
+## itself, then lets it go): the speed it wants, or -1 (see _tick_play)
+var scroll_hold := -1.0
 var respawn_t := 0.0
 var deaths := 0
 var kills := 0
@@ -481,6 +484,7 @@ func clear_field() -> void:
 	warnings.clear()
 	delayed.clear()
 	msg_t = 0.0
+	scroll_hold = -1.0
 
 
 func _respawn() -> void:
@@ -517,12 +521,18 @@ func boss_destroyed(b: BossBase) -> void:
 		return
 	if not b.final:
 		return
+	stage_cleared()
+
+
+## The stage is over (its boss destroyed; a stage still without its boss
+## ends after its last wave, with `sub` under STAGE CLEAR).
+func stage_cleared(sub := "") -> void:
 	clear_t = stage_t
 	bonus = maxi(0, int((stage_def.bonus_t - stage_t) * stage_def.bonus_rate / 100.0) * 100)
 	state = State.CLEAR
 	state_t = 0.0
 	player.invuln = 99.0
-	show_msg("STAGE CLEAR", "", 3.0)
+	show_msg("STAGE CLEAR", sub, 3.0)
 	sfx.play("clear")
 	print("CLEAR t=%.1f destroy=%d items=%d bonus=%d deaths=%d kills=%d tiles=%d stars=%d power3=%d power_drop=%d power_taken=%d" % [stage_t, destroy_score, item_score, bonus, deaths, kills, tiles_broken, stars_got, powers_got, powers_dropped, powers_taken])
 	if log_status:
@@ -721,7 +731,10 @@ func _tick_play(dt: float) -> void:
 			else:
 				_game_over()
 	var want_scroll := stage_def.boss_scroll if (stage != null and stage.phase != "waves") else stage_def.scroll
-	scroll_speed = move_toward(scroll_speed, want_scroll, dt * 1.5)
+	if scroll_hold >= 0.0:
+		scroll_speed = scroll_hold
+	else:
+		scroll_speed = move_toward(scroll_speed, want_scroll, dt * 1.5)
 	tick_world(dt)
 
 

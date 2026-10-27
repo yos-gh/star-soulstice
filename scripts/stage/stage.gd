@@ -19,7 +19,7 @@ var pending: Array = []
 var members: Array = []
 var gap_t := 2.0
 var carrier_t := 6.0
-var phase := "waves"  # waves, warn, boss
+var phase := "waves"  # waves, warn, boss (done: a stage with no boss yet is over)
 var warn_t := 0.0
 var mid_index := 0
 var area := ""
@@ -109,6 +109,11 @@ func _next_wave() -> void:
 	gap_t = GAP
 	members.clear()
 	if wi >= waves.size():
+		if def.boss == "":
+			# (a stage built only up to its mid-boss so far ends here)
+			phase = "done"
+			game.stage_cleared("TO BE CONTINUED")
+			return
 		_begin_warn()
 		return
 	_set_area(waves[wi].get("area", def.first_area))

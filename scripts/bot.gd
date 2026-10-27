@@ -86,6 +86,24 @@ func think() -> Array:
 				var s := signf(off) if absf(off) > 0.3 else (-signf(pp.x) if absf(pp.x) > 0.5 else 1.0)
 				push += nrm * s * (band - absf(off) + 1.0) * 1.5
 			continue
+		# (or the sector a beam sweeps from its eye: out of it, round the
+		# nearer edge)
+		if w["to"] is Dictionary and (w["to"] as Dictionary).has("sector"):
+			var sc: Array = w["to"]["sector"]
+			var o: Vector3 = sc[0]
+			var rel := pp - o
+			rel.y = 0.0
+			var dist := maxf(rel.length(), 1.0)
+			var ang := atan2(rel.z, rel.x)
+			var lo := minf(float(sc[1]), float(sc[2]))
+			var hi := maxf(float(sc[1]), float(sc[2]))
+			var pad := (float(w["to"].get("hw", 1.0)) + 2.2) / dist
+			if ang > lo - pad and ang < hi + pad:
+				var to_lo := ang - (lo - pad)
+				var to_hi := (hi + pad) - ang
+				var tang := Vector3(-sin(ang), 0, cos(ang))
+				push += tang * (-1.0 if to_lo < to_hi else 1.0) * (minf(to_lo, to_hi) * dist + 1.0) * 1.6
+			continue
 		# (or a circle where something lands: out of it)
 		if w["to"] is Dictionary and not (w["to"] as Dictionary).has("laser"):
 			var off := pp - nd.hit_pos

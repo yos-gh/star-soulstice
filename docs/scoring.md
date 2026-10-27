@@ -47,6 +47,10 @@
 | ボス BEHEMOTH の副砲（2 基） | 4,000 | 180 | `scripts/bosses/behemoth.gd` `SPONSON_SCORE` / `SPONSON_HP` |
 | ボス BEHEMOTH の主砲塔（反応炉を封じている） | 10,000 | 520 | `scripts/bosses/behemoth.gd` `TURRET_SCORE` / `TURRET_HP` |
 | ボス BEHEMOTH の反応炉（主砲塔を壊すか OVERRUN で撃てる） | 60,000 | 540 | `scripts/bosses/behemoth.gd` `CORE_SCORE` / `CORE_HP` |
+| 中ボス GORGON のサイロの砲台（8 基、せり上がっている間だけ撃てる） | 2,000 | 36 | `scripts/bosses/gorgon.gd` `GUN_SCORE` / `GUN_HP` |
+| 中ボス GORGON の目（2 つ、それぞれ別の耐久） | 10,000 | 480 | `scripts/bosses/gorgon.gd` `EYE_SCORE` / `EYE_HP` |
+| 中ボス GORGON の撃破（両目を壊す） | 20,000 | | `scripts/bosses/gorgon.gd` `SCORE` |
+| 中ボス GORGON の TWIN BREAK（2 つ目の目を 1 つ目から 1.5 秒以内に壊す） | 50,000 | | `scripts/bosses/gorgon.gd` `TWIN_BONUS` / `TWIN_WINDOW` |
 
 撃破した敵の弾は消えてエネルギーになる（スコアはエネルギー取得分のみ）。
 
@@ -92,6 +96,7 @@
 | TITAN DREDGE ホイール | 14 | `scripts/bosses/titan_dredge.gd` |
 | TEMPEST 避雷塔 / 発生機 / 最期 | 10 / 30 / 24 | `scripts/bosses/tempest.gd` |
 | BEHEMOTH 副砲 / 主砲塔 | 10 / 16 | `scripts/bosses/behemoth.gd` |
+| GORGON サイロの砲台 / 目 / 最期 | 5 / 20 / 30 | `scripts/bosses/gorgon.gd` |
 | タイル コンテナ / タンク / 倉庫 | 2 / 5 / 10 | `scripts/terrain/island.gd` `TILE_ENERGY` |
 | 消した弾（撃破・スピア） | 1 発につき 1 | `scripts/game.gd` |
 

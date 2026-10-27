@@ -16,6 +16,11 @@ extends Node3D
 ## "mouth", TunnelModels._facade); it comes in further off than a segment
 ## would, so its face, which reaches far down, is off the screen until it
 ## scrolls in.
+## A surface style (SurfaceModels: stage 5 out on the enemy planet) is open
+## ground instead: its segments are drawn at random from the style's
+## variants and every other one is turned round; its gate is the way from
+## the area before into it (out of the base, into a canyon, into a crater).
+## A canyon keeps the sections between its walls (SurfaceModels.SPAN).
 
 const OPEN := "open"
 ## how far up the screen (z) the mouth comes in: its deep facade must be
@@ -40,7 +45,12 @@ func build(cfg: Dictionary) -> void:
 	styles = cfg.get("styles", {})
 	seed_ = int(cfg.get("seed", 1))
 	style = String(cfg.get("first", styles.values()[0] if not styles.is_empty() else TunnelModels.STYLES[0]))
-	z_far = game.screen_to_y(Vector2(480, -40), TunnelModels.FLOOR).z - TunnelModels.LEN * 0.5
+	# (open ground lies deeper than a tunnel's floor: it shows further up)
+	var deep := TunnelModels.FLOOR
+	for s: String in styles.values():
+		if SurfaceModels.STYLES.has(s):
+			deep = -11.5
+	z_far = game.screen_to_y(Vector2(480, -40), deep).z - TunnelModels.LEN * 0.5
 	z_near = game.screen_to_y(Vector2(480, 760), 0.0).z + TunnelModels.LEN * 0.5
 	_fill()
 
@@ -74,9 +84,19 @@ func set_area(a: String, now := false) -> void:
 		gate = true
 
 
-## Whether the tunnel's walls are there (not the open sky).
+## Whether the tunnel's walls are there (not the open sky or ground).
 func walled() -> bool:
-	return style != OPEN
+	return style != OPEN and not SurfaceModels.STYLES.has(style)
+
+
+## How far either side of the middle the ground sections may lie in style
+## `st` (0 = anywhere): between a tunnel's walls or a canyon's.
+static func span_of(st: String) -> float:
+	if st == OPEN:
+		return 0.0
+	if SurfaceModels.STYLES.has(st):
+		return float(SurfaceModels.SPAN.get(st, 0.0))
+	return TunnelModels.HW
 
 
 func tick(dt: float, speed: float) -> void:
@@ -113,6 +133,16 @@ func _add(z: float, as_style := "") -> void:
 	add_child(m)
 	segs.append(m)
 	if st == OPEN:
+		return
+	if SurfaceModels.STYLES.has(st):
+		var vs: Array = SurfaceModels.VARIANTS[st]
+		var sv: String = "gate" if gate else vs[rng.randi() % vs.size()]
+		gate = false
+		mouth = false
+		m.mesh = Vox.get_mesh("surface_%s_%s" % [st, sv])
+		if sv != "gate" and rng.randf() < 0.5:
+			m.rotation.y = PI
+		count += 1
 		return
 	var variant := "plain"
 	var props_of := ""

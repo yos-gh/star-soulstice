@@ -106,7 +106,7 @@ static func body_col(name: String, fallback: Color) -> Color:
 
 ## [group label, script] in viewer order.
 static func groups() -> Array:
-	return [["SHIP", ShipModels], ["ENEMIES", EnemyModels], ["BOSSES", BossModels], ["ITEMS", ItemModels], ["GROUND", GroundModels], ["TUNNEL", TunnelModels], ["BELT", BeltModels], ["PLANET", PlanetModels]]
+	return [["SHIP", ShipModels], ["ENEMIES", EnemyModels], ["BOSSES", BossModels], ["ITEMS", ItemModels], ["GROUND", GroundModels], ["TUNNEL", TunnelModels], ["BELT", BeltModels], ["PLANET", PlanetModels], ["SURFACE", SurfaceModels]]
 
 
 static func build(name: String) -> ArrayMesh:

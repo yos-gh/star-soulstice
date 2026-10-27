@@ -20,6 +20,10 @@ extends RefCounted
 ##   cargo     cargo set down on a deck (the stage 4 arena): no hull, a steel
 ##             pallet under every cell, most of them loaded (lifted onto the
 ##             deck: the result's "lift")
+##   mesa      a rock butte on a planet's surface (stage 5): its flat top at
+##             the deck's height, sheer cliffs banded in strata reaching
+##             down past the ground far below (D_MESA rows deep), the
+##             enemy's storehouses (tiles) on concrete pads on top
 ## Voxels are R units; a cell (one 2 x 2 tile) is K x K voxels. Tiles sit
 ## in sockets half a voxel below the deck. Local y = 0 is the deck top.
 ## A stage picks kinds and sizes per area (StageDef.areas). A new kind
@@ -27,12 +31,18 @@ extends RefCounted
 ## and its surface (_structure, or a builder of its own like _asteroid);
 ## add it to KINDS so the viewer can show it.
 
-const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid", "bridge", "quarry", "aerostat", "cargo"]
+const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid", "bridge", "quarry", "aerostat", "cargo", "mesa"]
 
 const R := 0.5
 const K := 4
 const MARGIN := 2
 const D := 8
+const D_MESA := 17  # a mesa's rows below its top: its cliffs reach y -11.5
+const MESA_TOP := Color(0.37, 0.32, 0.27)
+const MESA_TOP_L := Color(0.43, 0.38, 0.32)
+const MESA_STRATA := [Color(0.4, 0.31, 0.25), Color(0.33, 0.27, 0.23), Color(0.45, 0.36, 0.29), Color(0.29, 0.24, 0.21)]
+const PAD := Color(0.3, 0.31, 0.31)
+const PAD_D := Color(0.2, 0.21, 0.21)
 
 const HULL_A := Color(0.21, 0.26, 0.29)
 const HULL_B := Color(0.18, 0.22, 0.25)
@@ -84,7 +94,7 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 					var d := Vector2((i + 0.5 - w * 0.5) / s, (j + 0.5 - h * 0.5) / s).length()
 					inside = d < 0.98
 					e = d
-				"fragment", "asteroid", "quarry":
+				"fragment", "asteroid", "quarry", "mesa":
 					var a := atan2(dz, dx)
 					var wob := 0.13 * sin(a * 3.0 + phase) + 0.09 * sin(a * 5.0 + phase * 2.0)
 					var d := sqrt(dx * dx + dz * dz)
@@ -134,6 +144,10 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 				"asteroid":
 					if r.randf() < 0.45:
 						t = 1 if r.randf() < 0.6 else 2
+				"mesa":
+					# storehouses in rows on the top, the heavy ones inward
+					if j % 3 != 2 and e < 0.9 and r.randf() < 0.9:
+						t = 2 if e < 0.55 else (1 if e < 0.78 else 0)
 				"quarry":
 					# ore bins on the benches round the pit, none down in it
 					if e > 0.45 and e < 0.9 and r.randf() < 0.7:
@@ -176,11 +190,15 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 	var W := w * K + MARGIN * 2
 	var H := h * K + MARGIN * 2
 	var vmask := _footprint(kind, w, h, W, H, cell_in)
-	var v := Vox.new(W, D + 4, H)
+	var dd := D_MESA if kind == "mesa" else D
+	var v := Vox.new(W, dd + 4, H)
 	v.jitter = 0.04
 	v.ground = true
 	var info := {"kind": kind, "w": w, "h": h, "W": W, "H": H, "mid": mid, "vmask": vmask, "types": types, "tcells": tcells, "cell_e": cell_e, "r": r}
-	if kind == "asteroid":
+	if kind == "mesa":
+		v.cull_bottom = true
+		_mesa(v, info)
+	elif kind == "asteroid":
 		_asteroid(v, info)
 	elif kind == "quarry":
 		_quarry(v, info)
@@ -188,7 +206,7 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 		_cargo(v, info)
 	else:
 		_structure(v, info)
-	var mesh := v.mesh(R, Vector3(0, D, 0), true)
+	var mesh := v.mesh(R, Vector3(0, dd, 0), true)
 	return {"w": w, "h": h, "kind": kind, "types": types, "hidden": hidden, "mesh": mesh, "turrets": tcells, "lift": R if kind == "cargo" else 0.0}
 
 
@@ -208,7 +226,7 @@ static func _footprint(kind: String, w: int, h: int, W: int, H: int, cell_in: Pa
 					if c2.x >= 0 and cell_in[c2.y * w + c2.x] == 1:
 						m = 1
 						break
-			if m == 1 and (kind == "asteroid" or kind == "fragment" or kind == "quarry"):
+			if m == 1 and (kind == "asteroid" or kind == "fragment" or kind == "quarry" or kind == "mesa"):
 				m = 1 if Vox._hash(vx / 2, 3, vz / 2) > 0.4 else 0
 			vmask[vz * W + vx] = m
 	return vmask
@@ -507,6 +525,66 @@ static func _asteroid(v: Vox, info: Dictionary) -> void:
 					v.put(x, surf - 1, z, SOCKET)
 			elif on_turret and lx >= 1 and lz >= 1:
 				v.put(x, surf + 1, z, SIDE)
+
+
+## A mesa: a flat rock top (the deck) with concrete pads under its
+## storehouses and guns, the rim crumbling a little; its cliffs drop sheer
+## in strata (stepping out a voxel lower down) to the bottom of the grid,
+## well under the ground it stands on.
+static func _mesa(v: Vox, info: Dictionary) -> void:
+	var w: int = info["w"]
+	var h: int = info["h"]
+	var W: int = info["W"]
+	var H: int = info["H"]
+	var vmask: PackedByteArray = info["vmask"]
+	var types: PackedInt32Array = info["types"]
+	var tcells: Array[Vector2i] = info["tcells"]
+	var top := D_MESA - 1
+	for vz in H:
+		for vx in W:
+			var m := vmask[vz * W + vx]
+			var x := vx - W / 2
+			var z := vz - H / 2
+			if m == 0:
+				# the talus at the foot: a voxel out, lower down
+				var near := false
+				for q: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var nx := vx + q.x
+					var nz := vz + q.y
+					if nx >= 0 and nz >= 0 and nx < W and nz < H and vmask[nz * W + nx] != 0:
+						near = true
+				if near:
+					var foot := 4 + int(Vox._hash(vx, 51, vz) * 4.0)
+					for y in range(0, foot):
+						v.put(x, y, z, MESA_STRATA[(y / 2) % MESA_STRATA.size()].darkened(0.1))
+				continue
+			var ed := _edge_dist(vmask, W, H, vx, vz, 3)
+			var c2 := _cell_of(vx, vz, w, h)
+			var on_tile := c2.x >= 0 and types[c2.y * w + c2.x] >= 0
+			var on_turret := c2.x >= 0 and tcells.has(c2)
+			var n := Vox._hash(vx / 2, 9, vz / 2)
+			var surf := top
+			if m == 1:
+				surf = top - (1 if n < 0.5 else 0)
+			# only the cliff's outer columns go all the way down
+			var bottom := 0 if ed <= 1 else top - 3
+			for y in range(bottom, surf + 1):
+				var c: Color = MESA_STRATA[(y / 2) % MESA_STRATA.size()]
+				if y == surf:
+					c = MESA_TOP_L if n > 0.8 else MESA_TOP
+				v.put(x, y, z, c)
+			if c2.x < 0:
+				continue
+			var lx := (vx - MARGIN) % K
+			var lz := (vz - MARGIN) % K
+			if on_tile or on_turret:
+				# a concrete pad under each storehouse and gun
+				v.put(x, surf, z, PAD_D if (lx == 0 or lz == 0) else PAD)
+				if on_tile and lx != 0 and lz != 0:
+					v.erase(x, surf, z)
+					v.put(x, surf - 1, z, SOCKET)
+				elif on_turret and lx >= 1 and lz >= 1:
+					v.put(x, surf + 1, z, SIDE)
 
 
 ## An asteroid being strip-mined: an open pit stepping down in benches

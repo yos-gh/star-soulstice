@@ -9,6 +9,7 @@ const LIST := [
 	preload("res://scripts/stage/stage2.gd"),
 	preload("res://scripts/stage/stage3.gd"),
 	preload("res://scripts/stage/stage4.gd"),
+	preload("res://scripts/stage/stage5.gd"),
 ]
 
 

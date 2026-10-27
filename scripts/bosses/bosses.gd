@@ -14,6 +14,7 @@ const KINDS := {
 	"tempest": preload("res://scripts/bosses/tempest.gd"),
 	"behemoth": preload("res://scripts/bosses/behemoth.gd"),
 	"titan_dredge": preload("res://scripts/bosses/titan_dredge.gd"),
+	"gorgon": preload("res://scripts/bosses/gorgon.gd"),
 }
 
 
