@@ -12,7 +12,7 @@ extends RefCounted
 ##   cam     {target, dist, pitch} starting camera (default: the play camera)
 ## and the fields of its type.
 
-const MEDIUM_CATS := ["medium", "carrier", "hazard", "ground"]
+const MEDIUM_CATS := ["medium", "carrier", "hazard", "ground", "barrier"]
 
 
 static func build(g: Game) -> Array:
@@ -25,7 +25,7 @@ static func build(g: Game) -> Array:
 	return [
 		{"name": "SHIP", "jp": "自機", "items": _ship(f, stages[0])},
 		{"name": "SMALL", "jp": "小型機と編隊", "items": _enemies(f, ["small"], stages)},
-		{"name": "MEDIUM", "jp": "中型機・コンテナ・小惑星・砲台", "items": _enemies(f, MEDIUM_CATS, stages)},
+		{"name": "MEDIUM", "jp": "中型機・コンテナ・小惑星・砲台・隔壁", "items": _enemies(f, MEDIUM_CATS, stages)},
 		{"name": "BOSS", "jp": "中ボス・ボス", "items": _bosses(stages)},
 		{"name": "WAVES", "jp": "ステージのウェーブ（地形・砲台つき）", "items": _waves(stages)},
 		{"name": "TERRAIN", "jp": "地形・区画", "items": _terrain(stages)},
@@ -91,6 +91,10 @@ static func _enemies(f: Formations, cats: Array, stages: Array[StageDef]) -> Arr
 		var demos: Array = info.get("demos", [["ONE", "one", [0.0, kind, 0.0]]])
 		for demo: Array in demos:
 			var it := {"name": "%s  %s" % [info.get("name", kind), demo[0]], "kind": kind, "stage": d, "desc": info.get("desc", "")}
+			# (the scenery and scroll it is met in, if it says)
+			for k: String in ["area", "scroll"]:
+				if info.has(k):
+					it[k] = info[k]
 			if demo[1] == "ground":
 				it["type"] = "ground"
 				it["scroll"] = 0.0

@@ -13,9 +13,10 @@ extends BossBase
 ## the ship and the rest scattered; each lands with a blast (deadly inside
 ## its circle) and a ring of shells. The sponsons fire shell fans (big,
 ## then small), the hull gun telegraphed needles. Once a round it charges:
-## five lines marked from the dozer blade to the bottom edge show the ground
-## it will cover, then it drives the blade down to the bottom of the screen
-## (get out to the side) and backs off.
+## the corridor its dozer blade will sweep is marked down to the bottom edge
+## (edged, filling as the charge nears, chevrons streaming down it), then
+## it drives the blade down to the bottom of the screen (get out to the
+## side) and backs off.
 ## OVERRUN (the main turret destroyed, or after a while): the reactor is
 ## laid open and the tank goes wild. It pivots on its tracks to face the
 ## ship and charges along that heading to the edge of the screen (the
@@ -29,7 +30,7 @@ extends BossBase
 
 const INFO := {
 	"name": "BEHEMOTH", "role": "boss",
-	"desc": "敵基地の最深部、闘技場の床（ボス用に高くなっている）を履帯で走る攻城戦車。主砲塔（連装、主兵装）は車体の前にあり、その奥の反応炉（弱点）は砲塔が残っているあいだ砲塔の台座に封じられている：先に砲を落とす。主砲は自機を追って旋回し、予兆（線）のあと下端まで徹甲弾（鉄球弾：撃ち落とせず、スピアでも消えない）を 2 発。後ろの榴弾砲は砲弾を高く放り、予兆（円）のところへ落とす（1 発は自機、残りは散らばる。円の中は爆風、物理弾の輪が広がる）。副砲から物理弾の扇、車体の機銃から針弾。1 周に 1 回、ドーザーブレードから下端まで 5 本の線の予兆のあと画面の下まで突進して戻る（横へ逃げる）。主砲塔を壊すか時間で OVERRUN：反応炉がむき出しになり、履帯で向きを変えて自機の方へ画面の端まで突進（通り道を予兆）、その場で一回転（超信地旋回：届く円を予兆）しながら副砲と反応炉から物理弾を外へ撒く（回る車体が渦を描く）。着弾が自機の列を上から追い、反応炉から広い針弾",
+	"desc": "敵基地の最深部、闘技場の床（ボス用に高くなっている）を履帯で走る攻城戦車。主砲塔（連装、主兵装）は車体の前にあり、その奥の反応炉（弱点）は砲塔が残っているあいだ砲塔の台座に封じられている：先に砲を落とす。主砲は自機を追って旋回し、予兆（線）のあと下端まで徹甲弾（鉄球弾：撃ち落とせず、スピアでも消えない）を 2 発。後ろの榴弾砲は砲弾を高く放り、予兆（円）のところへ落とす（1 発は自機、残りは散らばる。円の中は爆風、物理弾の輪が広がる）。副砲から物理弾の扇、車体の機銃から針弾。1 周に 1 回、ドーザーブレードが通る帯（下端まで、突進が近づくと満ちていく）の予兆のあと画面の下まで突進して戻る（横へ逃げる）。主砲塔を壊すか時間で OVERRUN：反応炉がむき出しになり、履帯で向きを変えて自機の方へ画面の端まで突進（通り道を予兆）、その場で一回転（超信地旋回：届く円を予兆）しながら副砲と反応炉から物理弾を外へ撒く（回る車体が渦を描く）。着弾が自機の列を上から追い、反応炉から広い針弾",
 	"demos": [["FULL", ""], ["CHARGE", "A"], ["OVERRUN", "C"]],
 }
 const CORE_HP := 540.0
@@ -47,7 +48,7 @@ const TRACK_X := 7.6
 ## armoured hit zones: the tracks, the engine deck
 const ARMOUR := [[Vector3(-7.6, 0, -4.0), 1.5], [Vector3(7.6, 0, -4.0), 1.5], [Vector3(-7.6, 0, 0.0), 1.5], [Vector3(7.6, 0, 0.0), 1.5],
 	[Vector3(-7.6, 0, 4.0), 1.5], [Vector3(7.6, 0, 4.0), 1.5], [Vector3(0, 0, -5.3), 1.6]]
-const BLADE_X := [-7.2, -3.6, 0.0, 3.6, 7.2]  # the dozer blade's ram zones (and the charge's marked lines)
+const BLADE_X := [-7.2, -3.6, 0.0, 3.6, 7.2]  # the dozer blade's ram zones
 const BLADE_HW := 8.9  # the blade: deadly to touch (it lets shots by: no hit zone)
 const BLADE_Z := 6.8
 const BARREL_LEN := 4.2  # turret centre to the muzzles
@@ -64,6 +65,7 @@ const LUNGE_HOLD := 0.3
 const LUNGE_BACK := 1.6  # ... and back
 const AIM_MAX := 0.75  # OVERRUN's charge: how far it pivots toward the ship
 const SPIN_R := 11.8  # the circle a turn on the spot sweeps (the blade's corners)
+const CRUSH_R := 9.6  # what it rolls over (a circle round the hull)
 const SPIN_WARN := 1.0
 const SPIN_T := 2.6
 const ROUND_A := 10.0
@@ -353,11 +355,14 @@ func _moves(dt: float) -> void:
 		center.z = move_toward(center.z, rest_z + sin(creep_t * 0.4) * 1.0, 2.0 * dt)
 		center.x = move_toward(center.x, 0.0, 2.0 * dt)
 		yaw = move_toward(yaw, 0.0, 1.2 * dt)
+	# the cargo along the arena's sides is crushed where it rolls (or its
+	# blade swings) over it
+	game.terrain.crush(center, SPIN_R if spin == "go" else CRUSH_R)
 
 
 ## The charge: the hull pivots to heading `a` (0 = straight down) while
-## five lines are marked from the blade along it to the edge of the screen;
-## then it drives the blade down there, holds, and backs off.
+## the corridor the blade will sweep is marked along it to the edge of the
+## screen; then it drives the blade down there, holds, and backs off.
 func _lunge_warn(a: float) -> void:
 	lunge = "warn"
 	lunge_t = 0.0
@@ -371,11 +376,12 @@ func _lunge_warn(a: float) -> void:
 	if absf(sin(a)) > 0.05:
 		l = minf(l, (game.hw_bottom + 1.5 - absf(b0.x)) / absf(sin(a)))
 	lunge_to = home + h * maxf(l, 2.0)
-	for k in blade.size():
-		var from := home + Vector3(BLADE_X[k], 0, BLADE_Z).rotated(Vector3.UP, a)
-		game.warn(blade[k], LUNGE_WARN, Game.Warn.MOVE, 1.2, from + h * maxf(l, 2.0), k == 2, false)
-	# (for the autopilot: the corridor as one band, which it leaves sideways)
-	game.warn(hub, LUNGE_WARN + LUNGE_GO + LUNGE_HOLD, Game.Warn.MOVE, 3.0, {"lane": PackedVector3Array([b0, b0 + h * maxf(l, 2.0)]), "hw": BLADE_HW + 0.6}, false)
+	var lane := PackedVector3Array([b0, b0 + h * maxf(l, 2.0)])
+	# the corridor the blade will sweep, shown (HUD._charge_lane) ...
+	game.warn(hub, LUNGE_WARN, Game.Warn.MOVE, 1.6, {"lane": lane, "hw": BLADE_HW, "show": true}, true, false)
+	# ... and for the autopilot one band it leaves sideways, until the
+	# blade is back
+	game.warn(hub, LUNGE_WARN + LUNGE_GO + LUNGE_HOLD, Game.Warn.MOVE, 3.0, {"lane": lane, "hw": BLADE_HW + 0.6}, false)
 	game.sfx.play("slam")
 
 

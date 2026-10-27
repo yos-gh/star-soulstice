@@ -69,6 +69,7 @@ var bonus := 0
 var lives := START_LIVES
 var next_extend := 0
 var scroll_speed := SCROLL
+var braked := false  # the scroll was braked for a barrier: it picks up quickly again
 var respawn_t := 0.0
 var deaths := 0
 var kills := 0
@@ -450,6 +451,7 @@ func _start_stage(n: int, new_game: bool) -> void:
 	if start_at != "" and new_game:
 		stage.start_at(start_at)
 	scroll_speed = stage_def.scroll
+	braked = false
 	var keep := [player.level, player.shield, player.energy]
 	player.reset_at(Vector3(0, 0, field_bottom + 2.0))
 	player.entering = 0.9
@@ -721,7 +723,18 @@ func _tick_play(dt: float) -> void:
 			else:
 				_game_over()
 	var want_scroll := stage_def.boss_scroll if (stage != null and stage.phase != "waves") else stage_def.scroll
-	scroll_speed = move_toward(scroll_speed, want_scroll, dt * 1.5)
+	var rate := 1.5
+	# a barrier across the way (stage 4): the ship brakes in front of it,
+	# hard, and picks up again quickly once it is broken
+	for e in enemies:
+		if e.brake > 0.0 and not e.dead and e.hit_pos.z > field_top - 14.0 and e.hit_pos.z < field_bottom:
+			want_scroll = minf(want_scroll, e.brake)
+			rate = 12.0
+			braked = true
+	if braked and rate < 12.0:
+		rate = 6.0
+		braked = scroll_speed < want_scroll - 0.01
+	scroll_speed = move_toward(scroll_speed, want_scroll, dt * rate)
 	tick_world(dt)
 
 
@@ -875,7 +888,7 @@ func _collide(dt: float) -> void:
 		var hp: Vector3 = h["pos"]
 		var d := te.hit_pos - hp
 		d.y = 0.0
-		if d.length() < te.radius + 0.5:
+		if (te.gap_to(hp) < 0.5) if te.half_ext != Vector2.ZERO else d.length() < te.radius + 0.5:
 			_tally("homing", te, damage(te, Shots.HOMING_DMG, hp))
 			fx.sprite(hp + Vector3(0, 0.5, 0), Vector3.ZERO, 0.6, 2.2, 0.25, Color(0.5, 0.9, 1.0), 0.0)
 			shots.homing_hit(h)
@@ -892,10 +905,11 @@ func _collide(dt: float) -> void:
 			for e in enemies:
 				if e.dead or not e.ram or e.intangible or not e.visible:
 					continue
+				var boxed := e.half_ext != Vector2.ZERO and e.gap_to(player.position) < Player.HIT_R
 				var d := e.hit_pos - player.position
 				d.y = 0.0
 				var r := e.radius * 0.8 + Player.HIT_R
-				if d.length_squared() < r * r:
+				if boxed or (e.half_ext == Vector2.ZERO and d.length_squared() < r * r):
 					hit = true
 					if log_status:
 						print("HIT by %s t=%.1f" % [e.kind, play_t])
@@ -933,6 +947,10 @@ func _enemy_at(p: Vector3, r: float) -> Enemy:
 		if e.dead or e.intangible or not e.visible or not e.shootable:
 			continue
 		if not on_field(e.hit_pos, 0.5):
+			continue
+		if e.half_ext != Vector2.ZERO:
+			if e.gap_to(p) < r:
+				return e
 			continue
 		var d := e.hit_pos - p
 		var rr := e.radius + r
@@ -982,7 +1000,11 @@ func kill(e: Enemy) -> void:
 	kills += 1
 	add_score(e.score, true)
 	var at := e.hit_pos
-	fx.explode(at + Vector3(0, 0.4, 0), e.blast, Vector3(0, 0, scroll_speed * 0.4), e.debris_col)
+	if e.half_ext != Vector2.ZERO:
+		# a wall: it goes up all along
+		fx.wall_blast(at, e.half_ext.x - 2.0, e.blast * 0.55, Vector3(0, 0, scroll_speed * 0.4), e.debris_col)
+	else:
+		fx.explode(at + Vector3(0, 0.4, 0), e.blast, Vector3(0, 0, scroll_speed * 0.4), e.debris_col)
 	sfx.play("exp_l" if e.blast >= 2.5 else ("exp_m" if e.blast >= 1.5 else "exp_s"))
 	if e.blast >= 2.5:
 		shake(0.5 + e.blast * 0.1)
@@ -1015,6 +1037,9 @@ func _spear(dt: float) -> void:
 		var d := e.hit_pos - pp
 		var in_ring := Vector2(d.x, d.z).length() < Player.SPEAR_R + e.radius
 		var in_lance := absf(d.x) < Player.SPEAR_HW + e.radius and d.z < 0.0 and d.z > -Player.SPEAR_LEN - e.radius
+		if e.half_ext != Vector2.ZERO:
+			in_ring = e.gap_to(pp) < Player.SPEAR_R
+			in_lance = absf(d.x) < Player.SPEAR_HW + e.half_ext.x and d.z - e.half_ext.y < 0.0 and d.z + e.half_ext.y > -Player.SPEAR_LEN
 		if in_ring or in_lance:
 			_tally("spear", e, damage(e, dmg, e.hit_pos))
 	terrain.spear(pp, Player.SPEAR_R, Player.SPEAR_HW, Player.SPEAR_LEN, dmg)

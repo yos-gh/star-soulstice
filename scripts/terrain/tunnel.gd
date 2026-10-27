@@ -33,6 +33,7 @@ var z_near := 0.0  # a segment goes once it is past this
 var count := 0
 var gate := false
 var mouth := false  # the next gate is the base's mouth (out of the open)
+var mouth_seg: MeshInstance3D  # the last mouth to come in (stage 4's blast door rides on it)
 
 
 func build(cfg: Dictionary) -> void:
@@ -118,6 +119,8 @@ func _add(z: float, as_style := "") -> void:
 	if gate:
 		variant = "gate"
 		props_of = "mouth" if mouth else "gate"
+		if mouth:
+			mouth_seg = m
 		gate = false
 		mouth = false
 	elif count % 2 == 0:

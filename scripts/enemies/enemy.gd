@@ -39,6 +39,8 @@ var leaves := true
 var solid := false  # a wall on the plane (giant rock): stops enemy bullets, shoves the ship aside
 var lock := true  # homing lasers may pick it
 var shootable := true  # false: shots, the Spear and homing pass by it (a ram-only zone: BEHEMOTH's dozer blade)
+var half_ext := Vector2.ZERO  # a wall hit as a box (half width x, half depth z) instead of a circle (the stage 4 barriers)
+var brake := 0.0  # while it stands on the screen (or about to), the scroll slows to this (0 = never): barriers to break
 var marked := false  # its charges' MOVE warnings mark a line the autopilot keeps out of
 var entered := false
 var dead := false
@@ -96,6 +98,16 @@ func _build() -> void:
 ## Movement and attacks, every tick.
 func _behave(_dt: float) -> void:
 	pass
+
+
+## How far plane point p lies outside the hit shape (below 0: inside):
+## the circle, or the box of a wall.
+func gap_to(p: Vector3) -> float:
+	var d := Vector2(p.x - hit_pos.x, p.z - hit_pos.z)
+	if half_ext == Vector2.ZERO:
+		return d.length() - radius
+	var q := Vector2(absf(d.x) - half_ext.x, absf(d.y) - half_ext.y)
+	return Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length() + minf(maxf(q.x, q.y), 0.0)
 
 
 ## Adds a mesh that takes the hit flash and telegraph pulse with the model.

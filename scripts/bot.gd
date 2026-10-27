@@ -87,7 +87,7 @@ func think() -> Array:
 				push += nrm * s * (band - absf(off) + 1.0) * 1.5
 			continue
 		# (or a circle where something lands: out of it)
-		if w["to"] is Dictionary:
+		if w["to"] is Dictionary and not (w["to"] as Dictionary).has("laser"):
 			var off := pp - nd.hit_pos
 			off.y = 0.0
 			var reach := float(w["to"].get("r", 1.0)) + 1.8
@@ -99,7 +99,9 @@ func think() -> Array:
 				var away := (off / od if od > 0.05 else Vector3.ZERO) + Vector3(side, 0, 0)
 				push += away.normalized() * (reach - od) * 1.8
 			continue
-		var path := PackedVector3Array([nd.hit_pos, w["to"]]) if w["to"] is Vector3 else (w["to"] as PackedVector3Array)
+		# (a laser sight down a path: the same)
+		var to = w["to"]["laser"] if w["to"] is Dictionary else w["to"]
+		var path := PackedVector3Array([nd.hit_pos, to]) if to is Vector3 else (to as PackedVector3Array)
 		for k in path.size() - 1:
 			var a: Vector3 = path[k]
 			var ab: Vector3 = path[k + 1] - a
@@ -113,6 +115,13 @@ func think() -> Array:
 				push += away * (3.6 - dist) * 1.6
 	for e in enemies:
 		if e.dead or not e.ram or e.intangible:
+			continue
+		if e.half_ext != Vector2.ZERO:
+			# a wall across the way: back off from it (it is shot down
+			# by just firing ahead)
+			var gap := e.gap_to(pp)
+			if gap < 4.0 and pp.z > e.hit_pos.z:
+				push += Vector3(0, 0, 1) * (4.0 - gap) * 1.5
 			continue
 		var d := pp - e.hit_pos
 		d.y = 0.0

@@ -21,6 +21,8 @@ const KINDS := {
 	"kestrel": preload("res://scripts/enemies/kestrel.gd"),
 	"giant_rock": preload("res://scripts/enemies/giant_rock.gd"),
 	"boulder": preload("res://scripts/enemies/boulder.gd"),
+	"blast_door": preload("res://scripts/enemies/blast_door.gd"),
+	"bulkhead": preload("res://scripts/enemies/bulkhead.gd"),
 	"part": preload("res://scripts/enemies/part.gd"),
 }
 

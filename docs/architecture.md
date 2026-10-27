@@ -13,7 +13,7 @@
 | `scripts/enemies/` | `enemy.gd`（敵の共通部分）、種類ごとのスクリプト（`dart.gd` など）、`enemy_kinds.gd`（種類の登録表） |
 | `scripts/bosses/` | `boss_base.gd`（中ボス・ボスの共通部分）、`lazaro.gd` / `star_cortex.gd`（ステージ 1）、`ouroboros.gd` / `vulcan_press.gd`（ステージ 2）、`lodestar.gd` / `titan_dredge.gd`（ステージ 3）、`tempest.gd` / `behemoth.gd`（ステージ 4）、`bosses.gd`（登録表） |
 | `scripts/terrain/` | `terrain.gd`（地上の区画を流す）、`backdrop.gd`（星雲・惑星・星・深層の構造物・トンネル・降下する空）、`tunnel.gd`（トンネルの区間を流す）、`islandgen.gd`（区画の生成）、`island.gd`（区画とタイル） |
-| `scripts/models/` | `models.gd`（共通の色と振り分け）、`ship_models.gd` / `enemy_models.gd` / `boss_models.gd` / `item_models.gd` / `ground_models.gd` / `tunnel_models.gd`（トンネルの区間） / `belt_models.gd`（ステージ 3 の巨大岩・敵・ボス・背景の岩） / `planet_models.gd`（ステージ 4 の雲の峰・KESTREL・TEMPEST・BEHEMOTH） |
+| `scripts/models/` | `models.gd`（共通の色と振り分け）、`ship_models.gd` / `enemy_models.gd` / `boss_models.gd` / `item_models.gd` / `ground_models.gd` / `tunnel_models.gd`（トンネルの区間） / `belt_models.gd`（ステージ 3 の巨大岩・敵・ボス・背景の岩） / `planet_models.gd`（ステージ 4 の雲の峰・KESTREL・TEMPEST・BEHEMOTH・基地の扉と隔壁） |
 | `scripts/viewer/` | 閲覧モード（`viewer.gd`）、一覧の組み立て（`viewer_catalog.gd`）、左の情報パネル（`viewer_panel.gd`） |
 | `scripts/bot.gd` | 自動操縦（`--autoplay` と閲覧モードの B） |
 | その他 `scripts/*.gd` | 自機・ショット・敵弾・アイテム・エフェクト・HUD・効果音・配色・入力・ボクセル |
@@ -37,7 +37,7 @@ Stages ──> StageDef（stage1.gd …）
    - `areas` はエリア名ごとに `label`（出だしの表示）、`sections`（区画の種類と大きさ）、`gap`（区画の間隔）、`stream`（漂流物、任意）。
    - `layout_seed` を変えると同じ指定でも区画の形が変わる。
    - `scroll` / `boss_scroll` でスクロールの速さ（ステージ 2 は 18 / 10 と速い。ステージ 1 は 12 / 7、ステージ 3 は 15 / 8、ステージ 4 は 16 / 8）。
-   - 区画を流さないエリアは `{}`（ステージ 4 のボス戦：闘技場の床が区画の高さまで上がっている）。
+   - 区画を流さないエリアは `{}`。ステージ 4 のボス戦は闘技場の床が区画の高さまで上がっているので、区画の代わりに貨物（`cargo`：床に直に置いたパレットの上のタイル）を壁際に流す。`lead` を書くと、そのエリアに入ってから最初の区画までスクロールをその距離だけ空ける（闘技場の床が来てから）。
    - `zako_fire` / `zako_early` で難しさ：小型機と砲台が `zako_fire` 倍の頻度で撃ち、`zako_early` なら撃ち始めの遅い敵（周回円盤・砲台）が早く撃ち始める（ステージ 3 から 2 / true。ステージ 1・2 は 1 / false）。ダートは 2 発目を 0.6 秒後に、円盤はループの半周先で、後方強襲機は続けてもう 1 発、周回円盤はループに乗るところでも、砲台は撃つ間隔が半分（どれも予兆つき）。敵のスクリプトは `game.zako_fire()` / `game.zako_early()` で読む。
    - 何度か目に 1 つ巨大岩を出すように、`stream` の `spawn` は `StageDef` のメソッドで書ける（`stage3.gd`）。最初に重いモデルを使う時に一瞬止まらないよう、`build_waves` で `Vox.get_mesh` を先に呼んでおける。
 3. `build_waves(f)` で `wave(エリア名, 出現リスト, 制限時間, 中ボスか)` を並べる。出現リストは `f.col(...) + f.vform(...)` のように `Formations` の雛形を足し合わせる。中ボスは `[[0.0, "lazaro", {}]]`。
@@ -46,10 +46,11 @@ Stages ──> StageDef（stage1.gd …）
 ## 敵の種類を足す
 
 1. `scripts/enemies/<種類>.gd` を作り、`extends Enemy` にする。
-   - `INFO`：`name`、`category`（`small` 小型 / `medium` 中型 / `ground` 地上 / `carrier` パワーアップ運搬 / `hazard` 漂流物）、`desc`、`demos`（閲覧モードでの見せ方：`[ラベル, Formations のメソッド名, 引数]`）、`stage`（任意：どのウェーブにも載らない種類（漂ってくる巨大岩など）を、閲覧モードでどのステージの背景の上に出すか）。
+   - `INFO`：`name`、`category`（`small` 小型 / `medium` 中型 / `ground` 地上 / `carrier` パワーアップ運搬 / `hazard` 漂流物 / `barrier` 通路をふさぐ壁）、`desc`、`demos`（閲覧モードでの見せ方：`[ラベル, Formations のメソッド名, 引数]`）、`stage`（任意：どのウェーブにも載らない種類（漂ってくる巨大岩など）を、閲覧モードでどのステージの背景の上に出すか）、`area` / `scroll`（任意：閲覧モードで出すエリアの背景とスクロールの速さ）。
    - `_init_kind()` で耐久・半径・スコア・エネルギー・爆発の大きさなど。モデル名が種類名と違うときは `mesh_name`。
    - `_behave(dt)` で動きと攻撃。出現時の指定は `p` に入っている。危険な攻撃の前は `game.warn` / `game.warn_then` で予兆を出す。
    - `shootable = false` の部位はショット・スピア・ホーミングが素通りし、体当たりだけが残る（BEHEMOTH のドーザーブレード：前に置いても後ろの部位の盾にならない）。
+   - `half_ext`（半幅 x、半奥行き z）を決めると、当たり判定が円ではなく箱になる（ショット・スピア・ホーミング・体当たり）。`brake` を決めると、その敵が画面にいる間（と来る直前）スクロールがその速さまで落ちる（壊すと素早く戻る）。ステージ 4 の基地の扉・隔壁（`barrier.gd` の `Barrier`、`category` は `barrier`）：通路を幅いっぱいにふさぐ壁で、撃って壊さないとぶつかってミス。扉はトンネルの入口の門（`Tunnel.mouth_seg`）に乗って来て、隔壁は上から区画の隙間に来る（来る途中は新しい区画を出さない）。壊れると横一列に爆発する（`Fx.wall_blast`）。
    - 画面の外で待ってから来る敵（後ろの `chaser`、横の `flanker`）の予兆は、レティクルが画面の縁に出る。1 列の編隊で狙い（自機の位置）と予兆を 1 つにまとめるときは、`Formations.chasers` のように列の全員に同じ辞書（`group`）を渡し、先頭が書いて後続が読む。
    - 決まった道筋を列で飛ぶ編隊は、雛形で道筋（`Curve2D`、平面上の x と z）を作って全員に渡し、各機は先頭から一定の距離だけ後ろを飛ぶ（`Formations.racers` と `racer.gd`）。道筋は画面の割合で描いておき、反転・対角線での折り返しで 4 隅と 2 方向に使い回す。
 2. `scripts/enemies/enemy_kinds.gd` の `KINDS` に足す。
@@ -65,7 +66,7 @@ Stages ──> StageDef（stage1.gd …）
    - `INFO`：`name`（警告と体力ゲージの名前）、`role`（`mid` / `boss`）、`desc`、`demos`（閲覧モードの途中から再生：`[ラベル, 合図]`、合図は `viewer_skip` に渡る）。
    - 部位は `game.spawn_part(self, モデル名, 半径)` で作る（当たり判定は敵と同じ）。部位への被弾は `on_hit`、部位の撃破は `on_part_killed` に来る。
    - `gauge()` で HUD の体力ゲージ、`force_defeat()` は閲覧モードの K（撃破）、`debug_state()` は閲覧モードの状態表示。
-   - 突進・打ち下ろしなどの大技は、`game.warn(部位, 秒, Game.Warn.MOVE, 半径, 狙う地点の Vector3)` で予兆を出すと、矢印がその地点へ流れ、自動操縦はその線から外れる（ボスの部位の予兆と、`marked` を立てた敵の予兆のみ）。弧を描く大技は、狙う地点の代わりに道筋の点の列（`PackedVector3Array`）を渡すと、矢印が道筋に沿って流れ、自動操縦は道筋全体から外れる（TITAN DREDGE の薙ぎ払い、TEMPEST の稲妻）。落ちてくる攻撃は `{"r": 半径}` を渡すと、部位（落ちる地点に置いた見えない部位）のまわりに破線の円と締まっていく輪が出て、自動操縦は円から（なるべく横へ）出る（BEHEMOTH の榴弾）。予兆の道筋は出したあとでも書き換えられる（`game.warnings` の最後に入った辞書の `to`。TEMPEST の稲妻は充電のあいだ自機を追い、止まってから落ちる）。`warn` の引数 `sound` を `false` にすると予兆の音を鳴らさない（同時に何本も出すとき、攻撃中も線を残しておくとき）。`bot` を `false` にすると自動操縦はその予兆を見ない。大きなものが通る帯は `{"lane": [始点, 終点], "hw": 半幅}` を渡すと、画面には何も出ず、自動操縦だけが帯から横へ出る（BEHEMOTH の突進：画面には 5 本の線、自動操縦には 1 本の帯。平行な線を 1 本ずつ避けると線の間に挟まってしまう）。
+   - 突進・打ち下ろしなどの大技は、`game.warn(部位, 秒, Game.Warn.MOVE, 半径, 狙う地点の Vector3)` で予兆を出すと、矢印がその地点へ流れ、自動操縦はその線から外れる（ボスの部位の予兆と、`marked` を立てた敵の予兆のみ）。弧を描く大技は、狙う地点の代わりに道筋の点の列（`PackedVector3Array`）を渡すと、矢印が道筋に沿って流れ、自動操縦は道筋全体から外れる（TITAN DREDGE の薙ぎ払い、TEMPEST の稲妻）。落ちてくる攻撃は `{"r": 半径}` を渡すと、部位（落ちる地点に置いた見えない部位）のまわりに破線の円と締まっていく輪が出て、自動操縦は円から（なるべく横へ）出る（BEHEMOTH の榴弾）。予兆の道筋は出したあとでも書き換えられる（`game.warnings` の最後に入った辞書の `to`。TEMPEST の稲妻は充電のあいだ自機を追い、止まってから落ちる）。`warn` の引数 `sound` を `false` にすると予兆の音を鳴らさない（同時に何本も出すとき、攻撃中も線を残しておくとき）。`bot` を `false` にすると自動操縦はその予兆を見ない。大きなものが通る帯は `{"lane": [始点, 終点], "hw": 半幅}` を渡すと、自動操縦が帯から横へ出る。`"show": true` を足すと画面にその帯が出る（縁取り、予兆が進むにつれて始点から満ちていく塗り、帯を流れる幅いっぱいの矢印、止まる所の太線：BEHEMOTH の突進。`HUD._charge_lane`）。`show` のない帯は画面に出ない（突進のあいだ自動操縦を帯の外に置いておく分）。道筋を `{"laser": 点の列}` で渡すと、HUD は部位のレティクルだけを出し、道筋はボスが自分で描く（TEMPEST の稲妻：充電中はレーザー照準のような細い線、止まると明るい線と稲妻の幅の薄い帯、落ちる直前に点滅）。自動操縦は道筋と同じに扱う。
    - 体力が尽きて最期の演出に入るときは `disarm()` を呼ぶ（全部位の当たり判定が消え、自機がぶつからず、弾も素通りする）。最後の大爆発は `game.big_blast(位置, 大きさ, 破片の色)`（1 = ボス、0.7 = 中ボス）。
    - ステージのボス（`final`）は、倒れきったら `game.boss_destroyed(self)` を呼ぶとステージクリアになる。中ボスは去るときに `finished = true` にして `game.remove_boss(self)`。
 2. `scripts/bosses/bosses.gd` の `KINDS` に足す。
@@ -74,10 +75,11 @@ Stages ──> StageDef（stage1.gd …）
 
 ## 地形（区画）を足す
 
-- 既存の種類（hull / trench / solar / reactor / fragment / asteroid / bridge / quarry）の組み合わせと大きさは、ステージ定義の `areas[*].sections` だけで変えられる。
+- 既存の種類（hull / trench / solar / reactor / fragment / asteroid / bridge / quarry / aerostat / cargo）の組み合わせと大きさは、ステージ定義の `areas[*].sections` だけで変えられる。
 - `bridge` はトンネルの壁から壁へ渡る足場（タイルの列と網目の通路、下はトラス）。幅 16 マスでトンネルの幅いっぱいになる。
 - トンネルのあるステージでは、区画は壁の内側に置かれる。`sections` の 5 つ目に置き方を書ける：`"span"`（真ん中、壁から壁へ。`bridge` は書かなくてもこれ）、`"wall"`（左右どちらかの壁に寄せる）、なし（壁の内側のどこか）。例 `["hull", 6, 5, 2, "wall"]`。
 - `quarry`（ステージ 3）は露天掘りの小惑星：真ん中へ段々に下がる採掘穴、底に鉱脈の光、穴のまわりの段にタイル（鉱石の箱）、穴を横切るコンベアの桟橋。
+- `cargo`（ステージ 4 のボス戦）は床に直に置いた貨物：船体なし、マスごとの鉄のパレットにタイル。`IslandGen.make` の結果の `lift`（1 ボクセル）だけ持ち上げて置かれ、タイルの当たりも島ごとの高さで取る。BEHEMOTH が轢いた（または超信地旋回でブレードが払った）タイルは潰れて消える（`Terrain.crush`、得点もエネルギーもなし）。
 - `aerostat`（ステージ 4）は空に浮かぶプラットフォーム：四隅の丸いダクトに揚力ファン（その外の角は欠ける）、真ん中に灯りの並ぶ背骨、その間にタイルの列。
 - トンネルのあるステージでも、トンネルの様式が `open`（空）のエリアでは区画は壁に縛られない（`Terrain.spans`、エリアごと）。
 - 新しい種類は `scripts/terrain/islandgen.gd` に、外形（`make` の最初の match）・タイルの置き方（2 つ目の match）・表面（`_structure` か専用の関数）を足し、`KINDS` に加える。閲覧モードの TERRAIN に「KIND …」として標準サイズで出る。

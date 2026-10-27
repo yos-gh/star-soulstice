@@ -257,6 +257,21 @@ func explode(p: Vector3, scale := 1.0, drift := Vector3.ZERO, body := Color(0.4,
 	flash(at, scale)
 
 
+
+## A wall going up (the stage 4 barriers): a row of blasts along x from p
+## out to `hw` either way, rippling out from the middle, its wreckage
+## thrown forward and back off the slab.
+func wall_blast(p: Vector3, hw: float, scale: float, drift: Vector3, body: Color) -> void:
+	var at := Vector3(p.x, BLAST_Y, p.z)
+	var n := maxi(1, int(hw / 3.0))
+	for i in range(-n, n + 1):
+		var q := at + Vector3(i * hw / n, 0, rng.randf_range(-0.4, 0.4))
+		_blast(q, scale * rng.randf_range(0.85, 1.15), drift, WARM, absi(i) * 0.05, 0.4)
+		for k in 4:
+			var dv := Vector3(rng.randf_range(-3, 3), rng.randf_range(1, 4), (1.0 if k % 2 == 0 else -1.0) * rng.randf_range(6, 14))
+			_debris(q, dv + drift, clampf(scale * 0.14, 0.2, 0.45), body if rng.randf() < 0.75 else body.darkened(0.5))
+	flash(at, scale * 3.0)
+
 ## One blast: flash, fire billows, burning scraps, smoke rolling far out
 ## (`smoke` scales how much), shards (and a ring when larger).
 func _blast(p: Vector3, s: float, drift: Vector3, pal: int, delay: float, smoke := 1.0) -> void:

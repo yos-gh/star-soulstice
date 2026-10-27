@@ -6,9 +6,11 @@ extends Models
 ## frame, warm and matte, after desert military craft), TEMPEST (cool
 ## slate steel, warm brown glazed insulators, a lilac storm glow) and
 ## BEHEMOTH (gunmetal machinery in the KESTREL's sand on its armour, a
-## hazard-striped dozer blade, a pale gold reactor).
+## hazard-striped dozer blade, a pale gold reactor); the barriers across the
+## base's tunnel (the blast door, bulkheads: gunmetal and sand, hazard
+## stripes).
 
-const NAMES := ["cloud_a", "cloud_b", "cloud_c", "kestrel", "kestrel_fan", "kestrel_gun", "kestrel_barrels", "tempest_hull", "tempest_core", "tempest_coil", "tempest_rotor", "behemoth_hull", "behemoth_tread", "behemoth_turret", "behemoth_barrels", "behemoth_sponson", "behemoth_core", "behemoth_louvre", "behemoth_shell"]
+const NAMES := ["cloud_a", "cloud_b", "cloud_c", "kestrel", "kestrel_fan", "kestrel_gun", "kestrel_barrels", "tempest_hull", "tempest_core", "tempest_coil", "tempest_rotor", "behemoth_hull", "behemoth_tread", "behemoth_turret", "behemoth_barrels", "behemoth_sponson", "behemoth_core", "behemoth_louvre", "behemoth_shell", "blast_door", "bulkhead"]
 
 const CLOUD_HI := Color(0.53, 0.52, 0.59)
 const CLOUD_MID := Color(0.39, 0.38, 0.46)
@@ -67,6 +69,10 @@ static func make(name: String) -> ArrayMesh:
 			return _behemoth_louvre()
 		"behemoth_shell":
 			return _behemoth_shell()
+		"blast_door":
+			return _blast_door()
+		"bulkhead":
+			return _bulkhead()
 	return null
 
 
@@ -842,3 +848,144 @@ static func _behemoth_shell() -> ArrayMesh:
 	v.fill(-2, 0, 0, 1, 3, 0, CRIM)
 	v.fill(-1, 1, 4, 0, 2, 4, STEEL_L)
 	return v.mesh(U * 2.2, Vector3(0.5, 2.0, 0.5))
+
+
+# ------------------------------------------------------------ barriers
+
+## The stage 4 barriers stand across the tunnel from its floor (y -9) up to
+## the play plane: their top (a beam over the wall tops, out past the
+## screen's edges, its top just under the bullets) is what the ship meets,
+## their face hangs below it into the tunnel. Lower down the face darkens
+## a little (it lies deeper in the shaft).
+const BAR_U := 0.25
+const BAR_TOP := 37  # the top row (its top face at y 0.25)
+const BAR_LEAF := 48  # half width of what fills the tunnel (x 12: the gate's posts)
+
+
+static func _deep(c: Color, row: int) -> Color:
+	return c.darkened((1.0 - clampf(row / 32.0, 0.0, 1.0)) * 0.35)
+
+
+## The blast door at the base's mouth (it sits in the gate's frame): two
+## gunmetal leaves meeting at a toothed seam striped in hazard yellow,
+## raised ribs, sand armour panels, a locking wheel over the seam; along
+## the top a locking beam right across, striped on its top and front, dim
+## green lamps on it and a hydraulic ram along each end.
+static func _blast_door() -> ArrayMesh:
+	var v := Vox.new(160, BAR_TOP + 1, 6)
+	var lamp := Color(0.38, 0.64, 0.46)
+	for x in range(-80, 80):
+		var xi := x if x >= 0 else -1 - x
+		for r in range(2, BAR_TOP + 1):
+			if r >= 33:
+				# the locking beam
+				for z in range(-3, 3):
+					var c := DUSK
+					if r == BAR_TOP or z == 2:
+						var k := x + (z if r == BAR_TOP else r)
+						c = HAZARD if posmod(k, 8) < 4 else DUSK_D
+						if (r == BAR_TOP and (z == -3 or z == 2)) or (z == 2 and r == 33):
+							c = SLATE_D
+					v.put(x, r, z, c)
+				# lamps on the top, a ram along each end of the front
+				if r == BAR_TOP and xi % 24 == 10 and xi < 72:
+					v.put(x, r, -1, lamp, true)
+					v.put(x, r, 0, lamp, true)
+				continue
+			if xi >= BAR_LEAF:
+				continue
+			# the leaves: a 1-unit slab, ribs and panels raised on the front
+			var seam := 1 if posmod(r / 3, 2) == 0 else -1  # the teeth interlock
+			var dx := x - seam if x >= seam else seam - 1 - x  # from the seam
+			var c := _deep(GUN if posmod(r, 8) != 0 else DUSK_L, r)
+			var front := 1
+			if dx < 1:
+				c = DUSK_D
+				front = -1
+			elif dx < 5:
+				c = _deep(HAZARD if posmod((r + dx) / 2, 2) == 0 else DUSK_D, r)
+			else:
+				var px := posmod(xi - 8, 12)
+				if xi >= 8 and xi < 44 and px < 8 and r >= 6 and r < 30:
+					var edge := px == 0 or px == 7 or r == 6 or r == 29
+					c = _deep(SAND_D if edge else SAND, r)
+					front = 2 if not edge else 1
+				elif xi % 12 == 6 and r >= 4 and r < 32:
+					c = _deep(SLATE_L, r)
+					front = 2
+			for z in range(-2, front + 1):
+				v.put(x, r, z, c if z == front else _deep(DUSK, r))
+	# the locking wheel over the seam
+	for x in range(-8, 8):
+		for r in range(12, 28):
+			var d := Vector2(x + 0.5, r - 19.5)
+			var rr := d.length()
+			if rr > 7.5:
+				continue
+			var a := atan2(d.y, d.x)
+			var spoke := absf(wrapf(a * 4.0 / TAU, -0.5, 0.5)) < 0.12
+			v.put(x, r, 1, _deep(DUSK, r))
+			if rr > 5.5:
+				v.put(x, r, 2, _deep(STEEL_M if posmod(int(floor((a + PI) * 10.0 / PI)), 2) == 0 else GUN, r))
+			elif rr < 1.6:
+				v.put(x, r, 2, _deep(DUSK_L, r))
+			elif spoke:
+				v.put(x, r, 2, _deep(STEEL_L, r))
+	# the rams on the beam's ends (rows 34-35, out over the wall tops)
+	for x in range(52, 78):
+		for s in [-1, 1]:
+			var xx: int = x if s > 0 else -1 - x
+			var housing := x < 62
+			v.put(xx, 34, 2, STEEL_L if not housing else GUN)
+			v.put(xx, 35, 2, STEEL_M if not housing else GUN)
+	return v.mesh(BAR_U, Vector3(0.0, BAR_TOP, 0.0))
+
+
+## A bulkhead inside the base: a slatted pressure shutter between posts of
+## its own on the walls (striped on their inner faces), a hazard-striped
+## sill along its foot, straps up it; along the top a sand header right
+## across, dashed dark on its top, dim green lamps.
+static func _bulkhead() -> ArrayMesh:
+	var v := Vox.new(160, BAR_TOP + 1, 4)
+	var lamp := Color(0.38, 0.64, 0.46)
+	for x in range(-80, 80):
+		var xi := x if x >= 0 else -1 - x
+		for r in range(2, BAR_TOP + 1):
+			if r >= 33:
+				# the header
+				for z in range(-2, 2):
+					var c := SAND
+					if r == BAR_TOP:
+						c = SAND_D if posmod(xi, 8) < 3 else SAND_L
+						if z == -2 or z == 1:
+							c = DUSK
+					elif z == 1:
+						c = DUSK_L if r == 33 else (SAND_D if r == 34 else SAND)
+					v.put(x, r, z, c)
+				if r == BAR_TOP and xi % 16 == 6 and xi < 70:
+					v.put(x, r, -1, lamp, true)
+					v.put(x, r, 0, lamp, true)
+				continue
+			if xi >= 58:
+				continue
+			if xi >= 52:
+				# the posts on the wall faces
+				var c := _deep(SLATE_D if posmod(r, 6) != 0 else DUSK_L, r)
+				if xi == 52:
+					c = _deep(HAZARD if posmod(r / 2, 2) == 0 else DUSK_D, r)
+				for z in range(-2, 2):
+					v.put(x, r, z, c)
+				continue
+			# the shutter: slats with grooves between, straps, the sill
+			var groove := posmod(r, 3) == 1
+			var front := -1 if groove else 0
+			var c := _deep(DUSK_D if groove else (SLATE if posmod(r / 3, 2) == 0 else SLATE_L), r)
+			if r < 5:
+				c = _deep(HAZARD if posmod((xi + r) / 3, 2) == 0 else DUSK_D, r)
+				front = 1
+			elif xi < 2 or (xi >= 25 and xi < 27):
+				c = _deep(GUN, r)
+				front = 1
+			for z in range(-2, front + 1):
+				v.put(x, r, z, c if z == front else _deep(DUSK, r))
+	return v.mesh(BAR_U, Vector3(0.0, BAR_TOP, 0.0))

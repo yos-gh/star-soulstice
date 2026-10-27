@@ -17,6 +17,9 @@ extends RefCounted
 ##   aerostat  a floating sky platform (stage 4): a hull deck held up by a
 ##             ducted lift fan in each corner, rows of hatches between them
 ##             and a lit spine down the middle
+##   cargo     cargo set down on a deck (the stage 4 arena): no hull, a steel
+##             pallet under every cell, most of them loaded (lifted onto the
+##             deck: the result's "lift")
 ## Voxels are R units; a cell (one 2 x 2 tile) is K x K voxels. Tiles sit
 ## in sockets half a voxel below the deck. Local y = 0 is the deck top.
 ## A stage picks kinds and sizes per area (StageDef.areas). A new kind
@@ -24,7 +27,7 @@ extends RefCounted
 ## and its surface (_structure, or a builder of its own like _asteroid);
 ## add it to KINDS so the viewer can show it.
 
-const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid", "bridge", "quarry", "aerostat"]
+const KINDS := ["hull", "trench", "solar", "reactor", "fragment", "asteroid", "bridge", "quarry", "aerostat", "cargo"]
 
 const R := 0.5
 const K := 4
@@ -135,6 +138,10 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 					# ore bins on the benches round the pit, none down in it
 					if e > 0.45 and e < 0.9 and r.randf() < 0.7:
 						t = 0 if r.randf() < 0.45 else (1 if r.randf() < 0.65 else 2)
+				"cargo":
+					if r.randf() > 0.1:
+						var q := r.randf()
+						t = 0 if q < 0.5 else (1 if q < 0.85 else 2)
 				"bridge":
 					# rows of hatches across (the ends rest in the walls), the
 					# heavy ones in the middle
@@ -177,10 +184,12 @@ static func make(seed: int, kind: String, w: int, h: int, turret_count: int) -> 
 		_asteroid(v, info)
 	elif kind == "quarry":
 		_quarry(v, info)
+	elif kind == "cargo":
+		_cargo(v, info)
 	else:
 		_structure(v, info)
 	var mesh := v.mesh(R, Vector3(0, D, 0), true)
-	return {"w": w, "h": h, "kind": kind, "types": types, "hidden": hidden, "mesh": mesh, "turrets": tcells}
+	return {"w": w, "h": h, "kind": kind, "types": types, "hidden": hidden, "mesh": mesh, "turrets": tcells, "lift": R if kind == "cargo" else 0.0}
 
 
 ## 0 = empty, 1 = rim/margin, 2 = deck cell.
@@ -356,6 +365,27 @@ static func _structure(v: Vox, info: Dictionary) -> void:
 			else:
 				_greeble(v, x, surf, z, lx, lz, (c2.x * 31 + c2.y * 17 + w) % 7)
 
+
+
+## Cargo on a deck: a steel pallet under each cell (in the top row: the
+## section is lifted by a voxel so the pallets stand on the deck below),
+## dark runners between them, nothing round them.
+static func _cargo(v: Vox, info: Dictionary) -> void:
+	var W: int = info["W"]
+	var H: int = info["H"]
+	var vmask: PackedByteArray = info["vmask"]
+	for vz in H:
+		for vx in W:
+			if vmask[vz * W + vx] != 2:
+				continue
+			var lx := (vx - MARGIN) % K
+			var lz := (vz - MARGIN) % K
+			var col := PIPE
+			if lx == 0 or lz == 0:
+				col = SEAM
+			elif lx == 1 or lx == K - 1 or lz == 1 or lz == K - 1:
+				col = SIDE
+			v.put(vx - W / 2, D - 1, vz - H / 2, col)
 
 ## Which corner's lift fan covers cell (i, j) of an aerostat (0-3), or -1:
 ## the 2 x 2 cells in each corner (none on a small deck).

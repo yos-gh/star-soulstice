@@ -6,10 +6,13 @@ extends StageDef
 ## floating sky platforms; the mid-boss guards the way in, and with it gone
 ## the base's face comes up and the stage flies into its hangar shaft, down
 ## through the deep levels to the boss in the arena at the bottom. Denser
-## than stage 3: more fighters at a time, more guns on the ground.
+## than stage 3: more fighters at a time, more guns on the ground. Inside,
+## bulkheads shut the way between waves: barriers to shoot down before the
+## ship meets them (the scroll brakes for them).
 ##   AREA 1 UPPER ATMOSPHERE  sky platforms, the haze thickening
 ##   AREA 2 STORM LAYER       through the cloud deck
 ##   (the approach)           TEMPEST
+##   (the mouth)              the base's BLAST DOOR
 ##   AREA 3 HANGAR SHAFT      inside the base: gantries and decks
 ##   AREA 4 CORE ACCESS       the deep levels
 ##   BEHEMOTH                 in the arena at the bottom
@@ -52,8 +55,13 @@ func _init() -> void:
 			"sections": [["trench", 12, 7, 3], ["bridge", 16, 4, 2], ["reactor", 9, 9, 2], ["hull", 7, 7, 3, "wall"], ["bridge", 16, 3, 2]],
 			"gap": [10.0, 15.0],
 		},
-		# the arena: its deck lies where the sections would be
-		"boss": {},
+		# the arena: its deck lies where the sections would be; cargo stands
+		# along its sides, out of the tank's way (tiles to refill the homing
+		# lasers in the fight), the first once the deck is there
+		"boss": {
+			"sections": [["cargo", 2, 4, 0, "wall"], ["cargo", 2, 3, 0, "wall"], ["cargo", 2, 5, 0, "wall"], ["cargo", 2, 3, 0, "wall"]],
+			"gap": [5.0, 10.0], "lead": 30.0,
+		},
 	}
 	backdrop = {
 		"nebula": {"y": -240.0, "size": 760.0},
@@ -70,7 +78,7 @@ func _init() -> void:
 
 func build_waves(f: Formations) -> void:
 	# build the stage's big models now, not the moment they first appear
-	for n: String in ["cloud_a", "cloud_b", "cloud_c", "kestrel", "tempest_hull", "tempest_core", "tempest_coil", "tempest_rotor", "tunnel_facade", "behemoth_hull", "behemoth_turret", "behemoth_tread", "behemoth_core"]:
+	for n: String in ["cloud_a", "cloud_b", "cloud_c", "kestrel", "tempest_hull", "tempest_core", "tempest_coil", "tempest_rotor", "tunnel_facade", "blast_door", "bulkhead", "behemoth_hull", "behemoth_turret", "behemoth_tread", "behemoth_core"]:
 		Vox.get_mesh(n)
 	# AREA 1: upper atmosphere (more at a time than stage 3 from the start)
 	wave("entry", f.col(0.0, -0.75, 6, 0.18, 1) + f.col(0.8, 0.75, 6, 0.18, -1) + f.vform(1.8, 1))
@@ -87,13 +95,18 @@ func build_waves(f: Formations) -> void:
 	wave("storm", f.sweep(0.0, -1, 6, 0.2) + f.sweep(0.5, 1, 6, 0.2) + f.rammers(1.6, [-0.4, 0.4], 0.3) + f.swirls(2.6, -1, 5, 0.22), 9.0)
 	# the approach to the base: the storm station guards the way in
 	wave("gate", [[0.0, "tempest", {}]], 60.0, true)
+	# the base's blast door shuts the way in: break it or crash
+	wave("hangar", f.one(0.0, "blast_door", 0.0, {"gate": true}), 30.0)
 	# AREA 3: hangar shaft (the rail carriages of the foundry guard it too)
 	wave("hangar", f.col(0.0, -0.75, 5, 0.18, 1) + f.col(0.6, 0.75, 5, 0.18, -1) + f.col(1.2, -0.55, 5, 0.18, 1) + f.col(1.8, 0.55, 5, 0.18, -1) + f.vform(2.6, 1))
 	wave("hangar", f.railjack(0.0, -1) + f.kestrel(0.8, 1, 0.35) + f.rammers(3.0, [-0.4], 0.2), 14.0)
+	wave("hangar", f.one(0.0, "bulkhead", 0.0), 20.0)
 	wave("hangar", f.chasers(0.0, 3, -1) + f.chasers(1.4, 3, 1) + f.pincer(3.0, 2), 9.0)
 	wave("hangar", f.railjack(0.0, 1) + f.railjack(0.6, -1) + f.racers(2.5, "tl", 1, 8), 14.0)
 	# AREA 4: core access
+	wave("core", f.one(0.0, "bulkhead", 0.0), 20.0)
 	wave("core", f.kestrel(0.0, -1, -0.45) + f.kestrel(0.8, 1, 0.45) + f.rammers(2.5, [0.0], 0.2), 15.0)
 	wave("core", f.racers(0.0, "tr", 1, 8) + f.rammers(1.0, [-0.5, 0.5], 0.4) + f.sweep(2.0, -1, 6, 0.2), 12.0)
 	wave("core", f.chasers(0.0, 3, -1) + f.chasers(1.4, 3, 1) + f.flankers(3.0, -1, 3) + f.swirls(4.0, 1, 5, 0.22), 10.0)
+	wave("core", f.one(0.0, "bulkhead", 0.0), 20.0)
 	wave("core", f.railjack(0.0, -1) + f.railjack(0.6, 1) + f.col(2.0, -0.75, 5, 0.18, 1) + f.col(2.6, 0.75, 5, 0.18, -1), 13.0)

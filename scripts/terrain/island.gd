@@ -113,6 +113,15 @@ func _destroy(idx: int) -> void:
 	game.on_tile_broken(at, world, t, hidden[idx] == 1)
 
 
+
+## Crushed under something heavy (Terrain.crush): gone, nothing for it.
+func crush(idx: int) -> void:
+	var t := types[idx]
+	types[idx] = -1
+	alive_tiles -= 1
+	_drop_slot(t, idx)
+	game.tile_break_fx(position + cell_center(idx % w, idx / w), t)
+
 ## Removes a tile from its MultiMesh by moving the last visible slot into
 ## its place and shrinking the visible count.
 func _drop_slot(t: int, idx: int) -> void:

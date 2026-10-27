@@ -4,10 +4,10 @@ extends BossBase
 ## the storm generator in the middle (the weak point, the gauge), with
 ## three lightning masts (glazed insulator stacks under steel toroids: one
 ## aft on the spine, one on each front boom).
-## Lightning, its signature, often: a mast charges and its bolt's whole
-## jagged path is marked, from the mast through the ship to the bottom
-## edge; the path follows the ship (leading it a little) while the mast
-## charges, then holds still for a moment, then the bolt strikes down it:
+## Lightning, its signature, often: a mast charges and a laser sight marks
+## its bolt's path, from the mast through the ship to the bottom edge; the
+## sight follows the ship (leading it a little) while the mast charges,
+## then holds still for a moment, brighter, then the bolt strikes down it:
 ## be off the line once it stops. Two masts sometimes strike together, one
 ## at the ship and one to the side it is heading for. The rotor nacelles
 ## shed hail in their downwash, columns of shells falling straight down
@@ -332,7 +332,7 @@ func _charge(node: Enemy, turn: float, side: float, sound := true) -> void:
 		jit.append(randf_range(-0.35, 0.35))
 	var b := {"node": node, "turn": turn, "side": side, "jit": jit, "state": "track", "t": TRACK_T}
 	b["pts"] = _bolt_path(b)
-	game.warn(node, TRACK_T + LOCK_T, Game.Warn.MOVE, node.radius, b["pts"], sound)
+	game.warn(node, TRACK_T + LOCK_T, Game.Warn.MOVE, node.radius, {"laser": b["pts"]}, sound)
 	b["warn"] = game.warnings[game.warnings.size() - 1]
 	bolts.append(b)
 
@@ -374,7 +374,7 @@ func _bolts(dt: float) -> void:
 				if b["state"] == "track":
 					# the marked path follows the ship
 					b["pts"] = _bolt_path(b)
-					(b["warn"] as Dictionary)["to"] = b["pts"]
+					(b["warn"]["to"] as Dictionary)["laser"] = b["pts"]
 					if b["t"] <= 0.0:
 						b["state"] = "lock"
 						b["t"] = LOCK_T
@@ -386,7 +386,7 @@ func _bolts(dt: float) -> void:
 					game.shake(0.35)
 					game.flash_a = maxf(game.flash_a, 0.12)
 					# the bot keeps off the line while it burns
-					game.warn(node, STRIKE_T, Game.Warn.MOVE, node.radius, b["pts"], false)
+					game.warn(node, STRIKE_T, Game.Warn.MOVE, node.radius, {"laser": b["pts"]}, false)
 					var pts: PackedVector3Array = b["pts"]
 					for k in range(1, pts.size(), 2):
 						game.fx.spark(pts[k] + Vector3(0, 0.4, 0), BOLT_COL, 2, 0.4)
@@ -410,33 +410,46 @@ func _on_bolt(pts: PackedVector3Array, p: Vector3) -> bool:
 	return false
 
 
-## The bolts that are striking (or fading) as ribbons just over the plane.
+## The bolts as ribbons just over the plane: striking (and fading), and
+## before that as laser sights straight down their paths (the HUD marks
+## only the mast): a thin flickering line while the path follows the ship,
+## then, held still, a bright line in a faint band as wide as the bolt,
+## blinking just before it strikes.
 func _draw_bolts() -> void:
 	bolt_mesh.clear_surfaces()
-	var any := false
-	for b in bolts:
-		if b["state"] == "strike" or b["state"] == "fade":
-			any = true
-	if not any:
+	if bolts.is_empty():
 		return
 	bolt_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
 	for b in bolts:
-		if b["state"] != "strike" and b["state"] != "fade":
-			continue
-		var a := 1.0 if b["state"] == "strike" else float(b["t"]) / FADE_T
-		var w := 0.75 if b["state"] == "strike" else 0.5
 		var pts: PackedVector3Array = b["pts"]
-		for k in pts.size() - 1:
-			var p0 := pts[k] + Vector3(0, 0.36, 0)
-			var p1 := pts[k + 1] + Vector3(0, 0.36, 0)
-			var d := p1 - p0
-			var s := Vector3(-d.z, 0, d.x).normalized() * w
-			var col := Color(BOLT_COL.r, BOLT_COL.g, BOLT_COL.b, a)
-			for q: Array in [[p0 - s, 0.0], [p0 + s, 1.0], [p1 + s, 1.0], [p0 - s, 0.0], [p1 + s, 1.0], [p1 - s, 0.0]]:
-				bolt_mesh.surface_set_color(col)
-				bolt_mesh.surface_set_uv(Vector2(0, q[1]))
-				bolt_mesh.surface_add_vertex(q[0])
+		var sight := PackedVector3Array([pts[0], pts[pts.size() - 1]])
+		match b["state"]:
+			"track":
+				_ribbon(sight, 0.07, 0.42 + 0.18 * sin(game.time * 70.0 + float(b["side"]) * 3.0))
+			"lock":
+				_ribbon(sight, BOLT_R, 0.16)
+				var t: float = b["t"]
+				if t > 0.15 or int(t * 40.0) % 2 == 0:
+					_ribbon(sight, 0.13, 1.0)
+			"strike":
+				_ribbon(pts, 0.75, 1.0)
+			"fade":
+				_ribbon(pts, 0.5, float(b["t"]) / FADE_T)
 	bolt_mesh.surface_end()
+
+
+## One ribbon down `pts`, `w` either side, faded to `a`.
+func _ribbon(pts: PackedVector3Array, w: float, a: float) -> void:
+	var col := Color(BOLT_COL.r, BOLT_COL.g, BOLT_COL.b, a)
+	for k in pts.size() - 1:
+		var p0 := pts[k] + Vector3(0, 0.36, 0)
+		var p1 := pts[k + 1] + Vector3(0, 0.36, 0)
+		var d := p1 - p0
+		var s := Vector3(-d.z, 0, d.x).normalized() * w
+		for q: Array in [[p0 - s, 0.0], [p0 + s, 1.0], [p1 + s, 1.0], [p0 - s, 0.0], [p1 + s, 1.0], [p1 - s, 0.0]]:
+			bolt_mesh.surface_set_color(col)
+			bolt_mesh.surface_set_uv(Vector2(0, q[1]))
+			bolt_mesh.surface_add_vertex(q[0])
 
 
 # ------------------------------------------------------------ guns

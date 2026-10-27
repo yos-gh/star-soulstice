@@ -36,7 +36,9 @@ var boss_warn_time := 5.5
 ##   label     [title, subtitle] shown when the area begins (optional)
 ##   sections  [[kind, w, h, turrets], ...]  ground layouts (IslandGen kinds,
 ##             size in cells); a random one follows another
+##             (a 5th entry anchors it in a tunnel: "wall", "span")
 ##   gap       [min, max] distance between sections
+##   lead      how far the scroll runs before its first section (optional)
 ##   stream    {every, first, spawn: Callable(game)} things drifting in on
 ##             their own timer while the area lasts (optional)
 ## }

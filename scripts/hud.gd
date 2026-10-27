@@ -237,9 +237,8 @@ func _warnings() -> void:
 		var nd = w["node"]
 		if not is_instance_valid(nd):
 			continue
-		# (a "lane" is for the autopilot only: the lines of the same move
-		# show it)
-		if w["to"] is Dictionary and (w["to"] as Dictionary).has("lane"):
+		# (a "lane" is for the autopilot only, unless it is to be shown)
+		if w["to"] is Dictionary and (w["to"] as Dictionary).has("lane") and not w["to"].get("show", false):
 			continue
 		var at: Vector3 = (nd as Enemy).hit_pos if nd is Enemy else (nd as Node3D).global_position
 		var sp := g.camera.unproject_position(at)
@@ -299,6 +298,9 @@ func _warnings() -> void:
 			_path_chevrons(to as PackedVector3Array)
 		elif to is Dictionary and (to as Dictionary).has("r"):
 			_impact_ring(at, float(to["r"]), f)
+		elif to is Dictionary and (to as Dictionary).has("lane"):
+			_charge_lane(to["lane"], float(to["hw"]), f)
+		# (a "laser" path: its attacker draws the sight itself, TEMPEST)
 		if target != Vector2.INF:
 			var d := target - sp
 			var len := minf(d.length(), 420.0)
@@ -336,6 +338,56 @@ func _impact_ring(at: Vector3, r: float, f: float) -> void:
 			draw_polyline(seg, Color(0, 0, 0, 0.55), 4.5)
 			draw_polyline(seg, Color(1, 1, 1, 0.9), 2.0)
 	draw_polyline(inner, Color(1, 1, 1, 0.35 + 0.4 * f), 1.5)
+
+
+## Something wide about to charge down a corridor (BEHEMOTH's dozer
+## blade): the corridor on the plane from `lane[0]` to `lane[1]`, `hw`
+## either side, edged, filling from where it starts toward its end as the
+## fuse runs (`f`), with rows of wide chevrons streaming down it and a
+## heavy line across where the charge stops.
+func _charge_lane(lane: PackedVector3Array, hw: float, f: float) -> void:
+	var g := game
+	var a := lane[0]
+	var b := lane[1]
+	var h := b - a
+	h.y = 0.0
+	var l := h.length()
+	if l < 0.1:
+		return
+	h /= l
+	var n := Vector3(-h.z, 0, h.x)
+	var pulse := 0.5 + 0.5 * sin(g.time * 14.0)
+	var quad := func(z0: float, z1: float) -> PackedVector2Array:
+		return PackedVector2Array([
+			g.camera.unproject_position(a + h * z0 - n * hw), g.camera.unproject_position(a + h * z0 + n * hw),
+			g.camera.unproject_position(a + h * z1 + n * hw), g.camera.unproject_position(a + h * z1 - n * hw)])
+	draw_colored_polygon(quad.call(0.0, l), Color(1, 1, 1, 0.07 + 0.05 * pulse))
+	if f > 0.03:
+		draw_colored_polygon(quad.call(0.0, l * (1.0 - pow(1.0 - f, 2.0))), Color(1, 1, 1, 0.12))
+	# the edges, and the stop line with ticks back up the edges
+	for s: float in [-1.0, 1.0]:
+		var e0 := g.camera.unproject_position(a + n * hw * s)
+		var e1 := g.camera.unproject_position(b + n * hw * s)
+		draw_line(e0, e1, Color(0, 0, 0, 0.55), 5.5)
+		draw_line(e0, e1, Color(1, 1, 1, 0.9), 3.0)
+	var stop := PackedVector2Array([
+		g.camera.unproject_position(b - n * hw - h * 1.2), g.camera.unproject_position(b - n * hw),
+		g.camera.unproject_position(b + n * hw), g.camera.unproject_position(b + n * hw - h * 1.2)])
+	draw_polyline(stop, Color(0, 0, 0, 0.55), 6.0)
+	draw_polyline(stop, Color(1, 1, 1, 0.95), 3.5)
+	# wide chevrons streaming down it
+	var gap := 3.2
+	var k := fmod(g.time * 9.0, gap)
+	while k < l - 0.6:
+		var p := a + h * k
+		var fade := clampf(minf(k, l - k) / 2.0, 0.0, 1.0) * 0.8
+		var v := PackedVector2Array([
+			g.camera.unproject_position(p - n * hw * 0.82),
+			g.camera.unproject_position(p + h * 1.6),
+			g.camera.unproject_position(p + n * hw * 0.82)])
+		draw_polyline(v, Color(0, 0, 0, fade * 0.5), 6.0)
+		draw_polyline(v, Color(1, 1, 1, fade), 3.0)
+		k += gap
 
 
 ## A big move along a path of points on the plane (a boom's sweep):

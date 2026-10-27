@@ -14,6 +14,7 @@ var layouts := {}  # area -> Array[Dictionary] (IslandGen.make results + "anchor
 var gaps := {}  # area -> [min, max]
 var span_hw := 0.0  # half width between the tunnel walls (0 = open space)
 var spans := {}  # area -> span_hw there (a stage may fly in from open sky: stage 4)
+var leads := {}  # area -> scroll before its first section (stage 4's arena: its deck first)
 var _stage_layouts := {}  # stage number -> {layouts, gaps, spans}
 var first_area := ""
 var title_area := ""
@@ -34,6 +35,7 @@ func use_stage(def: StageDef) -> void:
 	if not _stage_layouts.has(def.number):
 		var ls := {}
 		var gs := {}
+		var lds := {}
 		var s := def.layout_seed
 		for a: String in def.areas:
 			var list: Array[Dictionary] = []
@@ -45,17 +47,20 @@ func use_stage(def: StageDef) -> void:
 				s += def.layout_seed_step
 			ls[a] = list
 			gs[a] = def.areas[a].get("gap", [2.0, 6.0])
+			if def.areas[a].has("lead"):
+				lds[a] = float(def.areas[a]["lead"])
 		# between the walls in a tunnel, except where it is open sky
 		var sp := {}
 		var tun: Dictionary = def.backdrop.get("tunnel", {})
 		for a: String in def.areas:
 			var st := String((tun.get("styles", {}) as Dictionary).get(a, tun.get("first", Tunnel.OPEN)))
 			sp[a] = TunnelModels.HW if not tun.is_empty() and st != Tunnel.OPEN else 0.0
-		_stage_layouts[def.number] = {"layouts": ls, "gaps": gs, "spans": sp}
+		_stage_layouts[def.number] = {"layouts": ls, "gaps": gs, "spans": sp, "leads": lds}
 	var e: Dictionary = _stage_layouts[def.number]
 	layouts = e["layouts"]
 	gaps = e["gaps"]
 	spans = e["spans"]
+	leads = e["leads"]
 	first_area = def.first_area
 	title_area = def.title_area
 
@@ -84,6 +89,8 @@ func set_area(a: String) -> void:
 	if layouts.has(a):
 		area = a
 		span_hw = spans.get(a, 0.0)
+		if leads.has(a):
+			next_in = maxf(next_in, leads[a])
 
 
 # ------------------------------------------------------------ tick
@@ -106,7 +113,19 @@ func tick(dt: float, speed: float) -> void:
 		tl[1] += dt
 		next_in -= speed * dt
 		if next_in <= 0.0:
-			_spawn_island()
+			# (not while a barrier comes down the tunnel above: a section
+			# would run through it; the stretch before it stays clear)
+			if _barrier_above():
+				next_in = 0.5
+			else:
+				_spawn_island()
+
+
+func _barrier_above() -> bool:
+	for e in game.enemies:
+		if e.half_ext != Vector2.ZERO and not e.dead and e.position.z < game.ground_top - 1.0:
+			return true
+	return false
 
 
 func _spawn_island() -> void:
@@ -146,7 +165,7 @@ func place(lay: Dictionary, at: Vector3, with_turrets: bool) -> Island:
 	var isl := Island.new()
 	add_child(isl)
 	isl.setup(game, lay)
-	isl.position = at
+	isl.position = at + Vector3(0, float(lay.get("lift", 0.0)), 0)
 	islands.append(isl)
 	if with_turrets:
 		for c: Vector2i in lay["turrets"]:
@@ -161,9 +180,9 @@ func place(lay: Dictionary, at: Vector3, with_turrets: bool) -> Island:
 func hit(p: Vector3, dmg: float) -> float:
 	if islands.is_empty():
 		return -1.0
-	var g := game.from_plane(p, Game.GROUND_Y + 0.4)
 	for isl in islands:
-		var idx := isl.tile_at(g)
+		# (at the island's own height: cargo is lifted onto a deck)
+		var idx := isl.tile_at(game.from_plane(p, isl.position.y + 0.4))
 		if idx >= 0:
 			return isl.damage(idx, dmg)
 	return -1.0
@@ -182,6 +201,20 @@ func spear(pp: Vector3, r: float, hw: float, length: float, dmg: float) -> void:
 			if d.x * d.x + d.z * d.z < r * r or (absf(d.x) < hw and d.z < 0.0 and d.z > -length):
 				isl.damage(idx, dmg)
 
+
+
+## Something heavy rolls over the ground (BEHEMOTH): the tiles within r
+## of world point `at` (x and z) are crushed.
+func crush(at: Vector3, r: float) -> void:
+	for isl in islands:
+		if absf(isl.position.z - at.z) > isl.h * Island.CELL * 0.5 + r:
+			continue
+		for idx in isl.w * isl.h:
+			if isl.types[idx] < 0:
+				continue
+			var c := isl.position + isl.cell_center(idx % isl.w, idx / isl.w)
+			if Vector2(c.x - at.x, c.z - at.z).length() < r:
+				isl.crush(idx)
 
 func tiles_alive() -> int:
 	var c := 0
