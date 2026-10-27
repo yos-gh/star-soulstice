@@ -8,7 +8,7 @@ extends StageDef
 ## through the deep levels to the boss in the arena at the bottom. Denser
 ## than stage 3: more fighters at a time, more guns on the ground. Inside,
 ## bulkheads shut the way between waves: barriers to shoot down before the
-## ship meets them (the scroll brakes for them).
+## ship meets them.
 ##   AREA 1 UPPER ATMOSPHERE  sky platforms, the haze thickening
 ##   AREA 2 STORM LAYER       through the cloud deck
 ##   (the approach)           TEMPEST

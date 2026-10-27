@@ -3,17 +3,16 @@ extends Enemy
 ## A barrier across the stage 4 base's tunnel (the blast door, bulkheads):
 ## a wall from the tunnel floor up to the play plane, the screen's whole
 ## width. It is hit as a box (Enemy.half_ext): shots, the Spear and homing
-## lasers break it, and the ship that meets it crashes. While it is on the
-## screen (or about to be) the scroll brakes to `brake` (Game._tick_play),
-## which gives the time to shoot it down; broken, it lets the scroll pick up
-## again. It comes with the scroll: on the tunnel's mouth (params gate: the
-## blast door in the gate's frame) or on its own from above the screen,
-## placed in a gap between the ground sections (they would run through it;
-## Terrain holds back new ones until it is on the screen).
+## lasers break it, and the ship that meets it crashes (the scroll keeps its
+## speed: shoot it down as it comes in). It comes with the scroll: on the
+## tunnel's mouth (params gate: the blast door in the gate's frame) or on
+## its own from above the screen, placed in a gap between the ground
+## sections (they would run through it; Terrain holds back new ones until
+## it is on the screen).
 ## params: gate, z
 
 const HALF_W := 18.0  # out past the screen's edges
-const COME_IN := 12.0  # how far above the screen it comes in on its own
+const COME_IN := 6.0  # how far above the screen it comes in on its own (its face hangs lower)
 
 var placed := false
 

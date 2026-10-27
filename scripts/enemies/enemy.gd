@@ -40,7 +40,6 @@ var solid := false  # a wall on the plane (giant rock): stops enemy bullets, sho
 var lock := true  # homing lasers may pick it
 var shootable := true  # false: shots, the Spear and homing pass by it (a ram-only zone: BEHEMOTH's dozer blade)
 var half_ext := Vector2.ZERO  # a wall hit as a box (half width x, half depth z) instead of a circle (the stage 4 barriers)
-var brake := 0.0  # while it stands on the screen (or about to), the scroll slows to this (0 = never): barriers to break
 var marked := false  # its charges' MOVE warnings mark a line the autopilot keeps out of
 var entered := false
 var dead := false

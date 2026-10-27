@@ -91,10 +91,9 @@ static func _enemies(f: Formations, cats: Array, stages: Array[StageDef]) -> Arr
 		var demos: Array = info.get("demos", [["ONE", "one", [0.0, kind, 0.0]]])
 		for demo: Array in demos:
 			var it := {"name": "%s  %s" % [info.get("name", kind), demo[0]], "kind": kind, "stage": d, "desc": info.get("desc", "")}
-			# (the scenery and scroll it is met in, if it says)
-			for k: String in ["area", "scroll"]:
-				if info.has(k):
-					it[k] = info[k]
+			# (the scenery it is met in, if it says)
+			if info.has("area"):
+				it["area"] = info["area"]
 			if demo[1] == "ground":
 				it["type"] = "ground"
 				it["scroll"] = 0.0

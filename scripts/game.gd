@@ -69,7 +69,6 @@ var bonus := 0
 var lives := START_LIVES
 var next_extend := 0
 var scroll_speed := SCROLL
-var braked := false  # the scroll was braked for a barrier: it picks up quickly again
 var respawn_t := 0.0
 var deaths := 0
 var kills := 0
@@ -451,7 +450,6 @@ func _start_stage(n: int, new_game: bool) -> void:
 	if start_at != "" and new_game:
 		stage.start_at(start_at)
 	scroll_speed = stage_def.scroll
-	braked = false
 	var keep := [player.level, player.shield, player.energy]
 	player.reset_at(Vector3(0, 0, field_bottom + 2.0))
 	player.entering = 0.9
@@ -723,18 +721,7 @@ func _tick_play(dt: float) -> void:
 			else:
 				_game_over()
 	var want_scroll := stage_def.boss_scroll if (stage != null and stage.phase != "waves") else stage_def.scroll
-	var rate := 1.5
-	# a barrier across the way (stage 4): the ship brakes in front of it,
-	# hard, and picks up again quickly once it is broken
-	for e in enemies:
-		if e.brake > 0.0 and not e.dead and e.hit_pos.z > field_top - 14.0 and e.hit_pos.z < field_bottom:
-			want_scroll = minf(want_scroll, e.brake)
-			rate = 12.0
-			braked = true
-	if braked and rate < 12.0:
-		rate = 6.0
-		braked = scroll_speed < want_scroll - 0.01
-	scroll_speed = move_toward(scroll_speed, want_scroll, dt * rate)
+	scroll_speed = move_toward(scroll_speed, want_scroll, dt * 1.5)
 	tick_world(dt)
 
 
