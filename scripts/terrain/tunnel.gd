@@ -39,6 +39,7 @@ var count := 0
 var gate := false
 var mouth := false  # the next gate is the base's mouth (out of the open)
 var mouth_seg: MeshInstance3D  # the last mouth to come in (stage 4's blast door rides on it)
+var edge := ""  # out of a surface style into the open: the ground breaks off there (stage 5)
 
 
 func build(cfg: Dictionary) -> void:
@@ -63,6 +64,7 @@ func _fill() -> void:
 	segs.clear()
 	rng.seed = seed_
 	count = 0
+	edge = ""
 	gate = false
 	mouth = false
 	var z := z_near
@@ -80,6 +82,8 @@ func set_area(a: String, now := false) -> void:
 		_fill()
 	elif s != style:
 		mouth = style == OPEN and s != OPEN
+		if SurfaceModels.STYLES.has(style) and s == OPEN:
+			edge = style
 		style = s
 		gate = true
 
@@ -133,6 +137,13 @@ func _add(z: float, as_style := "") -> void:
 	add_child(m)
 	segs.append(m)
 	if st == OPEN:
+		# (where a surface ends: the ground breaking off at a cliff)
+		if edge != "" and as_style == "":
+			var n := "surface_%s_edge" % edge
+			edge = ""
+			gate = false
+			if SurfaceModels.NAMES.has(n):
+				m.mesh = Vox.get_mesh(n)
 		return
 	if SurfaceModels.STYLES.has(st):
 		var vs: Array = SurfaceModels.VARIANTS[st]

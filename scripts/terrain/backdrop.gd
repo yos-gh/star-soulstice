@@ -26,6 +26,19 @@ extends Node3D
 ##           grow and quicken and the cloud banks rise from `far` to `near`
 ##           as it comes down (out from level 0.22 to 1.02, not in an area
 ##           that goes lower than that, nor in a base)
+##   globe   {radius, top: [near, far], shift, from: {area: p}, to: {area: p},
+##           rate, rates}  a rocky planet right under the stage (stage 5),
+##           shaders/moon.gdshader. `p` says how far the ship has climbed
+##           away from it: 0 = its surface just under the ground (the
+##           stage's surface segments cover it), 1 = gone below the bottom
+##           edge. As p goes up its top sinks from `near` to `far` under the
+##           plane and it slides back `shift` (down the screen): its far
+##           edge (the horizon, the planet's limb) comes in at the top of the
+##           screen and passes down and out at the bottom, space behind it.
+##           It turns with the scroll (its surface keeps pace with the
+##           ground it takes over from). Each area eases p toward its `to`.
+##           Keep `far` shallow enough that the limb stays above the star
+##           layers (they must stay behind it).
 ## Palette sets the colours of the nebula, planet, ring and sky.
 
 var game: Game
@@ -51,6 +64,12 @@ var level_rate := 0.02  # the area's (sky.rates, else sky.rate)
 var sky_off := Vector2.ZERO
 var clouds: Array = []  # {m, far, near}
 var cloud_rng := RandomNumberGenerator.new()
+var globe: MeshInstance3D
+var globe_cfg := {}
+var globe_p := 0.0
+var globe_to := 0.0
+var globe_rate := 0.05
+var globe_spin := 0.0
 
 
 ## Builds the scenery for `cfg` (does nothing if it is already showing).
@@ -70,6 +89,11 @@ func use(cfg: Dictionary) -> void:
 	sky_mat = null
 	sky = {}
 	clouds.clear()
+	globe = null
+	globe_cfg = {}
+	globe_p = 0.0
+	globe_to = 0.0
+	globe_spin = 0.0
 	level = 0.0
 	level_to = 0.0
 	sky_off = Vector2.ZERO
@@ -201,6 +225,8 @@ func build(cfg: Dictionary) -> void:
 			m.rotation = Vector3(belt_rng.randf() * TAU, belt_rng.randf() * TAU, 0)
 			add_child(m)
 			belt.append({"m": m, "a": a, "b": b, "spin": Vector3(belt_rng.randf_range(-0.25, 0.25), belt_rng.randf_range(-0.3, 0.3), 0)})
+	if cfg.has("globe"):
+		_build_globe(cfg["globe"])
 	if cfg.has("sky"):
 		_build_sky(cfg["sky"])
 	if cfg.has("tunnel"):
@@ -251,11 +277,55 @@ func _build_sky(sc: Dictionary) -> void:
 	_sky_view(0.0, 0.0)
 
 
+func _build_globe(gc: Dictionary) -> void:
+	globe_cfg = gc
+	var r: float = gc.get("radius", 120.0)
+	var sp := SphereMesh.new()
+	sp.radius = r
+	sp.height = r * 2.0
+	sp.radial_segments = 160
+	sp.rings = 80
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://shaders/moon.gdshader")
+	sp.material = mat
+	globe = MeshInstance3D.new()
+	globe.mesh = sp
+	globe.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	globe.extra_cull_margin = 16384.0
+	add_child(globe)
+	_globe_view(0.0, 0.0)
+
+
+## The globe after `dt` of the scroll at `speed`: p eases toward the area's,
+## the top sinks and the globe slides back (see the comment at the top),
+## and it turns so its surface keeps pace with the scroll.
+func _globe_view(dt: float, speed: float) -> void:
+	if globe == null:
+		return
+	globe_p = move_toward(globe_p, globe_to, globe_rate * dt)
+	var e := smoothstep(0.06, 1.0, globe_p)
+	var r: float = globe_cfg.get("radius", 120.0)
+	var tops: Array = globe_cfg.get("top", [16.0, 34.0])
+	var d := lerpf(float(tops[0]), float(tops[1]), e)
+	var z0 := game.from_plane(Vector3(0, 0, (game.field_top + game.field_bottom) * 0.5), -d).z
+	globe.position = Vector3(0, -d - r, z0 + float(globe_cfg.get("shift", 150.0)) * e)
+	globe_spin = fmod(globe_spin + speed * dt / r, TAU)
+	globe.rotation.x = globe_spin
+	globe.visible = globe_p < 0.999
+
+
 ## The stage's area changed (a tunnel takes on its style, the sky comes
-## down toward the area's level); `now` = at once.
+## down toward the area's level, the globe falls away toward the area's);
+## `now` = at once.
 func set_area(a: String, now := false) -> void:
 	if tunnel != null:
 		tunnel.set_area(a, now)
+	if globe != null:
+		globe_to = float((globe_cfg.get("to", {}) as Dictionary).get(a, globe_to))
+		globe_rate = float((globe_cfg.get("rates", {}) as Dictionary).get(a, globe_cfg.get("rate", 0.05)))
+		if now:
+			globe_p = float((globe_cfg.get("from", {}) as Dictionary).get(a, globe_to))
+			_globe_view(0.0, 0.0)
 	if not sky.is_empty():
 		var to: Dictionary = sky.get("to", {})
 		var from: Dictionary = sky.get("from", {})
@@ -344,6 +414,7 @@ func _sky_view(dt: float, speed: float) -> void:
 func tick(dt: float, speed: float) -> void:
 	scroll_total += speed * dt
 	_sky_view(dt, speed)
+	_globe_view(dt, speed)
 	if tunnel != null:
 		tunnel.tick(dt, speed)
 	if nebula_mat != null:

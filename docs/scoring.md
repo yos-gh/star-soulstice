@@ -13,6 +13,8 @@
 | 後方強襲機（chaser） | 200 | 1 | `scripts/enemies/chaser.gd` 〃 |
 | 側面強襲機（flanker） | 200 | 1 | `scripts/enemies/flanker.gd` 〃 |
 | 周回円盤（racer） | 150 | 1 | `scripts/enemies/racer.gd` 〃 |
+| 衛星軌道兵器・ガトリング（satellite gatling、ステージ 5） | 700 | 14 | `scripts/enemies/satellite.gd` `_init_kind` |
+| 衛星軌道兵器・レーザー（satellite lance、ステージ 5） | 900 | 18 | 〃 |
 | 砲台（turret） | 400 | 5 | `scripts/enemies/turret.gd` 〃 |
 | 小惑星・小（rock） | 150 | 3 | `scripts/enemies/rock.gd` 〃 |
 | 小惑星・大（rock big） | 500 | 8 | 〃 |
@@ -85,6 +87,7 @@
 | 発生元 | 量 | 場所 |
 |---|---:|---|
 | 編隊機 / 円盤 / 突進機雷 / 後方強襲機 / 側面強襲機 / 周回機 | 2 / 3 / 3 / 2 / 2 / 2 | `scripts/enemies/<種類>.gd` `energy_drop` |
+| 衛星軌道兵器（2 種とも） | 4 | `scripts/enemies/satellite.gd` |
 | 砲台 / コンテナ | 4 / 4 | 〃 |
 | 小惑星 小 / 大 | 3 / 8 | 〃 |
 | 中型機 bulwark / railjack / grappler / kestrel / halberd | 14 / 12 / 12 / 12 / 20 | 〃 |
@@ -127,7 +130,7 @@
 | 3（ステージ 3 から始めて、第 1 形態から） | 約 47 万 | 約 42 万（うちスター 44 個） | 約 18 万 | 約 120 秒 |
 | 4（ステージ 3 から続けて） | 約 46 万 | 約 72 万（うちスター 50 個） | 約 12 万 | 約 169 秒（ボス戦が長引いた回。ボス戦は 40〜60 秒とぶれる） |
 | 4（ステージ 4 から始めて、第 1 形態から） | 約 47 万 | 約 64 万（うちスター 61 個） | 約 13 万 | 約 157 秒 |
-| 5（ステージ 5 から始めて、第 1 形態から。中ボスまで） | 約 46 万 | 約 44 万（うちスター 41 個） | 約 20 万 | 約 108 秒（中ボスの撃破でクリア）|
+| 5（ステージ 5 から始めて、第 1 形態から。AREA 4 まで、ボスはまだ） | 約 59 万 | 約 68 万（うちスター 50 個） | 約 13 万 | 約 157 秒（最後のウェーブでクリア） |
 
 自動操縦はほぼ秒間 7.5 回連打するので、ショットはおおむね ×8（最大）。
 
@@ -141,7 +144,7 @@
 | 2 | 13.9 | INTAKE DUCT 14.9、ASSEMBLY LINE 19.2、（OUROBOROS）14.1、FURNACE ROW 17.3、ボス戦 8.1 |
 | 3 | 13.9 | DRIFT FIELD 15.7、QUARRY ROCKS 17.6、（LODESTAR）10.3、CRUSH ZONE 16.5、ボス戦 6.9（ステージ 3 から始めた値） |
 | 4 | 11.7 | UPPER ATMOSPHERE 15.1、STORM LAYER 13.8、（TEMPEST）15.3、HANGAR SHAFT 13.2、CORE ACCESS 16.9、ボス戦 3.4（壁際の貨物）（ステージ 4 から始めた値） |
-| 5 | 17.8 | EXIT SHAFT 23.6（6 秒だけ）、CRATER PLAINS 17.6、RED RIFT 17.1（ステージ 5 から始めた値。GORGON のクレーターは区画なし） |
+| 5 | 16.5 | EXIT SHAFT 22.8（4 秒だけ）、CRATER PLAINS 16.6、RED RIFT 17.5、（GORGON のクレーターは区画なし）、HIGH ORBIT 12.5（スクロール 10）、DEFENSE GRID 16.9（ステージ 5 から始めた値） |
 
 ステージ 2 はスクロールが 1.5 倍なので、区画の間隔（`stage2.gd` の `gap`）を広げて密度を下げている。区画に硬いタイル（倉庫：スターが隠れている率 6%、ほかは 2%）が多いので、密度が同じならスターはステージ 1 より多めに出る。
 

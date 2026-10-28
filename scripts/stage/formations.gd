@@ -244,6 +244,17 @@ func railjack(at: float, side: int, hold := 5.5, stay := 12.0) -> Array:
 	return [[at, "railjack", {"side": side, "x": side * (_hw() - 2.4), "z": _top() - 3.0, "hold": _top() + hold, "stay": stay}]]
 
 
+## Orbital weapons parked across the way (see satellite.gd): `list` =
+## [[xn, arm, dz], ...], each just above the top edge at x (fraction of the
+## half width), `dz` further up (optional); they come down with the scroll.
+func sats(at: float, list: Array) -> Array:
+	var out := []
+	for s: Array in list:
+		var dz := float(s[2]) if s.size() > 2 else 0.0
+		out.append([at, "satellite", {"x": float(s[0]) * _hw(), "z": _top() - 2.0 - dz, "arm": s[1]}])
+	return out
+
+
 ## A heavy gunship down from the top at x (fraction of the half width) to
 ## hold `hold` below the top of the screen (see halberd.gd).
 func halberd(at: float, xn: float, hold := 6.0, stay := 14.0) -> Array:

@@ -1,17 +1,28 @@
 extends StageDef
 ## STAGE 5 DEAD WORLD, the last stage: out of the enemy base and on across
-## its planet's surface, a dead rock like the Moon or Mars. It opens in the
-## base's exit shaft; the tunnel ends at a portal and the ship comes out over
-## a plain of craters and boulders, the enemy's works on the mesas standing
-## out of it, then down a rust-red canyon between stepped cliffs (bridges
-## across it, outposts on its ledges) into the great crater where the
-## mid-boss lies buried: GORGON, a fortress with two eyes. More fighters at
-## a time than ever, and they fire three times as often (zako_fire 3).
-## (Built up to the mid-boss so far: the stage ends there.)
+## its planet's surface, a dead rock like the Moon or Mars, then up off it
+## into orbit. It opens in the base's exit shaft; the tunnel ends at a
+## portal and the ship comes out over a plain of craters and boulders, the
+## enemy's works on the mesas standing out of it, then down a rust-red
+## canyon between stepped cliffs (bridges across it, outposts on its
+## ledges) into the great crater where the mid-boss lies: GORGON, a fortress
+## with two eyes. Past it the crater floor breaks off and the ship climbs
+## away: the planet falls away under it (Backdrop globe), its limb comes in
+## at the top and passes down and out at the bottom, space beyond. Up there
+## the defence grid waits: orbital weapons parked across the way (satellite:
+## rotary guns, laser lances) set to close the ship in, rocks drifting
+## among them to hide behind; then fast waves with the satellites mixed in.
+## More fighters at a time than ever, and they fire three times as often
+## (zako_fire 3). (No boss yet: the stage ends after the last wave.)
 ##   (the exit shaft)      the base's last tunnel
 ##   AREA 1 CRATER PLAINS  craters, boulders, mesas with storehouses
 ##   AREA 2 RED RIFT       a canyon: bridges, outposts on the walls
 ##   (the crater)          GORGON
+##   AREA 3 HIGH ORBIT     the climb: satellites in groups, rocks for cover
+##   AREA 4 DEFENSE GRID   fast waves with satellites, no rocks
+
+## the meteor stream's count (every other one a giant rock)
+var drift_n := 0
 
 
 func _init() -> void:
@@ -44,16 +55,59 @@ func _init() -> void:
 		# anything there would stay in front of it); its guns and shells
 		# refill the homing lasers
 		"basin": {},
+		# up off the planet: slower (the satellites drift with the scroll and
+		# need the time on screen), wreckage and solar arrays in orbit, rocks
+		# drifting through (cover from the satellites); its first section
+		# once the ground has broken off
+		"ascent": {
+			"label": ["AREA 3", "HIGH ORBIT"],
+			"scroll": 10.0,
+			"sections": [["fragment", 7, 5, 0], ["solar", 10, 4, 1], ["fragment", 8, 6, 1], ["hull", 7, 5, 1]],
+			"gap": [3.0, 7.0], "lead": 22.0,
+			"stream": {"every": 3.0, "first": 5.0, "spawn": _meteor},
+		},
+		"orbit": {
+			"label": ["AREA 4", "DEFENSE GRID"],
+			"scroll": 17.0,
+			"sections": [["hull", 8, 6, 2], ["reactor", 8, 8, 2], ["trench", 10, 6, 2], ["solar", 12, 4, 1], ["hull", 7, 5, 2]],
+			"gap": [6.0, 11.0],
+		},
 	}
 	backdrop = {
-		"tunnel": {"styles": {"exit": "hangar", "plains": "regolith", "rift": "rift", "basin": "basin"}, "first": "hangar", "seed": 83},
+		# space, under the ground and the planet until the climb
+		"nebula": {"y": -240.0, "size": 760.0},
+		"stars": [[-120.0, 420, 0.42], [-175.0, 300, 0.5]],
+		"globe": {"radius": 120.0, "top": [16.0, 34.0], "shift": 150.0, "rate": 0.06,
+			"from": {"ascent": 0.0, "orbit": 1.0}, "to": {"ascent": 1.0, "orbit": 1.0}},
+		"tunnel": {"styles": {"exit": "hangar", "plains": "regolith", "rift": "rift", "basin": "basin", "ascent": "open", "orbit": "open"}, "first": "hangar", "seed": 83},
 	}
+
+
+## AREA 3's rocks: every other one a giant rock (two at most), drifting
+## slowly down the middle (cover), else a small rock from above.
+func _meteor(g: Game) -> void:
+	drift_n += 1
+	if drift_n % 2 == 1 and _giants(g) < 2:
+		var xn := randf_range(-0.55, 0.55)
+		g.spawn_enemy("giant_rock", {"x": xn * g.field_hw, "vx": -xn * randf_range(0.3, 0.8), "vz": randf_range(3.2, 4.2), "spin": randf_range(-0.15, 0.15), "turn": randf() * TAU, "big": randf() < 0.3})
+	else:
+		g.spawn_enemy("rock", {"x": randf_range(-0.85, 0.85) * g.field_hw, "z": g.field_top - 2.5, "vx": randf_range(-1.0, 1.0), "vz": randf_range(4.0, 6.0), "spin": randf_range(-1.2, 1.2), "big": randf() < 0.3})
+
+
+func _giants(g: Game) -> int:
+	var c := 0
+	for e in g.enemies:
+		if e.kind == "giant_rock" and not e.dead:
+			c += 1
+	return c
 
 
 func build_waves(f: Formations) -> void:
 	# build the stage's big models now, not the moment they first appear
-	# (the surface's segments and GORGON's parts)
+	# (the surface's segments, GORGON's parts, the heavies, the satellites)
 	for n: String in SurfaceModels.NAMES:
+		Vox.get_mesh(n)
+	for n: String in ["giant_rock_a", "giant_rock_b"]:
 		Vox.get_mesh(n)
 	# the exit shaft: a few fighters, and out (the tunnel ends at a portal
 	# a few seconds on)
@@ -79,3 +133,23 @@ func build_waves(f: Formations) -> void:
 	# comes), then the buried fortress
 	wave("basin", f.vform(0.0, -1) + f.vform(0.6, 1) + f.rammers(1.4, [-0.3, 0.3], 0.3), 7.0)
 	wave("basin", [[0.0, "gorgon", {}]], 95.0, true)
+	# AREA 3: the climb into orbit. A few fighters while the ground breaks
+	# off and the planet falls away, then the satellites in groups
+	wave("ascent", f.vform(0.0, 1) + f.vform(0.7, -1) + f.col(2.0, -0.75, 4, 0.18, 1) + f.col(2.4, 0.75, 4, 0.18, -1), 8.0)
+	# two lance columns, a gun firing down the lane between them
+	wave("ascent", f.sats(0.0, [[-0.55, "lance"], [0.55, "lance"]]) + f.sats(1.2, [[0.0, "gatling"]]), 8.0)
+	# guns either side firing across, a lance down the middle; saucers
+	wave("ascent", f.sats(0.0, [[-0.8, "gatling"], [0.8, "gatling"]]) + f.sats(0.8, [[0.0, "lance"]]) + f.swirls(2.6, -1, 5, 0.22), 9.0)
+	# the comb: four lance columns in two rows, guns behind them
+	wave("ascent", f.sats(0.0, [[-0.75, "lance"], [-0.25, "lance", 4.5], [0.25, "lance"], [0.75, "lance", 4.5]]) + f.sats(2.2, [[-0.5, "gatling"], [0.5, "gatling"]]), 10.0)
+	wave("ascent", f.sweep(0.0, -1, 6, 0.2) + f.sats(0.8, [[0.4, "gatling"], [-0.4, "gatling", 3.0]]) + f.sats(2.6, [[-0.85, "lance"], [0.0, "lance"], [0.85, "lance"]]), 10.0)
+	# a grid: lances on the flanks, guns staggered down the middle
+	wave("ascent", f.sats(0.0, [[-0.6, "lance"], [0.6, "lance"], [0.0, "gatling", 3.0], [-0.3, "gatling", 7.0], [0.3, "gatling", 7.0]]) + f.rammers(2.4, [0.0], 0.2), 11.0)
+	# AREA 4: the defence grid: fast waves, satellites among them
+	wave("orbit", f.col(0.0, -0.75, 6, 0.16, 1) + f.col(0.4, 0.75, 6, 0.16, -1) + f.col(0.8, -0.55, 5, 0.16, 1) + f.col(1.2, 0.55, 5, 0.16, -1))
+	wave("orbit", f.racers(0.0, "tl", 1, 8) + f.racers(1.2, "tr", 1, 8) + f.sats(1.0, [[-0.5, "lance"], [0.5, "lance"]]), 13.0)
+	wave("orbit", f.chasers(0.0, 4, -1) + f.chasers(1.2, 4, 1) + f.pincer(2.4, 3) + f.sats(2.0, [[-0.7, "gatling"], [0.7, "gatling"]]), 11.0)
+	wave("orbit", f.kestrel(0.0, -1, -0.45) + f.kestrel(0.6, 1, 0.45) + f.sweep(2.0, 1, 7, 0.18) + f.sats(3.0, [[0.0, "lance"], [-0.6, "gatling", 3.0], [0.6, "gatling", 3.0]]), 15.0)
+	wave("orbit", f.swirls(0.0, -1, 6, 0.2) + f.swirls(0.5, 1, 6, 0.2) + f.vform(1.6, 1) + f.vform(2.1, -1) + f.sats(1.0, [[-0.4, "gatling"], [0.4, "lance"], [-0.8, "lance", 4.0]]), 11.0)
+	wave("orbit", f.halberd(0.0, 0.0) + f.flankers(2.0, -1, 4) + f.flankers(3.2, 1, 4) + f.sats(2.6, [[-0.75, "lance"], [0.75, "lance"]]), 16.0)
+	wave("orbit", f.col(0.0, -0.75, 6, 0.16, 1) + f.col(0.4, 0.75, 6, 0.16, -1) + f.sats(0.8, [[-0.6, "lance"], [0.0, "gatling"], [0.6, "lance"], [-0.3, "gatling", 5.0], [0.3, "gatling", 5.0]]) + f.rammers(2.8, [-0.4, 0.4], 0.3), 12.0)

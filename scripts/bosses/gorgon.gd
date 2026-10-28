@@ -253,7 +253,7 @@ func silos_alive() -> int:
 
 
 func _stage_scroll() -> float:
-	return game.stage_def.scroll if game.stage_def != null else Game.SCROLL
+	return game.area_scroll()
 
 
 ## Holds the ground at speed v (it is part of it).

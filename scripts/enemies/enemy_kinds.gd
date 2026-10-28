@@ -20,6 +20,7 @@ const KINDS := {
 	"grappler": preload("res://scripts/enemies/grappler.gd"),
 	"kestrel": preload("res://scripts/enemies/kestrel.gd"),
 	"halberd": preload("res://scripts/enemies/halberd.gd"),
+	"satellite": preload("res://scripts/enemies/satellite.gd"),
 	"giant_rock": preload("res://scripts/enemies/giant_rock.gd"),
 	"boulder": preload("res://scripts/enemies/boulder.gd"),
 	"blast_door": preload("res://scripts/enemies/blast_door.gd"),

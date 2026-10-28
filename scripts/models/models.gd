@@ -97,7 +97,7 @@ const BODY := {
 	"lode_core": Color(0.7, 0.42, 0.24), "lode_pylon": Color(0.7, 0.42, 0.24), "dredge_core": GUN, "dredge_wheel": Color(0.84, 0.64, 0.14), "dredge_driver": Color(0.84, 0.64, 0.14), "meteor_a": Color(0.34, 0.31, 0.28), "meteor_b": Color(0.34, 0.31, 0.28),
 	"kestrel": Color(0.52, 0.46, 0.33), "tempest_core": Color(0.3, 0.335, 0.37), "tempest_coil": Color(0.44, 0.27, 0.17), "behemoth_turret": Color(0.33, 0.34, 0.38), "behemoth_sponson": Color(0.52, 0.46, 0.33), "behemoth_louvre": Color(0.4, 0.43, 0.46), "behemoth_core": Color(0.33, 0.34, 0.38),
 	"blast_door": GUN, "bulkhead": Color(0.3, 0.335, 0.37),
-	"halberd": Color(0.36, 0.15, 0.15), "gorgon_eye": Color(0.6, 0.53, 0.52), "gorgon_gun": Color(0.36, 0.15, 0.15), "gorgon_cannon": Color(0.36, 0.15, 0.15),
+	"halberd": Color(0.36, 0.15, 0.15), "sat_gatling": Color(0.33, 0.34, 0.38), "sat_lance": Color(0.33, 0.34, 0.38), "gorgon_eye": Color(0.6, 0.53, 0.52), "gorgon_gun": Color(0.36, 0.15, 0.15), "gorgon_cannon": Color(0.36, 0.15, 0.15),
 }
 
 

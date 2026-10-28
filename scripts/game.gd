@@ -382,6 +382,16 @@ func line_to_bottom(from: Vector3, through: Vector3) -> Vector3:
 	return Vector3(clampf(to.x, -hw_bottom - 2.0, hw_bottom + 2.0), 0, to.z)
 
 
+## The scroll speed the waves want: the current area's own (`scroll` in
+## StageDef.areas, stage 5's orbit) or the stage's.
+func area_scroll() -> float:
+	if stage_def == null:
+		return SCROLL
+	if stage != null:
+		return float((stage_def.areas.get(stage.area, {}) as Dictionary).get("scroll", stage_def.scroll))
+	return stage_def.scroll
+
+
 ## The stage's difficulty for small fighters and turrets (StageDef): how
 ## many times as often they fire, and whether the slow ones start early.
 func zako_fire() -> int:
@@ -730,7 +740,7 @@ func _tick_play(dt: float) -> void:
 				_respawn()
 			else:
 				_game_over()
-	var want_scroll := stage_def.boss_scroll if (stage != null and stage.phase != "waves") else stage_def.scroll
+	var want_scroll := stage_def.boss_scroll if (stage != null and stage.phase != "waves") else area_scroll()
 	if scroll_hold >= 0.0:
 		scroll_speed = scroll_hold
 	else:

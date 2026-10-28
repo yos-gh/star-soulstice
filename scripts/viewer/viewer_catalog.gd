@@ -190,6 +190,13 @@ static func _scenery(stages: Array[StageDef]) -> Array:
 		for i in keys.size():
 			var a: String = keys[i]
 			var style: String = styles.get(a, "")
+			# off a planet's surface into space: the ground breaks off, the
+			# planet falls away
+			if style == Tunnel.OPEN and i > 0 and SurfaceModels.STYLES.has(String(styles.get(keys[i - 1], ""))) and not seen.has("liftoff"):
+				seen["liftoff"] = true
+				out.append({"name": "S%d LIFT-OFF" % d.number, "type": "backdrop", "stage": d, "area": keys[i - 1], "then": [1.0, a], "loop": 18.0,
+					"scroll": float((d.areas.get(a, {}) as Dictionary).get("scroll", d.scroll)),
+					"desc": "地表が崖で途切れ、惑星が遠ざかって、そのへりが画面の下へ流れ去る（宇宙へ）"})
 			if style == "" or style == Tunnel.OPEN or seen.has(style):
 				continue
 			seen[style] = true

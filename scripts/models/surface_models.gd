@@ -32,9 +32,9 @@ const SPAN := {"rift": 12.0}
 const NAMES := [
 	"surface_regolith_a", "surface_regolith_b", "surface_regolith_c", "surface_regolith_d", "surface_regolith_e", "surface_regolith_gate",
 	"surface_rift_a", "surface_rift_b", "surface_rift_c", "surface_rift_d", "surface_rift_gate",
-	"surface_basin_a", "surface_basin_b", "surface_basin_c", "surface_basin_gate",
+	"surface_basin_a", "surface_basin_b", "surface_basin_c", "surface_basin_gate", "surface_basin_edge",
 	"gorgon_hull", "gorgon_eye", "gorgon_lid", "gorgon_socket", "gorgon_cannon", "gorgon_gun",
-	"halberd", "halberd_turret",
+	"halberd", "halberd_turret", "sat_gatling", "sat_lance", "sat_gun", "sat_barrels",
 ]
 
 const R := 0.5
@@ -90,6 +90,14 @@ static func make(name: String) -> ArrayMesh:
 			return _halberd()
 		"halberd_turret":
 			return _halberd_turret()
+		"sat_gatling":
+			return _sat_body(false)
+		"sat_lance":
+			return _sat_body(true)
+		"sat_gun":
+			return _sat_gun()
+		"sat_barrels":
+			return _sat_barrels()
 	var parts := name.split("_")
 	if parts.size() == 3 and parts[0] == "surface" and STYLES.has(parts[1]):
 		return _segment(parts[1], parts[2])
@@ -181,6 +189,12 @@ static func _ground(style: String, variant: String, x: int, z: int) -> int:
 		"basin":
 			if variant == "gate":
 				return _canyon_out(x, z, g)
+			if variant == "edge":
+				# the crater floor breaks off in a ragged cliff halfway along
+				# (open space beyond: -1, no ground)
+				var ze := 1.5 * sin(x * 0.21) + 1.0 * sin(x * 0.07 + 1.0) + (Vox._hash(x >> 1, 71, 0) - 0.5) * 2.0
+				if z < ze:
+					return -1
 			return FLOOR + (1 if grain > 0.86 else 0)
 	return PLAIN
 
@@ -254,6 +268,8 @@ static func _crater(g: Dictionary, cx: float, cz: float, r: float) -> void:
 				continue
 			var i := zi * W + xi
 			var h := top[i]
+			if h < 0:
+				continue
 			if d < r:
 				var f := d / r
 				h -= int(round(depth * (1.0 - f * f)))
@@ -290,6 +306,8 @@ static func _boulders(g: Dictionary, n: int) -> void:
 				if xi < 0 or xi >= W or zi < 1 or zi >= NZ - 1:
 					continue
 				var i := zi * W + xi
+				if top[i] < 0:
+					continue
 				top[i] += 1 + (1 if s >= 2 and dx * dx + dz * dz <= 1 else 0)
 				cols[i] = pal["rock"] if (dx + dz) % 2 == 0 else pal["rock_d"]
 
@@ -587,7 +605,7 @@ static func _basin(g: Dictionary) -> void:
 				break
 			cols[zi * W + xi] = pal["crack"]
 			top[zi * W + xi] = mini(top[zi * W + xi], FLOOR)
-	if variant != "gate":
+	if variant != "gate" and variant != "edge":
 		for k in (2 if variant == "b" else 1):
 			var r := rng.randf_range(2.0, 4.5)
 			_crater(g, rng.randf_range(-XS + 8.0, XS - 8.0), rng.randf_range(-NZ / 2 + r * 1.4 + 0.5, NZ / 2 - r * 1.4 - 0.5), r)
@@ -1058,3 +1076,82 @@ static func _halberd_turret() -> ArrayMesh:
 		v.fill(x, 2, -10, x + 1, 3, -5, STEEL_M)
 		v.fill(x, 2, -10, x + 1, 3, -10, DUSK_D)
 	return v.mesh(U * 1.55, Vector3(0.5, 0.5, 0.5))
+
+
+# ------------------------------------------------------------ satellites
+
+const PANEL := Color(0.2, 0.22, 0.27)  # solar cells (dark slate: not the shells' or the ship's blue)
+const PANEL_L := Color(0.3, 0.32, 0.37)
+
+
+## An orbital weapon's bus (the gun or the emitter is its own part): a box
+## with an oxblood top plate and bone bolts, truss arms out to a solar panel
+## each side (slate cells in a frame), a radiator stack behind. The lance's
+## bus is long down the screen (+z) round its emitter: square focusing
+## frames along a barrel with a glowing pink tip, bone capacitor fins.
+static func _sat_body(lance: bool) -> ArrayMesh:
+	var v := Vox.new(42, 8, 30)
+	var z0 := -6 if not lance else -8
+	var z1 := 5 if not lance else 3
+	v.fill(-5, 0, z0, 4, 4, z1, GUN)
+	v.fill(-5, 5, z0, 4, 5, z1, OX)
+	v.fill(-4, 5, z0 + 1, 3, 5, z0 + 2, OX_L)
+	for c: Vector2i in [Vector2i(-5, z0), Vector2i(4, z0), Vector2i(-5, z1), Vector2i(4, z1)]:
+		v.put(c.x, 6, c.y, BONE)
+	# the radiator stack behind
+	for z in range(z0 - 4, z0):
+		v.fill(-3, 1, z, 2, 3, z, STEEL_M if posmod(z, 2) == 0 else DUSK)
+	# truss arms and the panels
+	for s: int in [-1, 1]:
+		var a0 := 5 if s > 0 else -6
+		var a1 := 9 if s > 0 else -10
+		v.fill(a0, 2, -2, a1, 2, -2, STEEL_M)
+		v.fill(a0, 2, 1, a1, 2, 1, STEEL_M)
+		for x in range(mini(a0, a1), maxi(a0, a1) + 1, 2):
+			v.fill(x, 2, -1, x, 2, 0, GUN_D)
+		var p0 := 10 if s > 0 else -21
+		var p1 := 20 if s > 0 else -11
+		for z in range(-6, 6):
+			for x in range(p0, p1 + 1):
+				var frame := x == p0 or x == p1 or z == -6 or z == 5
+				var grid := posmod(x, 3) == 0 or posmod(z, 3) == 0
+				v.put(x, 2, z, STEEL_M if frame else (PANEL_L if grid else PANEL))
+	if lance:
+		# the emitter: a barrel down the screen through focusing frames
+		v.fill(-2, 1, z1, 1, 3, 13, STEEL_M)
+		for fz: int in [5, 8, 11]:
+			for x in range(-4, 4):
+				for y in range(0, 5):
+					if x == -4 or x == 3 or y == 0 or y == 4:
+						v.put(x, y, fz, DUSK_L)
+		v.fill(-1, 2, 14, 0, 2, 14, G_PINK, true)
+		v.fill(-2, 1, 13, 1, 3, 13, G_PINK_D, true)
+		for z in range(z0 + 1, z1, 2):
+			v.put(-6, 3, z, BONE)
+			v.put(5, 3, z, BONE)
+	return v.mesh(U * 1.4, Vector3(0.5, 2.5, 0.5), true)
+
+
+## The rotary gun's housing (forward = -z): an oxblood shield over a steel
+## box, the drum of barrels is its own part (it spins).
+static func _sat_gun() -> ArrayMesh:
+	var v := Vox.new(12, 7, 14)
+	v.fill(-3, 0, -3, 2, 3, 4, GUN)
+	v.fill(-4, 1, -4, 3, 4, -3, OX)
+	v.fill(-3, 4, -3, 2, 4, 3, OX_L)
+	v.fill(-1, 4, 3, 0, 5, 4, BONE)
+	return v.mesh(U * 1.4, Vector3(0.5, 1.5, 0.5))
+
+
+## The rotary gun's drum: six barrels round a spindle, pointing -z (it
+## spins about z).
+static func _sat_barrels() -> ArrayMesh:
+	var v := Vox.new(8, 8, 12)
+	v.fill(0, 3, -6, 0, 3, 0, DUSK_D)
+	for k in 6:
+		var a := TAU * k / 6.0
+		var x := int(round(cos(a) * 2.2))
+		var y := int(round(sin(a) * 2.2)) + 3
+		v.fill(x, y, -6, x, y, 0, STEEL_L if k % 2 == 0 else STEEL_M)
+	v.fill(-3, 0, 0, 3, 6, 0, DUSK)
+	return v.mesh(U * 1.4, Vector3(0.5, 3.5, 0.5))
