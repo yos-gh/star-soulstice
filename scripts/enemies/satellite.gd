@@ -9,30 +9,32 @@ extends Enemy
 ##            then a stream of small energy rounds faster than anything
 ##            before it, its aim swinging after the ship (outrun it across,
 ##            or hide behind a rock); a gap, and again while above the ship
-##   lance    a laser emitter: its beam's line down the screen is marked
-##            (a thin flickering sight, then a band as wide as the beam,
-##            blinking at the end), then the straight beam burns out to the
-##            edge of the screen for as long as the satellite has left on
-##            the screen, turning very slowly (no warning: it is slow) the
-##            way it was set: params.tilt its first heading off straight
-##            down (+ its far end to the right), params.spin which way it
-##            turns (+1 its far end moves right, -1 left). Set in pairs
-##            that close in on the ship (scissors) or sweep it onto the
-##            guns (a push): break one quickly, or get behind a rock (a
-##            rock in the way stops the beam: Game.solid_cut).
+##   lance    a laser emitter: its beam's line is marked (a thin
+##            flickering sight, then a band as wide as the beam, blinking at
+##            the end), then the straight beam burns out to the edge of the
+##            screen until the satellite is down to the middle of the screen
+##            (BEAM_END), turning slowly all the while (no warning: it is
+##            slow). params.deg its first heading (0 = right, 90 = down,
+##            180 = left), params.turn degrees a second (+ = clockwise on
+##            the screen). Set as doors: hinged high on one side, the beam
+##            comes in near level across the top (it can't catch the ship
+##            unawares) and swings down, herding the ship below it to one
+##            side, where a gun waits; or a pair from both sides closing
+##            over a pocket at the bottom. Break one quickly, or get behind
+##            a rock (a rock in the way stops the beam: Game.solid_cut).
 ## Rocks (solid) stop the gun's rounds too. It rams like any small craft.
 ## Both lock on as they come over the top edge and open fire the moment
 ## they are on the screen.
-## params: x, z, arm, spin, tilt
+## params: x, z, arm, deg, turn
 
 const INFO := {
 	"name": "SATELLITE", "category": "small",
-	"desc": "衛星軌道兵器（ステージ 5 の宇宙）：自分では動けず、スクロールに乗って流れてきて、通りがかりに撃つ。太陽電池の翼をトラスで張った剥き出しの機械。組み合わせで自機を追い込む。gatling：予兆（ロックオン、砲身が回り出す）のあと、これまでにない速さで小さなエネルギー弾を連射し、狙いを自機へ振っていく（横へ振り切るか岩の陰へ）。間をおいて、自機より上にいるうちはもう一度。lance：レーザーの発射器。ビームの線に予兆（細くちらつく照準、ビームの幅の帯、最後に点滅）を出し、まっすぐなビームを画面の端まで、画面にいられるあいだ焼き続け、決められた向きへごくゆっくり回る（ゆっくりなので回る向きの予兆はなし）。初めの向きと回る向きは並べ方しだい：両側から閉じてくるハサミ、片側から掃いて砲台の側へ押し込む押し込み（急いで 1 機壊すか、岩の陰へ）。どちらも画面の上の端にかかるところでロックオンし、画面に入るとすぐ撃つ。岩があるとそこで止まる。岩は gatling の弾も止める。体当たりあり",
+	"desc": "衛星軌道兵器（ステージ 5 の宇宙）：自分では動けず、スクロールに乗って流れてきて、通りがかりに撃つ。太陽電池の翼をトラスで張った剥き出しの機械。組み合わせで自機を追い込む。gatling：予兆（ロックオン、砲身が回り出す）のあと、これまでにない速さで小さなエネルギー弾を連射し、狙いを自機へ振っていく（横へ振り切るか岩の陰へ）。間をおいて、自機より上にいるうちはもう一度。lance：レーザーの発射器。ビームの線に予兆（細くちらつく照準、ビームの幅の帯、最後に点滅）を出し、まっすぐなビームを画面の端まで、衛星が画面の中ほどへ下りるまで焼き続け、そのあいだゆっくり回る（ゆっくりなので回る向きの予兆はなし）。扉のように並べる：片側の高いところを蝶番に、ビームは上のほうで水平に近く現れ（出てすぐ不意に当たることはない）、下へじわじわ振り下ろして自機を片側へ寄せ、そこでガトリングが待つ。両側から閉じて下の真ん中の袋へ追い込む並べ方、時間差で反対側の扉が来る並べ方も。急いで 1 機壊すか、岩の陰へ。どちらも画面の上の端にかかるところでロックオンし、画面に入るとすぐ撃つ。岩があるとそこで止まる。岩は gatling の弾も止める。体当たりあり",
 	"demos": [
-				["SCISSORS", "sats", [0.0, [[-0.6, "lance", 0.0, 1.0, -0.15], [0.6, "lance", 0.0, -1.0, 0.15], [0.0, "gatling", 3.0]]]],
-		["PUSH", "sats", [0.0, [[-0.8, "lance", 0.0, 1.0, -0.3], [-0.35, "lance", 4.0, 1.0, -0.3], [0.75, "gatling", 1.0], [0.45, "gatling", 5.0]]]],
+		["DOOR", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 20.0], [-0.4, "gatling", 7.0]]]],
+		["DOORS", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 20.0], [0.65, "lance", 0.0, 172.0, -20.0]]]],
+		["DOORS IN TURN", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 20.0], [0.65, "lance", 9.0, 172.0, -20.0], [0.45, "gatling", 14.0]]]],
 		["GATLING", "sats", [0.0, [[0.0, "gatling"]]]],
-		["GRID", "sats", [0.0, [[-0.6, "lance"], [0.6, "lance"], [0.0, "gatling", 3.0]]]],
 	],
 }
 
@@ -44,9 +46,9 @@ const GAT_TURN := 1.1  # rad/s
 const GAT_GAP := 1.1
 const TRACK_T := 0.3  # the lance: the sight flickers ...
 const LOCK_T := 0.45  # ... then holds as the band ...
-const BEAM_MIN := 1.0  # ... then the beam, this long at least ...
-const BEAM_MAX := 3.2  # ... at most
-const SPIN_W := 0.23  # how fast the beam turns (rad/s)
+const BEAM_MIN := 0.6  # ... then the beam, this long at least ...
+const BEAM_MAX := 3.5  # ... at most
+const BEAM_END := 14.0  # the beam goes out once the satellite is this far below the top edge
 const ENTER := 2.5  # it locks on this far above the top edge (coming in): it opens fire the moment it is on
 const BEAM_HW := 0.55
 const BEAM_COL := Color(1.0, 0.45, 0.75)
@@ -66,7 +68,7 @@ var beam: MeshInstance3D
 var beam_mesh: ImmediateMesh
 var beam_warn: Dictionary = {}
 var ang := PI / 2.0  # where the lance points (PI/2 = down the screen)
-var spin := 0.0
+var turn := 0.0  # rad/s, + = clockwise on the screen
 var beam_t := BEAM_MIN
 
 
@@ -75,8 +77,9 @@ func _init_kind() -> void:
 	hp = 14.0 if arm == "gatling" else 32.0
 	radius = 1.15
 	score = 700 if arm == "gatling" else 1200
-	spin = float(p.get("spin", 0.0))
-	ang = PI / 2.0 - float(p.get("tilt", 0.0))
+	turn = deg_to_rad(float(p.get("turn", 0.0)))
+	marked = arm == "lance"  # the autopilot keeps out of its beam (and what it will sweep)
+	ang = deg_to_rad(float(p.get("deg", 90.0)))
 	energy_drop = 4.0
 	blast = 1.4
 	mesh_name = "sat_gatling" if arm == "gatling" else "sat_lance"
@@ -174,10 +177,10 @@ func _lance(dt: float) -> void:
 			if _coming_in():
 				phase = 1
 				phase_t = 0.0
-				# as long as it has left on the screen, up to BEAM_MAX
-				beam_t = clampf((game.field_bottom - 2.0 - position.z) / maxf(game.scroll_speed, 1.0) - TRACK_T - LOCK_T, BEAM_MIN, BEAM_MAX)
-				var pts := _beam_pts()
-				game.warn(self, TRACK_T + LOCK_T + beam_t, Game.Warn.MOVE, radius, {"laser": pts})
+				# on until the satellite is down to the middle of the screen
+				var v := maxf(game.scroll_speed, 1.0)
+				beam_t = clampf((game.field_top + BEAM_END - position.z) / v - TRACK_T - LOCK_T, BEAM_MIN, BEAM_MAX)
+				game.warn(self, TRACK_T + LOCK_T + beam_t, Game.Warn.MOVE, radius, _bot_mark())
 				beam_warn = game.warnings[game.warnings.size() - 1]
 				game.sfx.play("slam")
 		1:
@@ -187,8 +190,8 @@ func _lance(dt: float) -> void:
 				game.sfx.play("exp_s")
 				game.shake(0.15)
 		2:
-			# the beam turns, very slowly, the way it was set to
-			ang -= spin * SPIN_W * dt
+			# the beam turns, slowly, the way it was set to
+			ang += turn * dt
 			var pts := _beam_pts()
 			if game.combat_on() and _on_beam(pts[0], pts[1], game.player.position):
 				game.touch_player("satellite lance")
@@ -198,10 +201,20 @@ func _lance(dt: float) -> void:
 				phase = 3
 				phase_t = 0.0
 	if phase == 1 or phase == 2:
-		(beam_warn.get("to", {}) as Dictionary)["laser"] = _beam_pts()
+		var to: Dictionary = beam_warn.get("to", {})
+		to.merge(_bot_mark(), true)
 	# the emitter points along the beam
 	model.rotation.y = atan2(cos(ang), sin(ang)) + sin(t * 0.7) * (0.08 if phase == 0 else 0.0)
 	_draw_beam()
+
+
+## What the autopilot keeps out of (the HUD marks only the satellite): the
+## beam's line, or for a turning beam the sector it has still to sweep.
+func _bot_mark() -> Dictionary:
+	if turn == 0.0:
+		return {"laser": _beam_pts()}
+	var left := beam_t - (phase_t if phase == 2 else 0.0)
+	return {"sector": [_beam_pts()[0], ang, ang + turn * maxf(left, 0.0)], "hw": BEAM_HW}
 
 
 ## The muzzle and where the beam from it stops: the edge of the screen the

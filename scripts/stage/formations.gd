@@ -245,16 +245,16 @@ func railjack(at: float, side: int, hold := 5.5, stay := 12.0) -> Array:
 
 
 ## Orbital weapons parked across the way (see satellite.gd): `list` =
-## [[xn, arm, dz, spin, tilt], ...], each just above the top edge at x
-## (fraction of the half width), `dz` further up (optional); a lance starts
-## `tilt` radians off straight down (+ its far end to the right) and turns
-## `spin` (+1 its far end moves right, -1 left; both optional). They come
-## down with the scroll.
+## [[xn, arm, dz, deg, turn], ...], each just above the top edge at x
+## (fraction of the half width), `dz` further up (optional); a lance
+## starts heading `deg` degrees (0 right, 90 down, 180 left) and turns
+## `turn` degrees a second (+ clockwise on the screen; both optional). They
+## come down with the scroll.
 func sats(at: float, list: Array) -> Array:
 	var out := []
 	for s: Array in list:
 		var dz := float(s[2]) if s.size() > 2 else 0.0
-		out.append([at, "satellite", {"x": float(s[0]) * _hw(), "z": _top() - 2.0 - dz, "arm": s[1], "spin": float(s[3]) if s.size() > 3 else 0.0, "tilt": float(s[4]) if s.size() > 4 else 0.0}])
+		out.append([at, "satellite", {"x": float(s[0]) * _hw(), "z": _top() - 2.0 - dz, "arm": s[1], "deg": float(s[3]) if s.size() > 3 else 90.0, "turn": float(s[4]) if s.size() > 4 else 0.0}])
 	return out
 
 
