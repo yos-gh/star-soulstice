@@ -11,39 +11,43 @@ extends Enemy
 ##            or hide behind a rock); a gap, and again while above the ship
 ##   lance    a laser emitter: its beam's line down the screen is marked
 ##            (a thin flickering sight, then a band as wide as the beam,
-##            blinking at the end; where it will have turned to, faint,
-##            with chevrons the way it turns), then the straight beam
-##            burns out to the edge of the screen for as long as the
-##            satellite has left on the screen, turning very slowly the
-##            way it was set to (params.spin: +1 its far end moves right,
-##            -1 left, 0 not at all). Set in twos and threes that turn in
-##            on the ship: break one quickly, or get behind a rock (a rock
-##            in the way stops the beam: Game.solid_cut).
+##            blinking at the end), then the straight beam burns out to the
+##            edge of the screen for as long as the satellite has left on
+##            the screen, turning very slowly (no warning: it is slow) the
+##            way it was set: params.tilt its first heading off straight
+##            down (+ its far end to the right), params.spin which way it
+##            turns (+1 its far end moves right, -1 left). Set in pairs
+##            that close in on the ship (scissors) or sweep it onto the
+##            guns (a push): break one quickly, or get behind a rock (a
+##            rock in the way stops the beam: Game.solid_cut).
 ## Rocks (solid) stop the gun's rounds too. It rams like any small craft.
-## params: x, z, arm, spin
+## Both lock on as they come over the top edge and open fire the moment
+## they are on the screen.
+## params: x, z, arm, spin, tilt
 
 const INFO := {
 	"name": "SATELLITE", "category": "small",
-	"desc": "衛星軌道兵器（ステージ 5 の宇宙）：自分では動けず、スクロールに乗って流れてきて、通りがかりに撃つ。太陽電池の翼をトラスで張った剥き出しの機械。組み合わせで自機を追い込む。gatling：予兆（ロックオン、砲身が回り出す）のあと、これまでにない速さで小さなエネルギー弾を連射し、狙いを自機へ振っていく（横へ振り切るか岩の陰へ）。間をおいて、自機より上にいるうちはもう一度。lance：レーザーの発射器。下へ向けたビームの線に予兆（細くちらつく照準、ビームの幅の帯、最後に点滅。回り終わる線も薄く、回る向きに矢印）を出し、まっすぐなビームを画面の端まで、画面にいられるあいだ焼き続け、決められた向きへごくゆっくり回る（2〜3 機で自機を追い込むように並べる：急いで 1 機壊すか、岩の陰へ）。岩があるとそこで止まる。岩は gatling の弾も止める。体当たりあり",
+	"desc": "衛星軌道兵器（ステージ 5 の宇宙）：自分では動けず、スクロールに乗って流れてきて、通りがかりに撃つ。太陽電池の翼をトラスで張った剥き出しの機械。組み合わせで自機を追い込む。gatling：予兆（ロックオン、砲身が回り出す）のあと、これまでにない速さで小さなエネルギー弾を連射し、狙いを自機へ振っていく（横へ振り切るか岩の陰へ）。間をおいて、自機より上にいるうちはもう一度。lance：レーザーの発射器。ビームの線に予兆（細くちらつく照準、ビームの幅の帯、最後に点滅）を出し、まっすぐなビームを画面の端まで、画面にいられるあいだ焼き続け、決められた向きへごくゆっくり回る（ゆっくりなので回る向きの予兆はなし）。初めの向きと回る向きは並べ方しだい：両側から閉じてくるハサミ、片側から掃いて砲台の側へ押し込む押し込み（急いで 1 機壊すか、岩の陰へ）。どちらも画面の上の端にかかるところでロックオンし、画面に入るとすぐ撃つ。岩があるとそこで止まる。岩は gatling の弾も止める。体当たりあり",
 	"demos": [
-		["LANCE PAIR", "sats", [0.0, [[-0.5, "lance", 0.0, 1.0], [0.5, "lance", 0.0, -1.0]]]],
-		["LANCES TURNING", "sats", [0.0, [[-0.7, "lance", 0.0, -1.0], [0.0, "lance", 4.0, -1.0], [0.7, "lance", 0.0, -1.0]]]],
+				["SCISSORS", "sats", [0.0, [[-0.6, "lance", 0.0, 1.0, -0.15], [0.6, "lance", 0.0, -1.0, 0.15], [0.0, "gatling", 3.0]]]],
+		["PUSH", "sats", [0.0, [[-0.8, "lance", 0.0, 1.0, -0.3], [-0.35, "lance", 4.0, 1.0, -0.3], [0.75, "gatling", 1.0], [0.45, "gatling", 5.0]]]],
 		["GATLING", "sats", [0.0, [[0.0, "gatling"]]]],
 		["GRID", "sats", [0.0, [[-0.6, "lance"], [0.6, "lance"], [0.0, "gatling", 3.0]]]],
 	],
 }
 
-const LOCK_GAT := 0.55
+const LOCK_GAT := 0.4
 const GAT_T := 1.3
 const GAT_EVERY := 0.06
 const GAT_SPEED := 9.5
 const GAT_TURN := 1.1  # rad/s
 const GAT_GAP := 1.1
-const TRACK_T := 0.45  # the lance: the sight flickers ...
-const LOCK_T := 0.5  # ... then holds as the band ...
+const TRACK_T := 0.3  # the lance: the sight flickers ...
+const LOCK_T := 0.45  # ... then holds as the band ...
 const BEAM_MIN := 1.0  # ... then the beam, this long at least ...
 const BEAM_MAX := 3.2  # ... at most
-const SPIN_W := 0.26  # how fast the beam turns (rad/s)
+const SPIN_W := 0.23  # how fast the beam turns (rad/s)
+const ENTER := 2.5  # it locks on this far above the top edge (coming in): it opens fire the moment it is on
 const BEAM_HW := 0.55
 const BEAM_COL := Color(1.0, 0.45, 0.75)
 const NOSE := 1.3  # the muzzle, ahead (down-screen) of the centre
@@ -72,6 +76,7 @@ func _init_kind() -> void:
 	radius = 1.15
 	score = 700 if arm == "gatling" else 1200
 	spin = float(p.get("spin", 0.0))
+	ang = PI / 2.0 - float(p.get("tilt", 0.0))
 	energy_drop = 4.0
 	blast = 1.4
 	mesh_name = "sat_gatling" if arm == "gatling" else "sat_lance"
@@ -118,8 +123,10 @@ func _gatling(dt: float) -> void:
 		0, 3:
 			gun_a = rotate_toward(gun_a, aim, 2.0 * dt)
 			barrels.rotation.z += dt * 3.0
+			if phase == 0 and t <= dt * 1.5:
+				gun_a = aim  # (turned on the ship from the start)
 			var ready := phase == 0 or phase_t >= GAT_GAP
-			if ready and game.can_fire(position) and position.z > game.field_top + 1.0:
+			if ready and _coming_in():
 				phase = 1
 				phase_t = 0.0
 				game.warn(self, LOCK_GAT, Game.Warn.SHOT, radius)
@@ -149,6 +156,12 @@ func _gatling(dt: float) -> void:
 	gun.rotation.y = atan2(-cos(gun_a), -sin(gun_a))
 
 
+## On (or just coming onto) the screen, above the ship: time to lock on.
+func _coming_in() -> bool:
+	var pl := game.player
+	return game.combat_on() and pl.alive and position.z > game.field_top - ENTER and position.z < pl.position.z - 2.0 and absf(position.x) < game.half_width_at(position.z) + 1.0
+
+
 func _muzzle() -> Vector3:
 	return position + Vector3(cos(gun_a), 0, sin(gun_a)) * 1.1
 
@@ -158,7 +171,7 @@ func _muzzle() -> Vector3:
 func _lance(dt: float) -> void:
 	match phase:
 		0:
-			if game.can_fire(position) and position.z > game.field_top + 0.8:
+			if _coming_in():
 				phase = 1
 				phase_t = 0.0
 				# as long as it has left on the screen, up to BEAM_MAX
@@ -212,9 +225,8 @@ func _on_beam(from: Vector3, to: Vector3, pp: Vector3) -> bool:
 
 
 ## The beam (in local space, just over the plane): the flickering sight,
-## then the band with the bright line in it (blinking at the end) and, faint,
-## where it will have turned to with chevrons along its end the way it
-## turns; then the beam itself.
+## then the band with the bright line in it (blinking at the end); then the
+## beam itself (it turns slowly: the turn needs no warning).
 func _draw_beam() -> void:
 	beam_mesh.clear_surfaces()
 	if phase != 1 and phase != 2:
@@ -231,23 +243,6 @@ func _draw_beam() -> void:
 			_seg(a, b, BEAM_HW, 0.16)
 			if left > 0.15 or int(left * 40.0) % 2 == 0:
 				_seg(a, b, 0.1, 1.0)
-		if spin != 0.0:
-			var a1 := ang - spin * SPIN_W * beam_t
-			var end := _beam_pts(a1)
-			_seg(end[0] - position, end[1] - position, 0.05, 0.35)
-			# chevrons near the far end, pointing the way it will turn
-			var steps := 3
-			for k in steps:
-				var f := (k + fmod(game.time * 1.5, 1.0)) / steps
-				var ak := lerpf(ang, a1, f)
-				var pk := _beam_pts(ak)
-				var dir := Vector3(cos(ak), 0, sin(ak))
-				var tip := pk[0].lerp(pk[1], 0.8)
-				# (the way the far end moves as the angle grows or shrinks)
-				var side := Vector3(-dir.z, 0, dir.x) * (1.0 if a1 > ang else -1.0)
-				var al := 0.8 * sin(f * PI)
-				_seg(tip - side * 0.8 + dir * 0.8 - position, tip - position, 0.09, al)
-				_seg(tip - side * 0.8 - dir * 0.8 - position, tip - position, 0.09, al)
 	else:
 		var w := BEAM_HW * (1.0 + 0.08 * sin(game.time * 60.0))
 		var f := clampf((beam_t - phase_t) / 0.2, 0.0, 1.0)
