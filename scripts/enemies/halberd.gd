@@ -10,7 +10,8 @@ extends Enemy
 ## charges (sparks run down the rails), then three iron slugs go down it
 ## fast (they can't be shot and they stop shots: get off the line). The
 ## turrets fire needle fans in turn (announced) and the belly a wide shell
-## curtain, big then small.
+## curtain, big then small. It opens fire on the way down (the curtain and
+## the turrets first: the rail shot only once it holds).
 ## params: x, hold (z it holds at), stay (seconds)
 
 const INFO := {
@@ -24,7 +25,7 @@ const INFO := {
 
 const TURRET := Vector3(2.65, 0, -0.4)  # the engine turrets (and their mirror)
 const NOSE := Vector3(0, 0, 3.9)  # the rail gun's muzzle
-const DESCENT := 2.2  # seconds down into the hold
+const DESCENT := 1.8  # seconds down into the hold
 const DRIFT := 2.6  # top speed across, after the ship
 const CHARGE_T := 1.1  # the rail shot: marked this long, then
 const SLUGS := 3
@@ -58,7 +59,7 @@ func _build() -> void:
 		turrets.append(m)
 	hold_z = float(p.get("hold", game.field_top + 6.0))
 	position = Vector3(float(p.get("x", 0.0)), 0, game.field_top - 4.5)
-	fire_t = 0.6
+	fire_t = 0.15
 
 
 func _behave(dt: float) -> void:
@@ -73,20 +74,22 @@ func _behave(dt: float) -> void:
 			if f >= 1.0:
 				leg = 1
 				leg_t = 0.0
+			# it opens fire on the way down, as soon as it is on the screen
+			_attack(dt)
 		1:
 			# drift after the ship (not while the rail gun is marked or firing)
-			if step % 6 != 1 and slug_k == 0 and pl.alive:
+			if step % 6 != 5 and slug_k == 0 and pl.alive:
 				var want := clampf(pl.position.x, -game.field_hw + 4.0, game.field_hw - 4.0)
 				position.x = move_toward(position.x, want, DRIFT * dt)
 			position.z = hold_z + sin(t * 0.9) * 0.3
 			_attack(dt)
-			if t >= stay and step % 6 != 1 and slug_k == 0:
+			if t >= stay and step % 6 != 5 and slug_k == 0:
 				leg = 2
 				leg_t = 0.0
 		2:
 			position.z -= (2.0 + leg_t * 8.0) * dt
 	# the hull turns to the ship (held still while the line is marked)
-	if step % 6 != 1 and slug_k == 0 and pl.alive and leg == 1:
+	if step % 6 != 5 and slug_k == 0 and pl.alive and leg == 1:
 		var d := pl.position - position
 		aim_a = rotate_toward(aim_a, clampf(atan2(d.z, d.x), PI / 2.0 - 0.7, PI / 2.0 + 0.7), 1.4 * dt)
 	rotation.y = atan2(cos(aim_a), sin(aim_a))
@@ -114,9 +117,9 @@ func _attack(dt: float) -> void:
 				game.sfx.play("exp_s")
 			slug_k -= 1
 			if slug_k == 0:
-				fire_t = 0.8
+				fire_t = 1.6  # a quiet gap
 		return
-	if step % 6 == 1:
+	if step % 6 == 5:
 		# charging: sparks run down the rails
 		if randf() < 0.5:
 			var f := randf()
@@ -126,14 +129,24 @@ func _attack(dt: float) -> void:
 		return
 	match step % 6:
 		0:
-			# the rail shot: turned to the ship, the line marked
+			_curtain(Bullets.BIG)
+			fire_t = 0.25
+		1:
+			_curtain(Bullets.SMALL)
+			fire_t = 0.6
+		4:
+			# the rail shot (only once it holds): turned to the ship, the
+			# line marked
+			if leg != 1:
+				fire_t = 0.2
+				return
 			var muzzle := position + _rot(NOSE)
 			rail_to = game.line_to_bottom(muzzle, game.player.position)
 			aim_a = atan2(rail_to.z - position.z, rail_to.x - position.x)
 			game.warn(self, CHARGE_T, Game.Warn.MOVE, radius, rail_to)
 			game.sfx.play("slam")
 			fire_t = CHARGE_T
-		1:
+		5:
 			slug_k = SLUGS
 			slug_t = 0.0
 			fire_t = 0.6
@@ -147,12 +160,6 @@ func _attack(dt: float) -> void:
 				if game.can_fire(from):
 					game.bullets.fan(from, game.bullets.aim(from), 5, 40.0, 8.5, Bullets.ORB, self, Bullets.NEEDLE))
 			fire_t = 0.9 if step % 6 == 2 else 1.0
-		4:
-			_curtain(Bullets.BIG)
-			fire_t = 0.25
-		5:
-			_curtain(Bullets.SMALL)
-			fire_t = 1.6  # a quiet gap
 	step += 1
 
 

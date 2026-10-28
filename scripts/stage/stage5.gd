@@ -55,13 +55,13 @@ func _init() -> void:
 		# anything there would stay in front of it); its guns and shells
 		# refill the homing lasers
 		"basin": {},
-		# up off the planet: slower (the satellites drift with the scroll and
-		# need the time on screen), wreckage and solar arrays in orbit, rocks
+		# up off the planet: slow (the satellites drift with the scroll and
+		# need the time on screen to turn their beams), wreckage and solar arrays in orbit, rocks
 		# drifting through (cover from the satellites); its first section
 		# once the ground has broken off
 		"ascent": {
 			"label": ["AREA 3", "HIGH ORBIT"],
-			"scroll": 10.0,
+			"scroll": 7.5,
 			"sections": [["fragment", 7, 5, 0], ["solar", 10, 4, 1], ["fragment", 8, 6, 1], ["hull", 7, 5, 1]],
 			"gap": [3.0, 7.0], "lead": 22.0,
 			"stream": {"every": 3.0, "first": 5.0, "spawn": _meteor},
@@ -136,20 +136,24 @@ func build_waves(f: Formations) -> void:
 	# AREA 3: the climb into orbit. A few fighters while the ground breaks
 	# off and the planet falls away, then the satellites in groups
 	wave("ascent", f.vform(0.0, 1) + f.vform(0.7, -1) + f.col(2.0, -0.75, 4, 0.18, 1) + f.col(2.4, 0.75, 4, 0.18, -1), 8.0)
-	# two lance columns, a gun firing down the lane between them
-	wave("ascent", f.sats(0.0, [[-0.55, "lance"], [0.55, "lance"]]) + f.sats(1.2, [[0.0, "gatling"]]), 8.0)
+	# scissors: two lances on the flanks turning in on the middle, a gun
+	# behind them firing down it (break a lance, or get behind a rock)
+	wave("ascent", f.sats(0.0, [[-0.8, "lance", 0.0, 1.0], [0.8, "lance", 0.0, -1.0]]) + f.sats(1.4, [[0.0, "gatling"]]), 10.0)
 	# guns either side firing across, a lance down the middle; saucers
-	wave("ascent", f.sats(0.0, [[-0.8, "gatling"], [0.8, "gatling"]]) + f.sats(0.8, [[0.0, "lance"]]) + f.swirls(2.6, -1, 5, 0.22), 9.0)
-	# the comb: four lance columns in two rows, guns behind them
-	wave("ascent", f.sats(0.0, [[-0.75, "lance"], [-0.25, "lance", 4.5], [0.25, "lance"], [0.75, "lance", 4.5]]) + f.sats(2.2, [[-0.5, "gatling"], [0.5, "gatling"]]), 10.0)
-	wave("ascent", f.sweep(0.0, -1, 6, 0.2) + f.sats(0.8, [[0.4, "gatling"], [-0.4, "gatling", 3.0]]) + f.sats(2.6, [[-0.85, "lance"], [0.0, "lance"], [0.85, "lance"]]), 10.0)
+	wave("ascent", f.sats(0.0, [[-0.8, "gatling"], [0.8, "gatling"]]) + f.sats(0.8, [[0.0, "lance", 0.0, 1.0]]) + f.swirls(2.6, -1, 5, 0.22), 10.0)
+	# the comb: three lances turning the same way, their beams sweeping
+	# across like bars; guns behind them
+	wave("ascent", f.sats(0.0, [[-0.7, "lance", 0.0, -1.0], [0.0, "lance", 4.5, -1.0], [0.7, "lance", 0.0, -1.0]]) + f.sats(2.4, [[-0.5, "gatling"], [0.5, "gatling"]]), 11.0)
+	# the push: two lances on the left turning right, driving the ship onto
+	# the guns on the right
+	wave("ascent", f.sweep(0.0, -1, 6, 0.2) + f.sats(0.6, [[-0.8, "lance", 0.0, 1.0], [-0.3, "lance", 5.0, 1.0]]) + f.sats(1.6, [[0.75, "gatling"], [0.45, "gatling", 4.0]]), 11.0)
 	# a grid: lances on the flanks, guns staggered down the middle
-	wave("ascent", f.sats(0.0, [[-0.6, "lance"], [0.6, "lance"], [0.0, "gatling", 3.0], [-0.3, "gatling", 7.0], [0.3, "gatling", 7.0]]) + f.rammers(2.4, [0.0], 0.2), 11.0)
+	wave("ascent", f.sats(0.0, [[-0.6, "lance", 0.0, 1.0], [0.6, "lance", 0.0, -1.0], [0.0, "gatling", 3.0], [-0.3, "gatling", 7.0], [0.3, "gatling", 7.0]]) + f.rammers(2.4, [0.0], 0.2), 12.0)
 	# AREA 4: the defence grid: fast waves, satellites among them
 	wave("orbit", f.col(0.0, -0.75, 6, 0.16, 1) + f.col(0.4, 0.75, 6, 0.16, -1) + f.col(0.8, -0.55, 5, 0.16, 1) + f.col(1.2, 0.55, 5, 0.16, -1))
-	wave("orbit", f.racers(0.0, "tl", 1, 8) + f.racers(1.2, "tr", 1, 8) + f.sats(1.0, [[-0.5, "lance"], [0.5, "lance"]]), 13.0)
+	wave("orbit", f.racers(0.0, "tl", 1, 8) + f.racers(1.2, "tr", 1, 8) + f.sats(1.0, [[-0.5, "lance", 0.0, 1.0], [0.5, "lance", 0.0, -1.0]]), 13.0)
 	wave("orbit", f.chasers(0.0, 4, -1) + f.chasers(1.2, 4, 1) + f.pincer(2.4, 3) + f.sats(2.0, [[-0.7, "gatling"], [0.7, "gatling"]]), 11.0)
-	wave("orbit", f.kestrel(0.0, -1, -0.45) + f.kestrel(0.6, 1, 0.45) + f.sweep(2.0, 1, 7, 0.18) + f.sats(3.0, [[0.0, "lance"], [-0.6, "gatling", 3.0], [0.6, "gatling", 3.0]]), 15.0)
-	wave("orbit", f.swirls(0.0, -1, 6, 0.2) + f.swirls(0.5, 1, 6, 0.2) + f.vform(1.6, 1) + f.vform(2.1, -1) + f.sats(1.0, [[-0.4, "gatling"], [0.4, "lance"], [-0.8, "lance", 4.0]]), 11.0)
-	wave("orbit", f.halberd(0.0, 0.0) + f.flankers(2.0, -1, 4) + f.flankers(3.2, 1, 4) + f.sats(2.6, [[-0.75, "lance"], [0.75, "lance"]]), 16.0)
-	wave("orbit", f.col(0.0, -0.75, 6, 0.16, 1) + f.col(0.4, 0.75, 6, 0.16, -1) + f.sats(0.8, [[-0.6, "lance"], [0.0, "gatling"], [0.6, "lance"], [-0.3, "gatling", 5.0], [0.3, "gatling", 5.0]]) + f.rammers(2.8, [-0.4, 0.4], 0.3), 12.0)
+	wave("orbit", f.kestrel(0.0, -1, -0.45) + f.kestrel(0.6, 1, 0.45) + f.sweep(2.0, 1, 7, 0.18) + f.sats(3.0, [[0.0, "lance", 0.0, -1.0], [-0.6, "gatling", 3.0], [0.6, "gatling", 3.0]]), 15.0)
+	wave("orbit", f.swirls(0.0, -1, 6, 0.2) + f.swirls(0.5, 1, 6, 0.2) + f.vform(1.6, 1) + f.vform(2.1, -1) + f.sats(1.0, [[-0.4, "gatling"], [0.4, "lance", 0.0, -1.0], [-0.8, "lance", 4.0, 1.0]]), 11.0)
+	wave("orbit", f.halberd(0.0, 0.0) + f.flankers(2.0, -1, 4) + f.flankers(3.2, 1, 4) + f.sats(2.6, [[-0.75, "lance", 0.0, 1.0], [0.75, "lance", 0.0, -1.0]]), 16.0)
+	wave("orbit", f.col(0.0, -0.75, 6, 0.16, 1) + f.col(0.4, 0.75, 6, 0.16, -1) + f.sats(0.8, [[-0.6, "lance", 0.0, -1.0], [0.0, "gatling"], [0.6, "lance", 0.0, -1.0], [-0.3, "gatling", 5.0], [0.3, "gatling", 5.0]]) + f.rammers(2.8, [-0.4, 0.4], 0.3), 12.0)

@@ -14,7 +14,7 @@
 | 側面強襲機（flanker） | 200 | 1 | `scripts/enemies/flanker.gd` 〃 |
 | 周回円盤（racer） | 150 | 1 | `scripts/enemies/racer.gd` 〃 |
 | 衛星軌道兵器・ガトリング（satellite gatling、ステージ 5） | 700 | 14 | `scripts/enemies/satellite.gd` `_init_kind` |
-| 衛星軌道兵器・レーザー（satellite lance、ステージ 5） | 900 | 18 | 〃 |
+| 衛星軌道兵器・レーザー（satellite lance、ステージ 5） | 1,200 | 32 | 〃 |
 | 砲台（turret） | 400 | 5 | `scripts/enemies/turret.gd` 〃 |
 | 小惑星・小（rock） | 150 | 3 | `scripts/enemies/rock.gd` 〃 |
 | 小惑星・大（rock big） | 500 | 8 | 〃 |

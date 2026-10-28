@@ -941,6 +941,31 @@ func _solids() -> void:
 			player.push_out(e.hit_pos, e.radius + PUSH_R)
 
 
+## Where a beam on the plane from `from` toward `to` stops: at the near side
+## of the first solid thing in its way (a giant rock: cover from beams as
+## from bullets), else at `to`.
+func solid_cut(from: Vector3, to: Vector3) -> Vector3:
+	var d := Vector3(to.x - from.x, 0, to.z - from.z)
+	var len := d.length()
+	if len < 0.01:
+		return to
+	d /= len
+	var best := len
+	for e in enemies:
+		if not e.solid or e.dead or e.intangible or not e.visible:
+			continue
+		var oc := Vector3(e.hit_pos.x - from.x, 0, e.hit_pos.z - from.z)
+		var along := oc.dot(d)
+		var h2 := oc.length_squared() - along * along
+		var r2 := e.radius * e.radius
+		if h2 >= r2:
+			continue
+		var t0 := along - sqrt(r2 - h2)
+		if t0 < best and along + sqrt(r2 - h2) > 0.0:
+			best = maxf(t0, 0.0)
+	return Vector3(from.x + d.x * best, 0, from.z + d.z * best)
+
+
 ## A boss's solid part that is not a round hit zone (a hammer's ram) touched
 ## the ship: the same as being rammed.
 func touch_player(src: String) -> void:

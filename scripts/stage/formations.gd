@@ -245,13 +245,15 @@ func railjack(at: float, side: int, hold := 5.5, stay := 12.0) -> Array:
 
 
 ## Orbital weapons parked across the way (see satellite.gd): `list` =
-## [[xn, arm, dz], ...], each just above the top edge at x (fraction of the
-## half width), `dz` further up (optional); they come down with the scroll.
+## [[xn, arm, dz, spin], ...], each just above the top edge at x (fraction
+## of the half width), `dz` further up (optional); a lance turns its beam
+## `spin` (+1 its far end moves right, -1 left; optional). They come down
+## with the scroll.
 func sats(at: float, list: Array) -> Array:
 	var out := []
 	for s: Array in list:
 		var dz := float(s[2]) if s.size() > 2 else 0.0
-		out.append([at, "satellite", {"x": float(s[0]) * _hw(), "z": _top() - 2.0 - dz, "arm": s[1]}])
+		out.append([at, "satellite", {"x": float(s[0]) * _hw(), "z": _top() - 2.0 - dz, "arm": s[1], "spin": float(s[3]) if s.size() > 3 else 0.0}])
 	return out
 
 

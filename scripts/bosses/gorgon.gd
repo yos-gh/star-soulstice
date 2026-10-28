@@ -71,14 +71,16 @@ const RELEASE := 5.0  # and its pick-up as it lets the ground go
 ## the beams
 const BEAM_HW := 1.05  # deadly half width
 const BEAM_COL := Color(1.0, 0.45, 0.75)
-const AIM_TRACK := 0.75  # the sight follows the ship ...
+const AIM_TRACK := 1.1  # the sight creeps after the ship ...
 const AIM_LOCK := 0.55  # ... holds still ...
 const AIM_FIRE := 0.9  # ... and the beam burns
 const SWEEP_LOCK := 1.15  # a sweep: marked, then
 const SWEEP_T := 1.5  # swept
 const STARE_LOCK := 0.85
 const STARE_FIRE := 3.2  # DEATH STARE: on this long, turning after the ship
-const STARE_TURN := 0.5  # rad/s
+const STARE_TURN := 0.35  # rad/s
+const EYE_TURN := 0.6  # how fast an eye turns after the ship (rad/s): slowly
+const GAZE_TURN := 0.55  # and a gaze's sight while it follows
 const FADE_T := 0.3
 const LEAD := 0.3
 const BRACKET := 2.8
@@ -91,6 +93,7 @@ const LIFE := 64.0
 var hull: MeshInstance3D
 var eyes: Array[Enemy] = []
 var eye_q: Array[Quaternion] = [Quaternion.IDENTITY, Quaternion.IDENTITY]
+var look: Array[float] = [PI / 2.0, PI / 2.0]  # where each eye looks (plane angle, PI/2 = down)
 var lids: Array = []  # per eye [upper, lower]
 var lid_f := 1.0  # 1 shut, 0 open
 var sockets: Array = [null, null]  # a burnt-out eye's wreck (MeshInstance3D)
@@ -484,7 +487,7 @@ func _gaze(k: int, side: float, sound := true) -> void:
 	if e.dead or not game.can_fire(e.hit_pos):
 		return
 	var b := {"eye": e, "kind": "aim", "state": "track", "t": AIM_TRACK, "side": side}
-	b["ang"] = _aim_ang(e, side)
+	b["ang"] = look[k]
 	game.warn(e, AIM_TRACK + AIM_LOCK, Game.Warn.MOVE, e.radius, {"laser": _beam_pts(e.hit_pos, b["ang"])}, sound)
 	b["warn"] = game.warnings[game.warnings.size() - 1]
 	beams.append(b)
@@ -521,7 +524,7 @@ func _stare_beam(k: int) -> void:
 	if e.dead or not game.can_fire(e.hit_pos):
 		return
 	var b := {"eye": e, "kind": "stare", "state": "lock", "t": STARE_LOCK, "side": 0.0}
-	b["ang"] = _aim_ang(e, 0.0)
+	b["ang"] = look[k]
 	game.warn(e, STARE_LOCK, Game.Warn.MOVE, e.radius, {"laser": _beam_pts(e.hit_pos, b["ang"])})
 	b["warn"] = game.warnings[game.warnings.size() - 1]
 	beams.append(b)
@@ -553,7 +556,8 @@ func _beam_end(o: Vector3, ang: float) -> Vector3:
 		reach = (game.field_top - 2.0 - o.z) / d.z
 	if absf(d.x) > 0.01:
 		reach = minf(reach, (signf(d.x) * (game.hw_top + 3.0) - o.x) / d.x)
-	return o + d * reach
+	# (a giant rock in the way stops it)
+	return game.solid_cut(o, o + d * reach)
 
 
 func _beam_pts(o: Vector3, ang: float) -> PackedVector3Array:
@@ -564,7 +568,7 @@ func _on_beam(o: Vector3, ang: float, p: Vector3) -> bool:
 	var d := Vector3(cos(ang), 0, sin(ang))
 	var r := Vector3(p.x - o.x, 0, p.z - o.z)
 	var along := r.dot(d)
-	if along < 0.0:
+	if along < 0.0 or along > o.distance_to(_beam_end(o, ang)):
 		return false
 	return (r - d * along).length() < BEAM_HW + Player.HIT_R
 
@@ -579,7 +583,8 @@ func _beams(dt: float) -> void:
 				if defeated or e.dead:
 					beams.erase(b)
 					continue
-				b["ang"] = _aim_ang(e, float(b["side"]))
+				# (it creeps after the ship, as fast as the eye can turn)
+				b["ang"] = rotate_toward(float(b["ang"]), _aim_ang(e, float(b["side"])), GAZE_TURN * dt)
 				(b["warn"]["to"] as Dictionary)["laser"] = _beam_pts(o, b["ang"])
 				_charge_fx(e)
 				if b["t"] <= 0.0:
@@ -840,14 +845,21 @@ func _place(dt: float) -> void:
 		var p: Vector3 = center + EYE_OFF[k] + Vector3(0, EYE_Y, 0)
 		e.position = p
 		if not e.dead:
-			# the iris (+y) turns toward the ship
-			var d := game.player.position - e.hit_pos
-			d.y = 0.0
+			# the eye turns slowly after the ship, or looks down its beam
+			var beamed := false
+			for b in beams:
+				if b["eye"] == e and b["state"] != "fade":
+					look[k] = float(b["ang"])
+					beamed = true
+			if not beamed:
+				var d := game.player.position - e.hit_pos
+				look[k] = rotate_toward(look[k], atan2(d.z, d.x), EYE_TURN * dt)
+			# the iris (+y) tilted toward where it looks
 			var want := Quaternion.IDENTITY
-			if d.length() > 0.5 and lid_f < 0.99:
-				var axis := Vector3.UP.cross(d.normalized())
-				want = Quaternion(axis.normalized(), clampf(d.length() / 22.0, 0.15, 0.7))
-			eye_q[k] = eye_q[k].slerp(want, clampf(dt * 5.0, 0.0, 1.0))
+			if lid_f < 0.99:
+				var dir := Vector3(cos(look[k]), 0, sin(look[k]))
+				want = Quaternion(Vector3.UP.cross(dir).normalized(), 0.55)
+			eye_q[k] = eye_q[k].slerp(want, clampf(dt * 6.0, 0.0, 1.0))
 			e.model.quaternion = eye_q[k]
 		# the lids part along the eye and sink away (shut: they meet over it)
 		var open := 1.0 - lid_f
