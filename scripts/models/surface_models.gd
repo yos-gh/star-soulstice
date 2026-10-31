@@ -35,7 +35,7 @@ const NAMES := [
 	"surface_basin_a", "surface_basin_b", "surface_basin_c", "surface_basin_gate", "surface_basin_edge",
 	"gorgon_hull", "gorgon_eye", "gorgon_lid", "gorgon_socket", "gorgon_cannon", "gorgon_gun",
 	"halberd", "halberd_turret", "sat_gatling", "sat_lance", "sat_gun", "sat_barrels",
-	"omega_wings", "omega_rail",
+	"omega_wings", "omega_rail", "omega_mine",
 ]
 
 const R := 0.5
@@ -103,6 +103,8 @@ static func make(name: String) -> ArrayMesh:
 			return _omega_wings()
 		"omega_rail":
 			return _omega_rail()
+		"omega_mine":
+			return _omega_mine()
 	var parts := name.split("_")
 	if parts.size() == 3 and parts[0] == "surface" and STYLES.has(parts[1]):
 		return _segment(parts[1], parts[2])
@@ -1287,4 +1289,32 @@ static func _omega_rail() -> ArrayMesh:
 		v.fill(-2, 3, z, 1, 4, z, OMEGA_CYAN, true)
 	v.fill(-5, 2, 27, 4, 5, 30, DUSK_L)
 	v.fill(-2, 3, 30, 1, 4, 30, DUSK_D)
+	return v.mesh(0.12, Vector3(0.5, 2.0, 0.5), true)
+
+
+## OMEGA CORTEX's arc mine: a squat steel canister (square, corners cut)
+## with an electrode prong out at each corner, cyan tips (the arcs jump
+## between them) and a cyan lamp on top.
+static func _omega_mine() -> ArrayMesh:
+	var v := Vox.new(20, 7, 20)
+	for z in range(-5, 5):
+		for x in range(-5, 5):
+			var cx := absf(x + 0.5)
+			var cz := absf(z + 0.5)
+			if cx + cz > 7.5:
+				continue
+			var edge := cx > 3.5 or cz > 3.5 or cx + cz > 6.0
+			v.fill(x, 0, z, x, 2 if edge else 3, z, GUN_D if edge else GUN)
+	v.fill(-3, 4, -1, 2, 4, 0, STEEL_M)
+	v.fill(-1, 4, -3, 0, 4, 2, STEEL_M)
+	v.fill(-1, 5, -1, 0, 5, 0, OMEGA_CYAN, true)
+	for sx: int in [-1, 1]:
+		for sz: int in [-1, 1]:
+			for k in range(4, 8):
+				var x := k if sx > 0 else -1 - k
+				var z := k if sz > 0 else -1 - k
+				v.put(x, 2, z, STEEL_L)
+			var tx := 8 if sx > 0 else -9
+			var tz := 8 if sz > 0 else -9
+			v.fill(tx, 1, tz, tx, 3, tz, OMEGA_CYAN, true)
 	return v.mesh(0.12, Vector3(0.5, 2.0, 0.5), true)

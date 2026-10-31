@@ -210,6 +210,16 @@ func push_out(c: Vector3, r: float) -> void:
 	position.z = p.y
 
 
+## Dragged by an outside pull (OMEGA CORTEX's vortex): moved by `v` for `dt`,
+## kept inside its bounds.
+func drift(v: Vector3, dt: float) -> void:
+	if not alive or entering > 0.0:
+		return
+	var q := _inside(Vector2(position.x + v.x * dt, position.z + v.z * dt))
+	position.x = q.x
+	position.z = q.y
+
+
 ## A plane point (x, z) kept inside the ship's bounds (as tick keeps it).
 func _inside(q: Vector2) -> Vector2:
 	var x := clampf(q.x, -bounds_x, bounds_x)

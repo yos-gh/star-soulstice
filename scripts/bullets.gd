@@ -54,6 +54,13 @@ var wfreq := PackedFloat32Array()  # snaking: rad/s
 var split_t := PackedFloat32Array()  # seconds until it splits (0 = never)
 var split_n := PackedInt32Array()  # shells in the ring it splits into
 var n := 0
+## A gravity well (OMEGA CORTEX's vortex): while `well_pull` > 0 the bullets
+## of `well_owner` slower than WELL_MAX are drawn toward `well` (u/s²) and
+## swallowed there.
+const WELL_MAX := 10.0
+var well := Vector3.ZERO
+var well_pull := 0.0
+var well_owner := 0
 var bounds := Rect2(-30, -30, 60, 60)  # x, z
 
 var sprites: MultiMeshInstance3D
@@ -275,6 +282,8 @@ func shoot_shell(p: Vector3, r: float, dmg: float) -> Vector3:
 
 func tick(dt: float) -> void:
 	var i := 0
+	if well_pull > 0.0 and not is_instance_id_valid(well_owner):
+		well_pull = 0.0
 	while i < n:
 		var a := acc[i]
 		if a != 0.0:
@@ -285,6 +294,14 @@ func tick(dt: float) -> void:
 				vel[i] = v * (ns / s)
 			if ns == tspd[i]:
 				acc[i] = 0.0
+		if well_pull > 0.0 and owner_id[i] == well_owner:
+			var to := well - pos[i]
+			var dl := to.length()
+			if dl < 1.5:
+				_remove(i)
+				continue
+			if vel[i].length_squared() < WELL_MAX * WELL_MAX:
+				vel[i] += to / dl * well_pull * dt
 		if lift[i] > 0.0:
 			lift[i] = maxf(0.0, lift[i] - dt)
 		age[i] += dt

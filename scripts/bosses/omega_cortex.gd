@@ -1,37 +1,48 @@
 extends BossBase
 ## Stage 5's first boss OMEGA CORTEX: STAR CORTEX (stage 1) finished and
 ## armed. The same octagonal core round the great eye (its shutters, its
-## four pods, the armour blocks on its flanks), now built out: truss girders
-## carry a gun deck either side with a rail cannon on a ring mount (fed by
-## glowing capacitor banks), and two mine batteries stand on a frame at its
-## back. Bare machinery in the Cortex's greys, cyan lamps.
-## The eye is only vulnerable while open (open longer than shut; with a
-## shutter half shot off, shots get in on that side while it is shut).
-## Phase A: the pods fire shell fans in turn; the rail cannons take turns
-## at the rail shot (the turret turns to the ship, the line through it to
-## the bottom edge is marked, then four iron slugs go down it fast: they
-## can't be shot and they stop shots); the batteries lob mines (big shells
-## that slow to a stop over the screen and burst into rings: shoot them
-## first). Open, the eye fires a needle shotgun, three serpents (iron balls
-## weaving at the ship, announced), a flower of shell rings and a second
-## shotgun.
-## OVERDRIVE (both rail cannons gone, all four pods gone, or after a
-## while): the fortress sways, the eye opens longer; the pod sockets spin
-## shell spirals while it is shut; a living rail cannon marks two lines at a
-## time (one through the ship, one where it is heading), a dead one's deck
-## sprays a turning pair of shell streams; mines come in fours. Open, the
-## eye fires five serpents that burst into rings, a longer flower, a wide
-## needle fan, and once a round its signature, the NOVA: the eye glows (a
-## long lock-on), then a ring of eight iron balls and a ring of shells with
-## a gap toward the ship's side. There is a quiet moment in every round to
-## come in with the Spear.
+## four pods), now built out: truss girders carry a gun deck either side with
+## a rail cannon on a ring mount (fed by glowing capacitor banks), and two
+## mine batteries stand on a frame at its back. Bare machinery in the
+## Cortex's greys, cyan lamps. No invisible armour: a shot that misses every
+## part flies on past the hull (the old flank armour hid the rear pods).
+## Its own weapons, more than bullet patterns:
+##   rail shot       a rail cannon turns to the ship, the line through it to
+##                   the bottom edge is marked, then four iron slugs go down
+##                   it fast (they can't be shot and they stop shots)
+##   arc mines       the batteries lob mines that slow to a stop round the
+##                   ship and link up with electric arcs (marked, then live):
+##                   a tripwire through the ship's row; in OVERDRIVE a cage
+##                   of four round it that shrinks. A mine shot down takes
+##                   its arcs with it
+##   shutter blades  the eye's two shutter halves fly off as spinning blades
+##                   round a loop down either side of the screen (the loop
+##                   marked first) and back to the eye, which is bare while
+##                   they are out; they can be shot down in flight
+##   discharge       (OVERDRIVE) a broken rail deck's capacitors arc to the
+##                   ship: a forked bolt, marked, then struck
+##   vortex          (OVERDRIVE) the open eye drags the ship toward it, then
+##                   the NOVA: a ring of iron balls and a ring of shells burst
+##                   out to about where the ship is and halt there; then the
+##                   eye draws its slow bullets back in (shells that passed
+##                   the ship come back up past it)
+## Phase A: the pods fire shell fans in turn, rail shots, arc tripwires. The
+## eye (only vulnerable while open, open longer than shut; with a shutter
+## shot off, shots get in on that side while it is shut) opens with a needle
+## shotgun, then by turns the shutter blades, or three serpents (iron balls
+## weaving at the ship, announced) and a second shotgun.
+## OVERDRIVE (both rail cannons gone, all four pods gone, or after a while):
+## the fortress sways; a living rail cannon marks two lines at a time (one
+## through the ship, one where it is heading), broken decks discharge, mines
+## come as cages; the eye opens longer: four serpents, a wide needle fan and
+## the vortex.
 
 const INFO := {
 	"name": "OMEGA CORTEX", "role": "boss",
-	"desc": "ステージ 1 の STAR CORTEX を完成させて武装した最終面のボス 1 体目。八角形の本体と目（シャッター 2 枚、4 つのポッド、側面の装甲）はそのまま、トラスの桁で左右に砲甲板を張り出してレールキャノン（コンデンサーで光る）を載せ、後ろの架台に機雷の発射機が 2 基。目は開いている時だけ効く（閉じている時間より長く開く。シャッターを片方壊せばその側からは閉じていても撃ち込める）。通常：ポッドが交代で物理弾の扇。レールキャノンが交代でレール射撃（砲塔が自機を向き、自機を通って下端までの線を予兆、そのあと鉄球弾 4 発を速く：撃ち落とせず、ショットを遮る）。発射機が機雷（止まってから輪にはじける大きな物理弾：先に撃ち落とす）。開くと針弾の散弾、大型弾（蛇行する鉄球弾）3 つ、花びら状の物理弾、もう一度散弾。レールキャノンを両方壊すか、ポッドを全部壊すか、時間で OVERDRIVE：揺れながら、目は長く開き、閉じている間はポッドの穴から渦巻き弾、生きているレールキャノンは 2 本同時（自機と自機の向かう側）、壊れた甲板は回る 2 本の物理弾の流れ、機雷は 4 つずつ。開くと 5 つの大型弾（はじけて輪に）、長い花びら、広い針弾、そして 1 周に 1 回の大技 NOVA（目が光る長い予兆のあと、鉄球弾 8 つの輪と、自機の側に隙間のある物理弾の輪）。毎周、スピアで寄れる静かな間がある",
-	"demos": [["FULL", ""], ["OVERDRIVE", "B"]],
+	"desc": "ステージ 1 の STAR CORTEX を完成させて武装した最終面のボス 1 体目。八角形の本体と目（シャッター 2 枚、4 つのポッド）はそのまま、トラスの桁で左右に砲甲板を張り出してレールキャノン（コンデンサーで光る）を載せ、後ろの架台に機雷の発射機が 2 基。見えない装甲はなし（外れた弾は本体の上を抜ける）。目は開いている時だけ効く（閉じている時間より長く開く。シャッターを片方壊せばその側からは閉じていても撃ち込める）。通常：ポッドが交代で物理弾の扇。レール射撃（砲塔が自機を向き、自機を通って下端までの線を予兆、そのあと鉄球弾 4 発を速く）。電磁機雷（自機の左右に止まって、予兆のあと電撃の線でつながる。撃ち落とせばその線が消える）。目が開くと針弾の散弾、そして交互に、シャッター刃（シャッターが外れて回転しながら画面の左右を大きく回って戻る。軌道を予兆、飛んでいる間は目がむき出しで、刃も撃ち落とせる）か、大型弾（蛇行する鉄球弾）3 つともう一度散弾。レールキャノンを両方壊すか、ポッドを全部壊すか、時間で OVERDRIVE：揺れながら、レールキャノンは 2 本同時、壊れた砲甲板からは放電（自機へ枝分かれする稲妻、予兆つき）、機雷は 4 つで自機を囲む檻になって縮む（1 つ撃てば抜けられる）。目は長く開き、大型弾 4 つ、広い針弾、そして大技の重力渦：自機を目に引き寄せ、NOVA（鉄球弾と物理弾の輪が自機のあたりまで広がって止まる）、そのあと自分の遅い弾を全部吸い戻す（自機を通り過ぎた弾が下から戻ってくる）",
+	"demos": [["FULL", ""], ["OVERDRIVE", "B"], ["RAILS DOWN", "C"]],
 }
-const EYE_HP := 1150.0
+const EYE_HP := 1450.0
 const EYE_SCORE := 80000
 const POD_HP := 110.0
 const POD_SCORE := 5000
@@ -39,13 +50,14 @@ const RAIL_HP := 320.0
 const RAIL_SCORE := 12000
 const SHUTTER_HP := 240.0
 const SHUTTER_SCORE := 6000
+const MINE_HP := 8.0
+const MINE_SCORE := 500
 const POD_OFF := [Vector3(-5.6, 0, -2.4), Vector3(5.6, 0, -2.4), Vector3(-4.3, 0, 3.3), Vector3(4.3, 0, 3.3)]
 const RAIL_OFF := [Vector3(-11.5, 0, -1.0), Vector3(11.5, 0, -1.0)]
 const BATTERY_OFF := [Vector3(-5.6, 0, -6.3), Vector3(5.6, 0, -6.3)]
-const ARMOUR_OFF := [Vector3(-4.0, 0, 0.0), Vector3(4.0, 0, 0.0)]
-const ARMOUR_R := 2.7
 const SHUTTER_R := 1.35
 const SHUTTER_X := 1.05
+const SHUTTER_OPEN := 2.2  # how far each half slides out, open
 const RAIL_LEN := 3.2  # turret centre to the muzzle
 const RAIL_LOCK := 1.0  # the rail shot: marked this long, then
 const SLUGS := 4
@@ -56,23 +68,68 @@ const RAIL_TURN := 1.6  # the turret's slew (rad/s)
 const CLOSED_A := 2.6
 const OPEN_A := 4.6
 const CLOSED_B := 1.6
-const OPEN_B := 5.2
-const NOVA_LOCK := 1.3
+const OPEN_B := 6.5
 const ENRAGE_T := 50.0
+## arc mines: the flight to their spot, the arcs marked, then live
+const MINE_FLY := 1.1
+const ARC_WARN := 0.8
+const ARC_LIVE := 1.6  # phase A's tripwire
+const ARC_REACH := 7.0  # ... each mine this far either side of the ship
+const CAGE_LIVE := 1.8  # OVERDRIVE's cage (one a round, before the vortex) shrinks all the while ...
+const CAGE_HALF := 5.0
+const CAGE_SHRINK := 0.25  # ... to this
+const ARC_HW := 0.2
+const ARC_COL := Color(0.55, 0.92, 1.0)
+## shutter blades: the loop marked, then flown (the right one a little later)
+const BLADE_WARN := 0.9
+const BLADE_FLY := 3.0
+const BLADE_LAG := 0.35
+const BLADE_R := 1.6
+## the left blade's loop from its open place (offsets from the centre; the
+## right one flies its mirror)
+const BLADE_LOOP := [Vector3(-3.25, 0, 0.0), Vector3(-8.5, 0, 3.0), Vector3(-12.5, 0, 10.0), Vector3(-9.5, 0, 17.5), Vector3(-2.0, 0, 16.5), Vector3(-2.8, 0, 7.0)]
+## discharge: marked, then struck
+const BOLT_LOCK := 0.7
+const BOLT_LIVE := 0.25
+## the vortex (seconds into the open eye): the drag and the NOVA's lock-on,
+## the NOVA flying out and halting, then the eye draws its bullets back
+const VORTEX_AT := 2.2
+const NOVA_LOCK := 1.3
+const NOVA_FLY := 1.3
+const WELL_T := 1.4
+const PULL := 5.0  # the drag on the ship (it flies 17)
+const WELL := 9.0
+
+static var _arc_mat: ShaderMaterial
 
 var hull: MeshInstance3D
 var wings: MeshInstance3D
-var armour: Array[Enemy] = []
 var eye: Enemy
 var pods: Array[Enemy] = []
 var shutters: Array[Enemy] = []
 var rails: Array[Enemy] = []
+var decks: Array[Enemy] = []  # where a broken deck's discharge is announced (no hit zone)
 var rail_a := [PI / 2.0, PI / 2.0]  # where each rail cannon points (PI/2 = down)
 ## rail shots: {k, to: [Vector3, ...], t, slugs, gap}
 var rail_shots: Array[Dictionary] = []
 var rail_t := 1.2
 var rail_k := 0
 var mine_t := 2.0
+## arc mines in flight or linked: {m: [Enemy], from, to, links: [[i, j]],
+## t, state (0 flying, 1 marked, 2 live), cage, c, w: [warning per link]}
+var nets: Array[Dictionary] = []
+## discharges: {k, from, to, f: [fork ends], t}
+var bolts: Array[Dictionary] = []
+var bolt_t := 0.8
+var bolt_k := 0
+var blade_t := [-1.0, -1.0]  # seconds into each shutter's flight (< 0: at the eye)
+var blade_pts: Array[PackedVector3Array] = [PackedVector3Array(), PackedVector3Array()]
+var blade_len: Array[PackedFloat32Array] = [PackedFloat32Array(), PackedFloat32Array()]
+var eye_round := 0
+var pulling := false
+var arcs: MeshInstance3D
+var arc_mesh: ImmediateMesh
+var arc_tris: Array = []  # [p, color, uv] collected for this frame's arcs
 var center := Vector3.ZERO
 var phase := 0  # 0 enter, 1 A, 2 OVERDRIVE, 3 dying
 var st := 0.0
@@ -81,12 +138,7 @@ var cycle_t := 0.0
 var open := 0.0
 var open_want := false
 var fired := {}
-var spiral_a := 0.0
-var spiral_t := 0.0
-var spray_a := 0.0
-var spray_t := 0.0
 var serpent_to := Vector3.ZERO
-var flower_a := 0.0
 var pod_t := 1.0
 var pod_k := 0
 var destroyed := false
@@ -100,7 +152,7 @@ func setup(g: Game) -> void:
 	center = Vector3(0, 0, game.field_top - 10.0)
 	ship_last = game.player.position
 	# order matters: shots test enemies in list order, so the shutters come
-	# before the eye they cover, the eye, pods and rails before the armour
+	# before the eye they cover
 	for s in [-1, 1]:
 		var sh := game.spawn_part(self, "boss_shutter", SHUTTER_R)
 		sh.hp = SHUTTER_HP
@@ -138,17 +190,32 @@ func setup(g: Game) -> void:
 		r.armored = true
 		r.ram = false
 		rails.append(r)
+	for k in 2:
+		var d := game.spawn_part(self, "", 1.4)
+		d.intangible = true
+		d.shootable = false
+		d.lock = false
+		d.ram = false
+		decks.append(d)
 	hull = MeshInstance3D.new()
 	hull.mesh = Vox.get_mesh("boss_hull")
 	add_child(hull)
 	wings = MeshInstance3D.new()
 	wings.mesh = Vox.get_mesh("omega_wings")
 	add_child(wings)
+	if _arc_mat == null:
+		_arc_mat = ShaderMaterial.new()
+		_arc_mat.shader = load("res://shaders/lightning.gdshader")
+		_arc_mat.render_priority = 2
+	arc_mesh = ImmediateMesh.new()
+	arcs = MeshInstance3D.new()
+	arcs.mesh = arc_mesh
+	arcs.material_override = _arc_mat
+	arcs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	arcs.extra_cull_margin = 16384.0
+	add_child(arcs)
 	for k in 2:
-		var a := game.spawn_part(self, "", ARMOUR_R)
-		a.armored = true
-		a.hp = 1e9
-		armour.append(a)
+		_bake_loop(k)
 	_place(0.0)
 
 
@@ -160,6 +227,8 @@ func on_part_killed(e: Enemy) -> void:
 	if e == eye:
 		_die()
 		return
+	if e.mesh_name == "omega_mine":
+		return  # its arcs go with it (_nets)
 	game.shake(0.8)
 	var k := rails.find(e)
 	if k >= 0:
@@ -197,18 +266,30 @@ func rails_alive() -> int:
 func _place(dt: float) -> void:
 	hull.position = center
 	wings.position = center
-	for k in 2:
-		armour[k].position = center + ARMOUR_OFF[k]
 	eye.position = center + Vector3(0, -0.4, 0)
 	for k in 4:
 		if not pods[k].dead:
 			pods[k].position = center + POD_OFF[k]
-	var gap := open * 2.2
+	var gap := open * SHUTTER_OPEN
 	for k in 2:
-		if not shutters[k].dead:
-			var s := -1.0 if k == 0 else 1.0
-			shutters[k].position = center + Vector3(s * (gap + SHUTTER_X), 0, 0)
+		var sh := shutters[k]
+		if sh.dead:
+			continue
+		var s := -1.0 if k == 0 else 1.0
+		var spin := 0.0
+		if float(blade_t[k]) >= 0.0:
+			# flying: eased out of the eye and back in again, spinning
+			var u := float(blade_t[k]) / BLADE_FLY
+			var f := u - sin(TAU * u) / TAU
+			var total: float = blade_len[k][blade_len[k].size() - 1]
+			sh.position = center + _along(k, total * f)
+			spin = -s * TAU * 6.0 * f
+		else:
+			sh.position = center + Vector3(s * (gap + SHUTTER_X), 0, 0)
+		sh.model.rotation.y = spin
+		sh.model.position = Vector3(-s * SHUTTER_X, 1.25, 0).rotated(Vector3.UP, spin)
 	for k in 2:
+		decks[k].position = center + RAIL_OFF[k]
 		var r := rails[k]
 		r.position = center + RAIL_OFF[k]
 		if not r.dead:
@@ -244,6 +325,8 @@ func tick(dt: float) -> void:
 		var p := game.player.position
 		ship_v = ship_v.lerp((p - ship_last) / dt, clampf(dt * 8.0, 0.0, 1.0))
 		ship_last = p
+	pulling = false
+	game.bullets.well_pull = 0.0
 	match phase:
 		0:
 			center.z = move_toward(center.z, game.field_top + 7.0, 4.0 * dt)
@@ -267,18 +350,11 @@ func tick(dt: float) -> void:
 			_eye_cycle(dt, CLOSED_B, OPEN_B)
 			_pods(dt)
 			_rails(dt)
-			_mines(dt)
-			_sprays(dt)
-			if not open_want and cycle_t > 0.2 and cycle_t < CLOSED_B - 0.1:
-				# the pod sockets bleed fire while the eye is shut
-				spiral_t -= dt
-				if spiral_t <= 0.0:
-					spiral_t = 0.15
-					spiral_a += 0.33
-					for k in 4:
-						var at: Vector3 = center + POD_OFF[k]
-						if game.can_fire(at):
-							game.bullets.fire(at, spiral_a + k * PI / 2.0, 4.6, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if k % 2 == 0 else Bullets.SMALL)
+			if _fire_once("cage", 0.0):
+				_launch_mines()
+			_bolts(dt)
+			if pulling:
+				_drag(dt)
 		3:
 			dying_t += dt
 			if int(dying_t * 8.0) != int((dying_t - dt) * 8.0):
@@ -296,18 +372,22 @@ func tick(dt: float) -> void:
 				destroyed = true
 				finished = true
 				visible = false
-				for q in [eye] + armour + pods + shutters + rails:
+				for q in [eye] + pods + shutters + rails + decks:
 					game.remove_enemy(q)
 					q.visible = false
 				game.boss_destroyed(self)
 				return
 	_rail_shots(dt)
+	_fly_blades(dt)
+	_nets(dt)
+	_tick_bolts(dt)
 	open = move_toward(open, 1.0 if open_want else 0.0, dt * 2.5)
 	# shut, the eye is armoured while both shutters hold; with one shot off,
 	# shots get in on that side
 	eye.armored = phase == 0 or phase == 3 or (open < 0.7 and shutters_alive() == 2)
 	eye.model.rotation.y += dt * (2.2 if phase == 2 else 0.6)
 	_place(dt)
+	_draw_arcs()
 
 
 ## Both rail cannons gone, all the pods gone, or time up: OVERDRIVE.
@@ -322,37 +402,40 @@ func _overdrive() -> void:
 
 
 ## One round of the eye: shut, then open with its attacks (each energy shot
-## announced on the eye).
+## announced on the eye). It stays open until its blades are back.
 func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
 	cycle_t += dt
-	open_want = cycle_t > closed_time and cycle_t < closed_time + open_time
 	var c := closed_time
 	var w := Enemy.WINDUP_SHOT
-	if open_want:
+	var is_open := cycle_t > c and cycle_t < c + open_time
+	open_want = is_open or _blades_out()
+	if is_open:
 		if phase == 1:
 			_warn_at("shotgun1", c + 0.3 + w, w, Game.Warn.SHOT)
 			if _fire_once("shotgun1", c + 0.3 + w):
 				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 7, 24.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
-			_serpents(c + 1.2, 3, 20.0, false)
-			_flower(c + 2.3, 4, 18, 4.2)
-			_warn_at("shotgun2", c + 3.7 + w, w, Game.Warn.SHOT)
-			if _fire_once("shotgun2", c + 3.7 + w):
-				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 9, 40.0, 9.5, Bullets.ORB, self)
+			if eye_round % 2 == 0 and shutters_alive() > 0:
+				_blades(c + 0.7)
+			else:
+				_serpents(c + 1.4, 3, 20.0)
+				_warn_at("shotgun2", c + 3.3 + w, w, Game.Warn.SHOT)
+				if _fire_once("shotgun2", c + 3.3 + w):
+					game.bullets.fan(eye.position, game.bullets.aim(eye.position), 9, 40.0, 9.5, Bullets.ORB, self)
 		else:
-			_serpents(c + 0.2, 5, 18.0, true)
-			_flower(c + 1.3, 5, 22, 4.6)
-			_warn_at("shotgun1", c + 2.8 + w, w, Game.Warn.SHOT)
-			if _fire_once("shotgun1", c + 2.8 + w):
+			_serpents(c + 0.2, 4, 18.0)
+			_warn_at("shotgun1", c + 0.9 + w, w, Game.Warn.SHOT)
+			if _fire_once("shotgun1", c + 0.9 + w):
 				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 11, 60.0, 9.5, Bullets.ORB, self, Bullets.NEEDLE)
-			_nova(c + 3.6 + NOVA_LOCK)
-	if cycle_t > closed_time + open_time + 0.4:
+			_vortex(c + VORTEX_AT)
+	if cycle_t > closed_time + open_time + 0.4 and not _blades_out():
 		cycle_t = 0.0
 		fired.clear()
+		eye_round += 1
 
 
 ## `count` armoured IRON serpents weaving down toward where the ship was (a
-## lock-on marks the line first); in OVERDRIVE they burst into rings.
-func _serpents(at: float, count: int, spread: float, bursting: bool) -> void:
+## lock-on marks the line first).
+func _serpents(at: float, count: int, spread: float) -> void:
 	var dur := 0.8
 	if cycle_t >= at - dur and not fired.has("w_serpent"):
 		fired["w_serpent"] = true
@@ -365,39 +448,157 @@ func _serpents(at: float, count: int, spread: float, bursting: bool) -> void:
 			var a := base + deg_to_rad(spread) * (i - (count - 1) * 0.5)
 			game.bullets.fire(eye.position + Vector3(0, 0, 1.2), a, 4.8 if phase == 1 else 5.2, Bullets.IRON, self)
 			game.bullets.snake(2.3 if phase == 1 else 2.7, 3.1 if phase == 1 else 3.5)
-			if bursting:
-				game.bullets.split(1.9 + 0.12 * absf(i - (count - 1) * 0.5), 8)
 
 
-## A flower from the eye: rings of breakable shells, each turned a little.
-func _flower(at: float, waves: int, count: int, speed: float) -> void:
-	for k in waves:
-		if _fire_once("flower%d" % k, at + k * 0.32):
-			flower_a += 0.21
-			game.bullets.ring(eye.position, count, speed, Bullets.SHELL, self, flower_a)
+# ------------------------------------------------------------ shutter blades
+
+## The shutter halves (those still on) fly off round their loops: each loop
+## is marked with chevrons first, then flown.
+func _blades(at: float) -> void:
+	if cycle_t >= at and not fired.has("w_blades"):
+		fired["w_blades"] = true
+		var first := true
+		for k in 2:
+			if shutters[k].dead:
+				continue
+			var path := PackedVector3Array()
+			var pts := blade_pts[k]
+			for j in range(0, pts.size(), 3):
+				path.append(center + pts[j])
+			path.append(center + pts[pts.size() - 1])
+			game.warn(shutters[k], BLADE_WARN + k * BLADE_LAG, Game.Warn.MOVE, SHUTTER_R, path, first)
+			first = false
+	for k in 2:
+		if _fire_once("blade%d" % k, at + BLADE_WARN + k * BLADE_LAG) and not shutters[k].dead:
+			blade_t[k] = 0.0
+			shutters[k].ram = true
+			shutters[k].radius = BLADE_R
+			game.sfx.play("slam")
+			game.fx.flash(shutters[k].position, 0.4)
 
 
-## The NOVA (OVERDRIVE, once a round): a long lock-on as the eye glows,
-## then a ring of eight iron balls and a ring of shells with a gap toward
-## where the ship is heading.
-func _nova(at: float) -> void:
-	if cycle_t >= at - NOVA_LOCK and not fired.has("w_nova"):
+func _blades_out() -> bool:
+	return float(blade_t[0]) >= 0.0 or float(blade_t[1]) >= 0.0
+
+
+func _fly_blades(dt: float) -> void:
+	for k in 2:
+		if float(blade_t[k]) < 0.0:
+			continue
+		var sh := shutters[k]
+		if sh.dead or defeated:
+			blade_t[k] = -1.0
+			continue
+		blade_t[k] = float(blade_t[k]) + dt
+		if randf() < 0.5:
+			game.fx.spark(sh.position + Vector3(0, 0.6, 0), ARC_COL, 1, 0.3)
+		if float(blade_t[k]) >= BLADE_FLY:
+			# home: back in its slot by the eye
+			blade_t[k] = -1.0
+			sh.ram = false
+			sh.radius = SHUTTER_R
+			game.sfx.play("deflect")
+
+
+## A blade's loop as a closed Catmull-Rom curve through BLADE_LOOP (offsets
+## from the centre), sampled with the distance along it.
+func _bake_loop(k: int) -> void:
+	var m := 1.0 if k == 0 else -1.0
+	var ctrl: Array[Vector3] = []
+	for q: Vector3 in BLADE_LOOP:
+		ctrl.append(Vector3(q.x * m, 0, q.z))
+	var n := ctrl.size()
+	var pts := PackedVector3Array()
+	var cum := PackedFloat32Array()
+	var total := 0.0
+	for i in n:
+		var p0 := ctrl[(i - 1 + n) % n]
+		var p1 := ctrl[i]
+		var p2 := ctrl[(i + 1) % n]
+		var p3 := ctrl[(i + 2) % n]
+		for j in 12:
+			var t := j / 12.0
+			var q := 0.5 * ((2.0 * p1) + (p2 - p0) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t * t + (3.0 * p1 - p0 - 3.0 * p2 + p3) * t * t * t)
+			if not pts.is_empty():
+				total += q.distance_to(pts[pts.size() - 1])
+			pts.append(q)
+			cum.append(total)
+	total += ctrl[0].distance_to(pts[pts.size() - 1])
+	pts.append(ctrl[0])
+	cum.append(total)
+	blade_pts[k] = pts
+	blade_len[k] = cum
+
+
+func _along(k: int, d: float) -> Vector3:
+	var pts := blade_pts[k]
+	var cum := blade_len[k]
+	var i := cum.bsearch(d)
+	if i <= 0:
+		return pts[0]
+	if i >= pts.size():
+		return pts[pts.size() - 1]
+	var f := (d - cum[i - 1]) / maxf(cum[i] - cum[i - 1], 0.0001)
+	return pts[i - 1].lerp(pts[i], f)
+
+
+# ------------------------------------------------------------ vortex
+
+## OVERDRIVE's big move, from `at` into the open eye: the eye drags the ship
+## toward it through a long lock-on, the NOVA bursts out to about where the
+## ship is and halts, then the eye draws its slow bullets back in.
+func _vortex(at: float) -> void:
+	var nova_at := at + NOVA_LOCK
+	var halt_at := nova_at + NOVA_FLY
+	var well_at := halt_at + 0.3
+	if cycle_t >= at and not fired.has("w_nova"):
 		fired["w_nova"] = true
 		game.warn(eye, NOVA_LOCK, Game.Warn.MOVE, eye.radius * 1.6)
 		game.sfx.play("slam")
-	if cycle_t >= at - NOVA_LOCK and cycle_t < at and randf() < 0.5:
-		var off := Vector3(randf_range(-2.4, 2.4), 0.5, randf_range(-2.4, 2.4))
-		game.fx.sprite(eye.position + off, -off * 2.2, 0.5, 0.12, 0.18, Color(0.6, 0.95, 1.0), 0.0)
-	if _fire_once("nova", at):
-		var aim := game.bullets.aim(eye.position)
+	pulling = cycle_t >= at and cycle_t < halt_at
+	if cycle_t >= well_at and cycle_t < well_at + WELL_T:
+		game.bullets.well = eye.position
+		game.bullets.well_owner = get_instance_id()
+		game.bullets.well_pull = WELL
+		if randf() < 0.6:
+			_inflow(10.0, 22.0)
+	if _fire_once("nova", nova_at):
+		var d := game.player.position - eye.position
+		var reach := clampf(Vector2(d.x, d.z).length(), 9.0, 18.0)
+		var aim := atan2(d.z, d.x)
+		# iron balls halting just past the ship (it sits between two) and
+		# shells a little further, with a gap toward where it is heading
+		var v0 := 2.0 * (reach + 0.5) / NOVA_FLY
 		for k in 8:
-			game.bullets.fire(eye.position, aim + PI / 8.0 + TAU * k / 8.0, 4.4, Bullets.IRON, self)
+			game.bullets.fire(eye.position, aim + PI / 8.0 + TAU * k / 8.0, v0, Bullets.IRON, self, Bullets.ROUND, v0 / NOVA_FLY, 0.0)
 		var head := aim + (0.35 if ship_v.x > 0.0 else -0.35)
-		game.bullets.ring(eye.position, 28, 5.2, Bullets.SHELL, self, 0.0, 4, head)
+		v0 = 2.0 * (reach + 2.0) / NOVA_FLY
+		for i in 28:
+			var a := TAU * i / 28.0
+			if absf(wrapf(a - head, -PI, PI)) < TAU / 28.0 * 2.0:
+				continue
+			game.bullets.fire(eye.position, a, v0, Bullets.SHELL, self, Bullets.ROUND, v0 / NOVA_FLY, 0.0, Bullets.BIG if i % 2 == 0 else Bullets.SMALL)
 		game.flash_a = maxf(game.flash_a, 0.15)
 		game.shake(0.7)
 		game.sfx.play("exp_m")
 
+
+## The ship drawn toward the eye (it can fly against it), streaks pouring in.
+func _drag(dt: float) -> void:
+	var d := eye.position - game.player.position
+	d.y = 0.0
+	if d.length() > 3.0 and game.state != Game.State.VIEWER:
+		game.player.drift(d.normalized() * PULL, dt)
+	_inflow(8.0, 20.0)
+
+
+func _inflow(r0: float, r1: float) -> void:
+	var a := randf() * TAU
+	var off := Vector3(cos(a), 0, sin(a)) * randf_range(r0, r1)
+	game.fx.sprite(eye.position + off + Vector3(0, 0.6, 0), -off / 0.9, 0.32, 0.08, 0.9, ARC_COL, 0.0)
+
+
+# ------------------------------------------------------------ pods, rails
 
 func _pods(dt: float) -> void:
 	pod_t -= dt
@@ -465,53 +666,294 @@ func _rail_shots(dt: float) -> void:
 		var muzzle := r.position + Vector3(cos(a), 0, sin(a)) * RAIL_LEN
 		if game.combat_on():
 			game.bullets.fire(muzzle, atan2(to.z - muzzle.z, to.x - muzzle.x), SLUG_SPEED, Bullets.IRON, self)
-			game.fx.flash(muzzle, 0.5)
+			game.fx.flash(muzzle, 0.4)
 			game.sfx.play("exp_s")
 		q["slugs"] = int(q["slugs"]) - 1
 		if int(q["slugs"]) <= 0:
 			rail_shots.erase(q)
 
 
-## The batteries at the back lob mines: big shells that slow to a stop over
-## the screen and burst into rings (they can be shot down first).
+# ------------------------------------------------------------ arc mines
+
+## The batteries at the back lob arc mines that slow to a stop round the
+## ship: a pair either side of it (phase A, every few seconds), four boxing
+## it in (OVERDRIVE, as the eye shuts).
 func _mines(dt: float) -> void:
 	mine_t -= dt
 	if mine_t > 0.0:
 		return
-	mine_t = 4.2 if phase == 1 else 3.4
-	var n := 1 if phase == 1 else 2
-	for k in 2:
-		var at: Vector3 = center + BATTERY_OFF[k]
-		if not game.can_fire(at):
-			continue
-		for i in n:
-			var target := Vector3(randf_range(-0.8, 0.8) * game.field_hw, 0, randf_range(game.field_top + 10.0, game.field_bottom - 7.0))
-			var d := target - at
-			var dist := d.length()
-			# it decelerates to a stop at the target (v^2 = 2 a s)
-			var v0 := 9.0
-			game.bullets.fire(at, atan2(d.z, d.x), v0, Bullets.SHELL, self, Bullets.ROUND, -v0 * v0 / (2.0 * maxf(dist, 1.0)), 0.0, 1.7)
-			game.bullets.split(2.0 * maxf(dist, 1.0) / v0 + 0.5, 12)
-		game.fx.flash(at, 0.4)
+	mine_t = 4.6
+	_launch_mines()
 
 
-## OVERDRIVE: a dead rail cannon's deck sprays a turning pair of shell
-## streams from the stump.
-func _sprays(dt: float) -> void:
-	spray_t -= dt
-	spray_a += dt * 1.6
-	if spray_t > 0.0:
+func _launch_mines() -> void:
+	if not game.can_fire(center):
 		return
-	spray_t = 0.11
-	for k in 2:
-		if not rails[k].dead:
+	var p := game.player.position
+	var hw := game.field_hw - 1.5
+	var tos: Array[Vector3] = []
+	var links := []
+	var c := p
+	if phase == 1:
+		var tilt := randf_range(-0.35, 0.35)
+		var dir := Vector3(cos(tilt), 0, sin(tilt)) * ARC_REACH
+		var a := p - dir
+		var b := p + dir
+		var shift := 0.0
+		if a.x < -hw:
+			shift = -hw - a.x
+		elif b.x > hw:
+			shift = hw - b.x
+		for q: Vector3 in [a, b]:
+			tos.append(Vector3(q.x + shift, 0, clampf(q.z, game.field_top + 9.0, game.field_bottom - 1.0)))
+		links = [[0, 1]]
+	else:
+		c = Vector3(clampf(p.x, -hw + CAGE_HALF, hw - CAGE_HALF), 0, clampf(p.z, game.field_top + 14.0, game.field_bottom - 1.0 - CAGE_HALF))
+		var turn := randf_range(-0.3, 0.3)
+		for q: Vector3 in [Vector3(-1, 0, -1), Vector3(1, 0, -1), Vector3(1, 0, 1), Vector3(-1, 0, 1)]:
+			tos.append(c + (q * CAGE_HALF).rotated(Vector3.UP, turn))
+		links = [[0, 1], [1, 2], [2, 3], [3, 0]]
+	var ms: Array[Enemy] = []
+	var froms: Array[Vector3] = []
+	for to in tos:
+		var at: Vector3 = center + BATTERY_OFF[0 if to.x < center.x else 1] + Vector3(0, 0, 1.0)
+		var m := game.spawn_part(self, "omega_mine", 0.8)
+		m.hp = MINE_HP
+		m.max_hp = MINE_HP
+		m.score = MINE_SCORE
+		m.energy_drop = 4.0
+		m.blast = 1.2
+		m.debris_col = Models.STEEL_M
+		m.position = at
+		m.hit_pos = at
+		ms.append(m)
+		froms.append(at)
+		game.fx.flash(at, 0.4)
+	nets.append({"m": ms, "from": froms, "to": tos, "links": links, "t": 0.0, "state": 0, "cage": phase == 2, "c": c, "w": []})
+	game.sfx.play("exp_s")
+
+
+func _nets(dt: float) -> void:
+	for nt: Dictionary in nets.duplicate():
+		var ms: Array = nt["m"]
+		nt["t"] = float(nt["t"]) + dt
+		var t: float = nt["t"]
+		var alive := 0
+		for m: Enemy in ms:
+			if not m.dead:
+				alive += 1
+				m.model.rotation.y += dt * 2.5
+		if alive == 0 or defeated:
+			_end_net(nt)
 			continue
-		var at: Vector3 = center + RAIL_OFF[k]
-		if not game.can_fire(at):
+		var live := CAGE_LIVE if nt["cage"] else ARC_LIVE
+		match int(nt["state"]):
+			0:
+				# flying out, slowing to a stop on the spot
+				var u := clampf(t / MINE_FLY, 0.0, 1.0)
+				var f := 1.0 - (1.0 - u) * (1.0 - u)
+				for i in ms.size():
+					if not (ms[i] as Enemy).dead:
+						(ms[i] as Enemy).position = (nt["from"][i] as Vector3).lerp(nt["to"][i], f)
+				if u >= 1.0:
+					nt["state"] = 1
+					nt["t"] = 0.0
+					_mark_net(nt)
+			1:
+				if t >= ARC_WARN:
+					nt["state"] = 2
+					nt["t"] = 0.0
+					game.sfx.play("exp_s")
+			2:
+				if nt["cage"]:
+					var k := lerpf(1.0, CAGE_SHRINK, clampf(t / live, 0.0, 1.0))
+					var c: Vector3 = nt["c"]
+					for i in ms.size():
+						if not (ms[i] as Enemy).dead:
+							(ms[i] as Enemy).position = c + ((nt["to"][i] as Vector3) - c) * k
+				for l: Array in nt["links"]:
+					var a: Enemy = ms[l[0]]
+					var b: Enemy = ms[l[1]]
+					if not a.dead and not b.dead and game.combat_on() and _on_line(a.position, b.position, ARC_HW):
+						game.touch_player("omega arc")
+				if t >= live:
+					_end_net(nt)
+					continue
+		# the marks (for the autopilot) follow the mines; a broken link's goes
+		var ws: Array = nt["w"]
+		for j in ws.size():
+			var w: Dictionary = ws[j]
+			if w.is_empty():
+				continue
+			var l: Array = nt["links"][j]
+			var a: Enemy = ms[l[0]]
+			var b: Enemy = ms[l[1]]
+			if a.dead or b.dead:
+				w["t"] = 0.0
+			else:
+				(w["to"] as Dictionary)["laser"] = PackedVector3Array([a.position, b.position])
+
+
+## The mines have stopped: each link is marked (a reticle on its mine) for
+## as long as it will be live.
+func _mark_net(nt: Dictionary) -> void:
+	var ms: Array = nt["m"]
+	var dur := ARC_WARN + (CAGE_LIVE if nt["cage"] else ARC_LIVE)
+	var ws := []
+	var first := true
+	for l: Array in nt["links"]:
+		var a: Enemy = ms[l[0]]
+		var b: Enemy = ms[l[1]]
+		if a.dead or b.dead:
+			ws.append({})
 			continue
-		var s := -1.0 if k == 0 else 1.0
-		for arm in 2:
-			game.bullets.fire(at, s * spray_a + PI * arm, 4.8, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if arm == 0 else Bullets.SMALL)
+		game.warn(a, dur, Game.Warn.MOVE, a.radius, {"laser": PackedVector3Array([a.position, b.position])}, first)
+		ws.append(game.warnings[game.warnings.size() - 1])
+		first = false
+	if not nt["cage"] and not (ms[1] as Enemy).dead:
+		game.warn(ms[1], dur, Game.Warn.MOVE, (ms[1] as Enemy).radius, null, false, false)
+	nt["w"] = ws
+
+
+## The mines' time is up (or all shot down): those left fizzle out.
+func _end_net(nt: Dictionary) -> void:
+	for w: Dictionary in nt["w"]:
+		if not w.is_empty():
+			w["t"] = 0.0
+	for m: Enemy in nt["m"]:
+		if not m.dead:
+			m.dead = true
+			game.fx.sprite(m.position + Vector3(0, 0.6, 0), Vector3.ZERO, 1.8, 0.3, 0.25, ARC_COL, 0.0)
+			game.fx.spark(m.position + Vector3(0, 0.6, 0), ARC_COL, 5, 0.45)
+			game.remove_enemy(m)
+		m.queue_free()
+	nets.erase(nt)
+
+
+func _on_line(a: Vector3, b: Vector3, hw: float) -> bool:
+	var pp := game.player.position
+	var c := Geometry3D.get_closest_point_to_segment(Vector3(pp.x, 0, pp.z), Vector3(a.x, 0, a.z), Vector3(b.x, 0, b.z))
+	return Vector2(pp.x - c.x, pp.z - c.z).length() < hw + Player.HIT_R
+
+
+# ------------------------------------------------------------ discharge
+
+## OVERDRIVE: a broken rail deck's capacitors arc to the ship, by turns: a
+## bolt from the deck to where the ship is, forking on past it, marked first.
+func _bolts(dt: float) -> void:
+	if rails_alive() == 2:
+		return
+	bolt_t -= dt
+	if bolt_t > 0.0:
+		return
+	bolt_t = 1.5 if rails_alive() == 1 else 1.1
+	for i in 2:
+		bolt_k = (bolt_k + 1) % 2
+		if rails[bolt_k].dead:
+			break
+	var from: Vector3 = center + RAIL_OFF[bolt_k]
+	if not game.can_fire(from):
+		return
+	var to := game.player.position
+	var dir := to - from
+	dir.y = 0.0
+	dir = dir.normalized()
+	var forks: Array[Vector3] = [to + dir.rotated(Vector3.UP, 0.75) * 3.4, to + dir * 3.8, to + dir.rotated(Vector3.UP, -0.75) * 3.4]
+	bolts.append({"k": bolt_k, "from": from, "to": to, "f": forks, "t": 0.0})
+	game.warn(decks[bolt_k], BOLT_LOCK, Game.Warn.MOVE, 1.4, {"laser": PackedVector3Array([from, to, forks[1]])})
+	for k in 3:
+		game.fx.spark(from + Vector3(randf_range(-1.5, 1.5), 0.8, randf_range(-1.5, 1.5)), ARC_COL, 2, 0.4)
+
+
+func _tick_bolts(dt: float) -> void:
+	for b: Dictionary in bolts.duplicate():
+		var was: float = b["t"]
+		b["t"] = was + dt
+		b["from"] = center + RAIL_OFF[int(b["k"])]  # the deck sways with the fortress
+		if defeated:
+			bolts.erase(b)
+			continue
+		if was < BOLT_LOCK and float(b["t"]) >= BOLT_LOCK:
+			game.fx.flash(b["to"], 0.6)
+			game.sfx.play("exp_m")
+			game.shake(0.3)
+		if float(b["t"]) >= BOLT_LOCK and game.combat_on():
+			var hit := _on_line(b["from"], b["to"], 0.3)
+			for f: Vector3 in b["f"]:
+				hit = hit or _on_line(b["to"], f, 0.25)
+			if hit:
+				game.touch_player("omega discharge")
+		if float(b["t"]) >= BOLT_LOCK + BOLT_LIVE:
+			bolts.erase(b)
+
+
+# ------------------------------------------------------------ drawing
+
+## The arcs between mines and the discharges: a thin flickering line while
+## marked, a jagged bolt with a glow round it while live.
+func _draw_arcs() -> void:
+	arc_mesh.clear_surfaces()
+	arc_tris.clear()
+	var tm := game.time
+	for nt: Dictionary in nets:
+		var st_n := int(nt["state"])
+		if st_n == 0:
+			continue
+		var ms: Array = nt["m"]
+		var j := 0
+		for l: Array in nt["links"]:
+			j += 1
+			var a: Enemy = ms[l[0]]
+			var b: Enemy = ms[l[1]]
+			if a.dead or b.dead:
+				continue
+			if st_n == 1:
+				_zap(a.position, b.position, 0.07, 0.45 + 0.25 * sin(tm * 70.0 + j), j, 0.1)
+			else:
+				_zap(a.position, b.position, 0.55, 0.35, j, 0.25)
+				_zap(a.position, b.position, ARC_HW, 1.0, j, 0.25)
+	for b: Dictionary in bolts:
+		var t: float = b["t"]
+		var lines := [[b["from"], b["to"]]]
+		for f: Vector3 in b["f"]:
+			lines.append([b["to"], f])
+		var j := 0
+		for ln: Array in lines:
+			j += 1
+			if t < BOLT_LOCK:
+				_zap(ln[0], ln[1], 0.06, 0.4 + 0.3 * sin(tm * 80.0 + j), j + 7, 0.12)
+			else:
+				var fade := clampf((BOLT_LOCK + BOLT_LIVE - t) / BOLT_LIVE, 0.0, 1.0)
+				_zap(ln[0], ln[1], 0.7, 0.4 * fade, j + 7, 0.35)
+				_zap(ln[0], ln[1], 0.26, fade, j + 7, 0.35)
+	if arc_tris.is_empty():
+		return
+	arc_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	for v: Array in arc_tris:
+		arc_mesh.surface_set_color(v[1])
+		arc_mesh.surface_set_uv(v[2])
+		arc_mesh.surface_add_vertex(v[0])
+	arc_mesh.surface_end()
+
+
+## A jagged ribbon from a to b just over the plane: kinks every ~1.1 units
+## jumping about (`jag` at most) as the game clock runs.
+func _zap(a: Vector3, b: Vector3, w: float, alpha: float, seed: int, jag: float) -> void:
+	var d := b - a
+	d.y = 0.0
+	var n := maxi(2, int(d.length() / 1.1))
+	var side := Vector3(-d.z, 0, d.x).normalized()
+	var col := Color(ARC_COL.r, ARC_COL.g, ARC_COL.b, alpha)
+	var prev := Vector3(a.x, 0.36, a.z)
+	for i in range(1, n + 1):
+		var q := a.lerp(b, float(i) / n)
+		q.y = 0.36
+		if i < n:
+			q += side * sin(seed * 3.1 + i * 2.39 + game.time * 37.0) * jag
+		var s := Vector3(-(q - prev).z, 0, (q - prev).x).normalized() * w
+		for v: Array in [[prev - s, 0.0], [prev + s, 1.0], [q + s, 1.0], [prev - s, 0.0], [q + s, 1.0], [q - s, 0.0]]:
+			arc_tris.append([v[0], col, Vector2(0, v[1])])
+		prev = q
 
 
 func gauge() -> Dictionary:
@@ -525,20 +967,24 @@ func force_defeat() -> void:
 		game.kill(eye)
 
 
-## "B": straight into OVERDRIVE, everything still up.
+## "B": straight into OVERDRIVE, everything still up; "C": the same with
+## the rail cannons shot off (their decks discharge).
 func viewer_skip(to: String) -> void:
-	if to == "B":
+	if to == "B" or to == "C":
 		center.z = game.field_top + 7.0
 		phase = 1
 		for q in pods + shutters + rails:
 			q.armored = false
 		_overdrive()
+		if to == "C":
+			for r in rails:
+				game.kill(r)
 		_place(0.0)
 
 
 func debug_state() -> String:
 	var names := ["enter", "A", "OVERDRIVE", "dying"]
-	return "phase %s %.1fs  eye %s %d/%d  pods %d  rails %d" % [names[phase], st, "open" if not eye.armored else "shut", int(maxf(eye.hp, 0.0)), int(EYE_HP), pods_alive(), rails_alive()]
+	return "phase %s %.1fs  eye %s %d/%d  pods %d  rails %d  mines %d" % [names[phase], st, "open" if not eye.armored else "shut", int(maxf(eye.hp, 0.0)), int(EYE_HP), pods_alive(), rails_alive(), nets.size()]
 
 
 func _die() -> void:
@@ -546,10 +992,19 @@ func _die() -> void:
 	phase = 3
 	dying_t = 0.0
 	open_want = true
+	pulling = false
+	game.bullets.well_pull = 0.0
 	rail_shots.clear()
+	bolts.clear()
 	for q in pods + shutters + rails:
 		if not q.dead:
 			game.kill(q)
+	for nt in nets:
+		for m: Enemy in nt["m"]:
+			if not m.dead:
+				game.kill(m)
+	for nt in nets.duplicate():
+		_end_net(nt)
 	disarm()
 	var conv := game.bullets.cancel_all()
 	for b in conv:
