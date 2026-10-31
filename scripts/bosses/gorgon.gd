@@ -21,20 +21,22 @@ extends BossBase
 ## lobs iron balls (they can't be shot and they stop shots) that burst into
 ## rings of shells; the eyes fire needle fans; the bunkers' guns rise in
 ## turn, four at a time, and fire spreads of needles (they hold fire with
-## the ship close, like any ground gun).
+## the ship close, like any ground gun); a bunker whose gun is destroyed
+## raises a new one GUN_REARM later. The guns are the fight's energy: each
+## drops GUN_ENERGY and its rounds in the air turn to energy too.
 ## Hit both eyes together (the front side shots of Form III's five, the eyes
 ## set wide for them, or homing lasers) and break them within TWIN_WINDOW
 ## of each other: a TWIN BREAK bonus, and the fortress dies at once. Break
 ## one alone and the other goes mad: DEATH STARE, a beam that stays on and
 ## follows the ship for seconds while the dead housing sprays shells and
-## every gun left comes up. WRATH, with both eyes alive, once the bunkers
-## are all destroyed or after a while: the sweeps come every round, wider,
+## every gun comes up. WRATH, with both eyes alive, once as many guns as
+## there are bunkers have been destroyed, or after a while: the sweeps come every round, wider,
 ## with bigger iron volleys, double gazes and all the guns up. It shuts its
 ## eyes and lets the ground move on after LIFE seconds.
 
 const INFO := {
 	"name": "GORGON", "role": "mid",
-	"desc": "クレーターの段々の台の上に組まれた剥き出しの機械の要塞（スターソルジャーのデライラ風）：真ん中の背骨と横桁と周りの桁の格子、横桁の両端の四角い装甲の筐体に目が 1 つずつ（核：それぞれ別の耐久）。背骨の根元の中央砲台と、台のまわりの 8 つのトーチカの砲台も壊せる。目と中央砲台の手前には何も置かない（下からショットが届く）。地上にあるのでスクロールといっしょに来て、真上でスクロールを止める（来る間は目の上のシャッターが閉じている）。目は自機を追う。目玉の極太レーザー（大技）：細い照準が自機を少し先読みして画面の端まで追い、止まるとビームの幅の帯になって点滅し、ビームが焼く。2 つの目で 1 本は自機、1 本は自機の向かう側。1 周おきに 2 本のビームが扇形に薙ぐ（薙ぐ範囲を薄く、奥の縁に矢印）。中央砲台から鉄球弾（撃ち落とせず、ショットを遮る）がはじけて物理弾の輪に。目から針弾の扇。トーチカから砲台が 4 基ずつ交代でせり上がって針弾の 3 方向（近いと撃てない）。2 つの目を TWIN_WINDOW 秒以内に壊すと TWIN BREAK のボーナスでそのまま撃破（第 3 形態の 5 方向の前の斜めのショット：目はそのために左右に広く離してある。またはホーミング）。片目だけ壊すと残りの目が DEATH STARE：ビームが出たまま数秒自機を追い、壊れた筐体から物理弾が渦を巻き、残った砲台が全部上がる。両目が残ったままトーチカを全部壊すか時間で WRATH：毎周の薙ぎ払いが広く、鉄球が増え、2 本の照準と全砲台。時間が来ると目を閉じて地面ごと流れ去る",
+	"desc": "クレーターの段々の台の上に組まれた剥き出しの機械の要塞（スターソルジャーのデライラ風）：真ん中の背骨と横桁と周りの桁の格子、横桁の両端の四角い装甲の筐体に目が 1 つずつ（核：それぞれ別の耐久）。背骨の根元の中央砲台と、台のまわりの 8 つのトーチカの砲台も壊せる。目と中央砲台の手前には何も置かない（下からショットが届く）。地上にあるのでスクロールといっしょに来て、真上でスクロールを止める（来る間は目の上のシャッターが閉じている）。目は自機を追う。目玉の極太レーザー（大技）：細い照準が自機を少し先読みして画面の端まで追い、止まるとビームの幅の帯になって点滅し、ビームが焼く。2 つの目で 1 本は自機、1 本は自機の向かう側。1 周おきに 2 本のビームが扇形に薙ぐ（薙ぐ範囲を薄く、奥の縁に矢印）。中央砲台から鉄球弾（撃ち落とせず、ショットを遮る）がはじけて物理弾の輪に。目から針弾の扇。トーチカから砲台が 4 基ずつ交代でせり上がって針弾の 3 方向（近いと撃てない）。壊された砲台のトーチカはしばらくして新しい砲台を上げる（砲台はエネルギーを多めに落とし、撃っていた弾もエネルギーに変わる：この戦いのホーミングの補給）。2 つの目を TWIN_WINDOW 秒以内に壊すと TWIN BREAK のボーナスでそのまま撃破（第 3 形態の 5 方向の前の斜めのショット：目はそのために左右に広く離してある。またはホーミング）。片目だけ壊すと残りの目が DEATH STARE：ビームが出たまま数秒自機を追い、壊れた筐体から物理弾が渦を巻き、残った砲台が全部上がる。両目が残ったまま砲台をトーチカの数だけ壊すか時間で WRATH：毎周の薙ぎ払いが広く、鉄球が増え、2 本の照準と全砲台。時間が来ると目を閉じて地面ごと流れ去る",
 	"demos": [["FULL", ""], ["WRATH", "W"], ["DEATH STARE", "L"]],
 }
 const EYE_HP := 620.0
@@ -44,6 +46,8 @@ const TWIN_BONUS := 50000
 const TWIN_WINDOW := 1.5  # seconds between the two eyes for the TWIN BREAK
 const GUN_HP := 36.0
 const GUN_SCORE := 2000
+const GUN_ENERGY := 10.0
+const GUN_REARM := 6.0  # a bunker raises a new gun this long after its gun is destroyed
 const EYE_OFF := [Vector3(-8.5, 0, 0), Vector3(8.5, 0, 0)]  # wide apart: Form III's front side shots meet both
 const EYE_Y := -2.2  # the eyeballs' centres
 const CANNON_OFF := Vector3(0, 0, 2.6)
@@ -116,6 +120,7 @@ var cycle_t := 0.0
 var round_k := 0
 var fired := {}
 var group_t := 0.0
+var guns_down := 0  # guns destroyed in all (as many as there are bunkers: WRATH)
 var twin_t := 0.0  # after the first eye falls: the window for the second
 var spray_t := 0.0
 var spray_a := 0.0
@@ -154,16 +159,7 @@ func setup(g: Game) -> void:
 			pair.append(m)
 		lids.append(pair)
 	for o: Vector3 in SILO_OFF:
-		var gun := game.spawn_part(self, "gorgon_gun", 1.0)
-		gun.hp = GUN_HP
-		gun.max_hp = GUN_HP
-		gun.score = GUN_SCORE
-		gun.energy_drop = 5.0
-		gun.blast = 1.6
-		gun.ground = true
-		gun.ram = false
-		gun.intangible = true  # down in its bunker: shots pass over it
-		silos.append({"gun": gun, "state": "down", "t": 0.0, "burst": 0.0, "dead": false, "y": GUN_DOWN})
+		silos.append({"gun": _new_gun(), "state": "down", "t": 0.0, "burst": 0.0, "dead": false, "y": GUN_DOWN, "rearm": 0.0})
 	cannon = game.spawn_part(self, "gorgon_cannon", 1.6)
 	cannon.hp = CANNON_HP
 	cannon.max_hp = CANNON_HP
@@ -194,6 +190,20 @@ func setup(g: Game) -> void:
 	game.add_child(beam_mi)
 	_arm(true)
 	_place(0.0)
+
+
+## A bunker's gun, down in it (shots pass over it until it is up).
+func _new_gun() -> Enemy:
+	var gun := game.spawn_part(self, "gorgon_gun", 1.0)
+	gun.hp = GUN_HP
+	gun.max_hp = GUN_HP
+	gun.score = GUN_SCORE
+	gun.energy_drop = GUN_ENERGY
+	gun.blast = 1.6
+	gun.ground = true
+	gun.ram = false
+	gun.intangible = true
+	return gun
 
 
 func _exit_tree() -> void:
@@ -237,9 +247,15 @@ func on_part_killed(e: Enemy) -> void:
 	for s in silos:
 		if s["gun"] == e:
 			s["dead"] = true
+			s["rearm"] = GUN_REARM
+			guns_down += 1
 			game.shake(0.4)
 			game.fx.puff(e.global_position + Vector3(0, 0.6, 0), Vector3(0, 1.5, 0), 1.6, 1.4, 0.5, Fx.SMOKE)
-			if silos_alive() == 0 and phase == 2:
+			# its rounds still in the air turn to energy (the homing lasers'
+			# supply in this fight, with the guns' own drop)
+			for b in game.bullets.cancel_owner(e):
+				game.items.spawn(b, Items.ENERGY, 1.0)
+			if guns_down >= SILO_OFF.size() and phase == 2:
 				_wrath()
 			return
 
@@ -776,6 +792,17 @@ func _silos(dt: float) -> void:
 	for k in silos.size():
 		var s := silos[k]
 		if s["dead"]:
+			# a new gun comes up from the bunker after a while
+			if phase >= 2 and phase <= 4:
+				s["rearm"] -= dt
+				if s["rearm"] <= 0.0:
+					var old: Enemy = s["gun"]
+					old.queue_free()
+					s["gun"] = _new_gun()
+					s["dead"] = false
+					s["state"] = "down"
+					s["y"] = GUN_DOWN
+					s["t"] = 0.0
 			continue
 		var gun: Enemy = s["gun"]
 		var want := false
@@ -1012,8 +1039,10 @@ func viewer_skip(to: String) -> void:
 	if to == "W":
 		for s in silos:
 			s["dead"] = true
+			s["rearm"] = GUN_REARM
 			(s["gun"] as Enemy).dead = true
 			game.remove_enemy(s["gun"])
+		guns_down = SILO_OFF.size()
 		_wrath()
 	elif to == "L":
 		var e := eyes[0]

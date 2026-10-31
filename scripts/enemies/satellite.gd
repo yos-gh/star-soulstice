@@ -13,9 +13,8 @@ extends Enemy
 ##   lance    a laser emitter: its beam's line is marked (a thin
 ##            flickering sight, then a band as wide as the beam, blinking at
 ##            the end), then the straight beam burns out to the edge of the
-##            screen until the satellite is down to the middle of the screen
-##            (BEAM_END), turning slowly all the while (no warning: it is
-##            slow). params.deg its first heading (0 = right, 90 = down,
+##            screen until the satellite drifts off the screen, turning
+##            slowly all the while (no warning: it is slow). params.deg its first heading (0 = right, 90 = down,
 ##            180 = left), params.turn degrees a second (+ = clockwise on
 ##            the screen). Set as doors: hinged high on one side, the beam
 ##            comes in near level across the top (it can't catch the ship
@@ -32,9 +31,9 @@ const INFO := {
 	"name": "SATELLITE", "category": "small",
 	"desc": "衛星軌道兵器（ステージ 5 の宇宙）：自分では動けず、スクロールに乗って流れてきて、通りがかりに撃つ。太陽電池の翼をトラスで張った剥き出しの機械。組み合わせで自機を追い込む。gatling：予兆（ロックオン、砲身が回り出す）のあと、これまでにない速さで小さなエネルギー弾を連射し、狙いを自機へ振っていく（横へ振り切るか岩の陰へ）。間をおいて、自機より上にいるうちはもう一度。lance：レーザーの発射器。ビームの線に予兆（細くちらつく照準、ビームの幅の帯、最後に点滅）を出し、まっすぐなビームを画面の端まで、衛星が画面の中ほどへ下りるまで焼き続け、そのあいだゆっくり回る（ゆっくりなので回る向きの予兆はなし）。扉のように並べる：片側の高いところを蝶番に、ビームは上のほうで水平に近く現れ（出てすぐ不意に当たることはない）、下へじわじわ振り下ろして自機を片側へ寄せ、そこでガトリングが待つ。両側から閉じて下の真ん中の袋へ追い込む並べ方、時間差で反対側の扉が来る並べ方も。急いで 1 機壊すか、岩の陰へ。どちらも画面の上の端にかかるところでロックオンし、画面に入るとすぐ撃つ。岩があるとそこで止まる。岩は gatling の弾も止める。体当たりあり",
 	"demos": [
-		["DOOR", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 12.0], [-0.4, "gatling", 7.0]]]],
-		["DOORS", "sats", [0.0, [[-0.65, "lance", 0.0, -15.0, 14.0], [0.65, "lance", 0.0, 195.0, -14.0]]]],
-		["DOORS IN TURN", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 12.0], [0.65, "lance", 13.0, 172.0, -12.0], [0.45, "gatling", 19.0]]]],
+		["DOOR", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 16.0], [-0.4, "gatling", 7.0]]]],
+		["DOORS", "sats", [0.0, [[-0.65, "lance", 0.0, -15.0, 17.0], [0.65, "lance", 0.0, 195.0, -17.0]]]],
+		["DOORS IN TURN", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 16.0], [0.65, "lance", 13.0, 172.0, -16.0], [0.45, "gatling", 19.0]]]],
 		["GATLING", "sats", [0.0, [[0.0, "gatling"]]]],
 	],
 }
@@ -48,10 +47,9 @@ const GAT_GAP := 1.6
 const TRACK_T := 0.3  # the lance: the sight flickers ...
 const LOCK_T := 0.45  # ... then holds as the band ...
 const BEAM_MIN := 0.6  # ... then the beam, this long at least ...
-const BEAM_MAX := 3.5  # ... at most
-const BEAM_END := 14.0  # the beam goes out once the satellite is this far below the top edge
-const DRIFT := 0.55  # it drifts down at this share of the scroll ...
-const DRIFT_MAX := 7.0  # ... at most this fast: time to see it and choose
+const BEAM_OUT := 3.5  # ... and on until the satellite is this far past the bottom edge
+const DRIFT := 0.78  # it drifts down at this share of the scroll ...
+const DRIFT_MAX := 11.0  # ... at most this fast: time to see it and choose
 const ENTER := 2.5  # it locks on this far above the top edge (coming in): it opens fire the moment it is on
 const BEAM_HW := 0.55
 const BEAM_COL := Color(1.0, 0.45, 0.75)
@@ -185,9 +183,9 @@ func _lance(dt: float) -> void:
 			if _coming_in():
 				phase = 1
 				phase_t = 0.0
-				# on until the satellite is down to the middle of the screen
+				# on until the satellite has drifted off the screen
 				var v := maxf(_drift(), 1.0)
-				beam_t = clampf((game.field_top + BEAM_END - position.z) / v - TRACK_T - LOCK_T, BEAM_MIN, BEAM_MAX)
+				beam_t = maxf((game.field_bottom + BEAM_OUT - position.z) / v - TRACK_T - LOCK_T, BEAM_MIN)
 				game.warn(self, TRACK_T + LOCK_T + beam_t, Game.Warn.MOVE, radius, _bot_mark())
 				beam_warn = game.warnings[game.warnings.size() - 1]
 				game.sfx.play("slam")
