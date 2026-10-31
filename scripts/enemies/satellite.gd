@@ -1,7 +1,8 @@
 extends Enemy
 ## Orbital weapon of the planet's defence grid (stage 5, out in space): a
-## satellite with no drive of its own, parked in orbit: it comes down the
-## screen with the scroll and fires as it passes. Bare machinery in the
+## satellite with no drive of its own, parked in orbit: it drifts down the
+## screen, slower than the scroll (DRIFT, at most DRIFT_MAX: time to see it
+## and choose), and fires as it passes. Bare machinery in the
 ## colours of the planet's forces (oxblood and bone on greys), solar
 ## panels on truss arms. Two arms (params.arm), meant to be set in groups
 ## that close the ship in:
@@ -31,9 +32,9 @@ const INFO := {
 	"name": "SATELLITE", "category": "small",
 	"desc": "衛星軌道兵器（ステージ 5 の宇宙）：自分では動けず、スクロールに乗って流れてきて、通りがかりに撃つ。太陽電池の翼をトラスで張った剥き出しの機械。組み合わせで自機を追い込む。gatling：予兆（ロックオン、砲身が回り出す）のあと、これまでにない速さで小さなエネルギー弾を連射し、狙いを自機へ振っていく（横へ振り切るか岩の陰へ）。間をおいて、自機より上にいるうちはもう一度。lance：レーザーの発射器。ビームの線に予兆（細くちらつく照準、ビームの幅の帯、最後に点滅）を出し、まっすぐなビームを画面の端まで、衛星が画面の中ほどへ下りるまで焼き続け、そのあいだゆっくり回る（ゆっくりなので回る向きの予兆はなし）。扉のように並べる：片側の高いところを蝶番に、ビームは上のほうで水平に近く現れ（出てすぐ不意に当たることはない）、下へじわじわ振り下ろして自機を片側へ寄せ、そこでガトリングが待つ。両側から閉じて下の真ん中の袋へ追い込む並べ方、時間差で反対側の扉が来る並べ方も。急いで 1 機壊すか、岩の陰へ。どちらも画面の上の端にかかるところでロックオンし、画面に入るとすぐ撃つ。岩があるとそこで止まる。岩は gatling の弾も止める。体当たりあり",
 	"demos": [
-		["DOOR", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 20.0], [-0.4, "gatling", 7.0]]]],
-		["DOORS", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 20.0], [0.65, "lance", 0.0, 172.0, -20.0]]]],
-		["DOORS IN TURN", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 20.0], [0.65, "lance", 9.0, 172.0, -20.0], [0.45, "gatling", 14.0]]]],
+		["DOOR", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 12.0], [-0.4, "gatling", 7.0]]]],
+		["DOORS", "sats", [0.0, [[-0.65, "lance", 0.0, -15.0, 14.0], [0.65, "lance", 0.0, 195.0, -14.0]]]],
+		["DOORS IN TURN", "sats", [0.0, [[-0.65, "lance", 0.0, 8.0, 12.0], [0.65, "lance", 13.0, 172.0, -12.0], [0.45, "gatling", 19.0]]]],
 		["GATLING", "sats", [0.0, [[0.0, "gatling"]]]],
 	],
 }
@@ -43,12 +44,14 @@ const GAT_T := 1.3
 const GAT_EVERY := 0.06
 const GAT_SPEED := 9.5
 const GAT_TURN := 1.1  # rad/s
-const GAT_GAP := 1.1
+const GAT_GAP := 1.6
 const TRACK_T := 0.3  # the lance: the sight flickers ...
 const LOCK_T := 0.45  # ... then holds as the band ...
 const BEAM_MIN := 0.6  # ... then the beam, this long at least ...
 const BEAM_MAX := 3.5  # ... at most
 const BEAM_END := 14.0  # the beam goes out once the satellite is this far below the top edge
+const DRIFT := 0.55  # it drifts down at this share of the scroll ...
+const DRIFT_MAX := 7.0  # ... at most this fast: time to see it and choose
 const ENTER := 2.5  # it locks on this far above the top edge (coming in): it opens fire the moment it is on
 const BEAM_HW := 0.55
 const BEAM_COL := Color(1.0, 0.45, 0.75)
@@ -108,8 +111,8 @@ func _build() -> void:
 
 
 func _behave(dt: float) -> void:
-	# parked in orbit: it comes down with the scroll
-	position.z += game.scroll_speed * dt
+	# parked in orbit: it drifts down, slower than the scroll
+	position.z += _drift() * dt
 	phase_t += dt
 	if arm == "gatling":
 		model.rotation.y = sin(t * 0.7) * 0.08
@@ -159,6 +162,11 @@ func _gatling(dt: float) -> void:
 	gun.rotation.y = atan2(-cos(gun_a), -sin(gun_a))
 
 
+## How fast it comes down the screen.
+func _drift() -> float:
+	return minf(game.scroll_speed * DRIFT, DRIFT_MAX)
+
+
 ## On (or just coming onto) the screen, above the ship: time to lock on.
 func _coming_in() -> bool:
 	var pl := game.player
@@ -178,7 +186,7 @@ func _lance(dt: float) -> void:
 				phase = 1
 				phase_t = 0.0
 				# on until the satellite is down to the middle of the screen
-				var v := maxf(game.scroll_speed, 1.0)
+				var v := maxf(_drift(), 1.0)
 				beam_t = clampf((game.field_top + BEAM_END - position.z) / v - TRACK_T - LOCK_T, BEAM_MIN, BEAM_MAX)
 				game.warn(self, TRACK_T + LOCK_T + beam_t, Game.Warn.MOVE, radius, _bot_mark())
 				beam_warn = game.warnings[game.warnings.size() - 1]

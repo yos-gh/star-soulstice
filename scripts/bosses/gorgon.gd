@@ -5,8 +5,9 @@ extends BossBase
 ## crossbar, girders round it), and in a square armoured housing at either
 ## end of the crossbar an eye: the cores, each with its own durability.
 ## The central gun at the foot of the spine and eight gun bunkers round
-## the platform can be destroyed too. Nothing armoured stands in front of
-## the eyes or the central gun (shots from below reach them).
+## the platform can be destroyed too. No invisible armour anywhere (shots
+## pass over what they don't hit), and a gun down in its bunker lets them
+## pass too.
 ## It lies in the ground, so it comes in with the scroll, which it brings to
 ## a stop over itself (Game.scroll_hold); asleep, its shutters closed over
 ## the eyes. Then the shutters slide back and the eyes follow the ship.
@@ -60,10 +61,10 @@ const SILO_SHIFT := 5.0  # each group's turn
 const BURST := 2.0  # between a gun's bursts (rages: BURST_RAGE)
 const BURST_RAGE := 1.3
 const SEAL := 6.0
-## armoured hit zones, all behind the eyes and the central gun: the spine
-## over the gun, the crossbar, the back
-const ARMOUR := [[Vector3(0, 0, -1.2), 1.3], [Vector3(-4.2, 0, -3.0), 1.3], [Vector3(4.2, 0, -3.0), 1.3], [Vector3(0, 0, -5.2), 2.0],
-	[Vector3(-8.5, 0, -4.0), 1.4], [Vector3(8.5, 0, -4.0), 1.4]]
+## armoured hit zones: none. It lies under the plane like the ground (shots
+## pass over what they don't hit), and invisible armour there swallowed
+## shots meant for the guns beyond it (yos)
+const ARMOUR := []
 const LID_SLIDE := 2.6  # how far the shutters part ...
 const LID_SINK := 0.75  # ... and drop onto the housing
 const DECEL := 4.2  # the scroll's braking as it comes in (units/s/s)
@@ -161,7 +162,7 @@ func setup(g: Game) -> void:
 		gun.blast = 1.6
 		gun.ground = true
 		gun.ram = false
-		gun.armored = true
+		gun.intangible = true  # down in its bunker: shots pass over it
 		silos.append({"gun": gun, "state": "down", "t": 0.0, "burst": 0.0, "dead": false, "y": GUN_DOWN})
 	cannon = game.spawn_part(self, "gorgon_cannon", 1.6)
 	cannon.hp = CANNON_HP
@@ -793,14 +794,14 @@ func _silos(dt: float) -> void:
 				s["y"] = lerpf(GUN_DOWN, GUN_UP, smoothstep(0.0, 1.0, s["t"] / RISE_T))
 				if s["t"] >= RISE_T:
 					s["state"] = "up"
-					gun.armored = false
+					gun.intangible = false
 					s["burst"] = 0.35 + k * 0.09
 			"up":
 				s["burst"] -= dt
 				if not want:
 					s["state"] = "sink"
 					s["t"] = 0.0
-					gun.armored = true
+					gun.intangible = true
 				elif s["burst"] <= 0.0:
 					var d := game.player.position - gun.hit_pos
 					if not game.can_fire(gun.hit_pos) or d.length() < SEAL:
