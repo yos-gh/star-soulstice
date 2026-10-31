@@ -11,7 +11,7 @@
 | `scripts/game.gd` | 世界（カメラ・地形・ユニット・弾・エフェクト）とルール（スコア・当たり・残機・状態遷移）。ステージの中身は持たない |
 | `scripts/stage/` | `stage_def.gd`（ステージ定義の基底）、`stage1.gd` 〜 `stage5.gd`（各ステージの中身）、`stages.gd`（ステージの並び）、`stage.gd`（定義を実行する：ウェーブ・エリア・ボス戦）、`formations.gd`（編隊の雛形） |
 | `scripts/enemies/` | `enemy.gd`（敵の共通部分）、種類ごとのスクリプト（`dart.gd` など）、`enemy_kinds.gd`（種類の登録表） |
-| `scripts/bosses/` | `boss_base.gd`（中ボス・ボスの共通部分）、`lazaro.gd` / `star_cortex.gd`（ステージ 1）、`ouroboros.gd` / `vulcan_press.gd`（ステージ 2）、`lodestar.gd` / `titan_dredge.gd`（ステージ 3）、`tempest.gd` / `behemoth.gd`（ステージ 4）、`gorgon.gd`（ステージ 5 の中ボス）、`bosses.gd`（登録表） |
+| `scripts/bosses/` | `boss_base.gd`（中ボス・ボスの共通部分）、`lazaro.gd` / `star_cortex.gd`（ステージ 1）、`ouroboros.gd` / `vulcan_press.gd`（ステージ 2）、`lodestar.gd` / `titan_dredge.gd`（ステージ 3）、`tempest.gd` / `behemoth.gd`（ステージ 4）、`gorgon.gd` / `omega_cortex.gd`（ステージ 5 の中ボスとボス 1 体目）、`bosses.gd`（登録表） |
 | `scripts/terrain/` | `terrain.gd`（地上の区画を流す）、`backdrop.gd`（星雲・惑星・星・深層の構造物・トンネル・降下する空）、`tunnel.gd`（トンネル・惑星の地表の区間を流す）、`islandgen.gd`（区画の生成）、`island.gd`（区画とタイル） |
 | `scripts/models/` | `models.gd`（共通の色と振り分け）、`ship_models.gd` / `enemy_models.gd` / `boss_models.gd` / `item_models.gd` / `ground_models.gd` / `tunnel_models.gd`（トンネルの区間） / `belt_models.gd`（ステージ 3 の巨大岩・敵・ボス・背景の岩） / `planet_models.gd`（ステージ 4 の雲の峰・KESTREL・TEMPEST・BEHEMOTH・基地の扉と隔壁） / `surface_models.gd`（ステージ 5 の惑星の地表の区間・GORGON） |
 | `scripts/viewer/` | 閲覧モード（`viewer.gd`）、一覧の組み立て（`viewer_catalog.gd`）、左の情報パネル（`viewer_panel.gd`） |
@@ -37,7 +37,7 @@ Stages ──> StageDef（stage1.gd …）
    - `areas` はエリア名ごとに `label`（出だしの表示）、`sections`（区画の種類と大きさ）、`gap`（区画の間隔）、`stream`（漂流物、任意）。
    - `layout_seed` を変えると同じ指定でも区画の形が変わる。
    - `scroll` / `boss_scroll` でスクロールの速さ（ステージ 2 は 18 / 10 と速い。ステージ 1 は 12 / 7、ステージ 3 は 15 / 8、ステージ 4・5 は 16 / 8）。
-   - `boss` が `""` のステージ（ボスがまだないステージ 5）は、最後のウェーブが終わると「STAGE CLEAR / TO BE CONTINUED」で終わる（`Stage._next_wave` → `Game.stage_cleared`）。
+   - `boss` が `""` のステージは、最後のウェーブが終わるとクリアになる（`Stage._next_wave` → `Game.stage_cleared`）。`clear_note` に書いた行は STAGE CLEAR の下に出る（ステージ 5 は 2 体目のボスができるまで「TO BE CONTINUED」）。
    - エリアに `scroll` を書くと、そのエリアのウェーブの間はその速さになる（`Game.area_scroll`。ステージ 5 の宇宙：AREA 3 は 7.5（衛星が画面にいて、レーザーを回す時間を稼ぐ）、AREA 4 は 17）。
    - 区画を流さないエリアは `{}`。ステージ 4 のボス戦は闘技場の床が区画の高さまで上がっているので、区画の代わりに貨物（`cargo`：床に直に置いたパレットの上のタイル）を壁際に流す。`lead` を書くと、そのエリアに入ってから最初の区画までスクロールをその距離だけ空ける（闘技場の床が来てから）。
    - `zako_fire` / `zako_early` で難しさ：小型機と砲台が `zako_fire` 倍の頻度で撃ち、`zako_early` なら撃ち始めの遅い敵（周回円盤・砲台）が早く撃ち始める（ステージ 3・4 は 2 / true、ステージ 5 は 3 / true。ステージ 1・2 は 1 / false）。ダートは 2 発目（3 倍なら 3 発目も）を 0.6 秒おきに、円盤はループの半周先で、後方強襲機は続けてもう 1 発、周回円盤はループに乗るところでも、砲台は撃つ間隔が半分（どれも予兆つき）。敵のスクリプトは `game.zako_fire()` / `game.zako_early()` で読む。
@@ -156,7 +156,7 @@ Stages ──> StageDef（stage1.gd …）
 | SHIP | 自機の 3 形態、並べた比較、形態ごとの武器（連射・スピア・ホーミング 8 発） |
 | SMALL | 小型機の編隊（`INFO.demos` の数だけ） |
 | MEDIUM | 中型機・コンテナ・小惑星・砲台（その敵が最初に出るステージの地形・背景の上で） |
-| BOSS | 中ボス・ボス（STAR CORTEX は発狂から、OUROBOROS は突進から、VULCAN PRESS は暴走・発狂から、LODESTAR は暴走から、TITAN DREDGE は薙ぎ払いと発狂から、TEMPEST は SUPERCELL から、BEHEMOTH は突進と OVERRUN から、GORGON は WRATH と DEATH STARE から、も。そのボスのステージの背景の上で） |
+| BOSS | 中ボス・ボス（STAR CORTEX は発狂から、OUROBOROS は突進から、VULCAN PRESS は暴走・発狂から、LODESTAR は暴走から、TITAN DREDGE は薙ぎ払いと発狂から、TEMPEST は SUPERCELL から、BEHEMOTH は突進と OVERRUN から、GORGON は WRATH と DEATH STARE から、OMEGA CORTEX は OVERDRIVE から、も。そのボスのステージの背景の上で） |
 | WAVES | 各ステージの全ウェーブを、そのエリアの地形と砲台つきで。最後にボス |
 | TERRAIN | エリアごとの地形の流れ、全区画を 1 つずつ静止で、IslandGen の全種類 |
 | SCENERY | 背景だけ（ステージ 1 は通常速度と 4 倍速、トンネルのあるステージは様式ごとに本編の速さと 1/4 の速さ、ステージ 4 はエリアごとの降下と基地への突入も、ステージ 5 は基地の出口と地表の様式） |

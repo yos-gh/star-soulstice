@@ -531,7 +531,7 @@ func boss_destroyed(b: BossBase) -> void:
 		return
 	if not b.final:
 		return
-	stage_cleared()
+	stage_cleared(stage_def.clear_note)
 
 
 ## The stage is over (its boss destroyed; a stage still without its boss

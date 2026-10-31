@@ -32,6 +32,8 @@ var boss := ""
 var boss_area := "boss"
 var boss_warning := ["WARNING", ""]
 var boss_warn_time := 5.5
+## a line under STAGE CLEAR (a stage still being built: "TO BE CONTINUED")
+var clear_note := ""
 ## The areas of the stage, in order: name -> {
 ##   label     [title, subtitle] shown when the area begins (optional)
 ##   sections  [[kind, w, h, turrets], ...]  ground layouts (IslandGen kinds,

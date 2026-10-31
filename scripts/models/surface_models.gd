@@ -35,6 +35,7 @@ const NAMES := [
 	"surface_basin_a", "surface_basin_b", "surface_basin_c", "surface_basin_gate", "surface_basin_edge",
 	"gorgon_hull", "gorgon_eye", "gorgon_lid", "gorgon_socket", "gorgon_cannon", "gorgon_gun",
 	"halberd", "halberd_turret", "sat_gatling", "sat_lance", "sat_gun", "sat_barrels",
+	"omega_wings", "omega_rail",
 ]
 
 const R := 0.5
@@ -98,6 +99,10 @@ static func make(name: String) -> ArrayMesh:
 			return _sat_gun()
 		"sat_barrels":
 			return _sat_barrels()
+		"omega_wings":
+			return _omega_wings()
+		"omega_rail":
+			return _omega_rail()
 	var parts := name.split("_")
 	if parts.size() == 3 and parts[0] == "surface" and STYLES.has(parts[1]):
 		return _segment(parts[1], parts[2])
@@ -1155,3 +1160,131 @@ static func _sat_barrels() -> ArrayMesh:
 		v.fill(x, y, -6, x, y, 0, STEEL_L if k % 2 == 0 else STEEL_M)
 	v.fill(-3, 0, 0, 3, 6, 0, DUSK)
 	return v.mesh(U * 1.4, Vector3(0.5, 3.5, 0.5))
+
+
+# ------------------------------------------------------------ OMEGA CORTEX
+
+const OU := U * 1.6  # the wings' voxel
+const OMEGA_CYAN := Color(0.4, 0.95, 1.0)
+
+
+## A box in units on the wings' grid (rows: 0 just under the plane, 6 the
+## top at y 0.29), mirrored to the left when `both`.
+static func _obox(v: Vox, x0: float, x1: float, r0: int, r1: int, z0: float, z1: float, c: Color, both := true, glow := false) -> void:
+	var a := int(round(x0 / OU))
+	var b := int(round(x1 / OU)) - 1
+	var c0 := int(round(z0 / OU))
+	var c1 := int(round(z1 / OU)) - 1
+	v.fill(a, r0, c0, b, r1, c1, c, glow)
+	if both:
+		v.fill(-1 - b, r0, c0, -1 - a, r1, c1, c, glow)
+
+
+## OMEGA CORTEX's build-out round the STAR CORTEX hull (which is a mesh of
+## its own): either side two box-truss girders out to a gun deck (plates
+## and machinery blocks, armour along its outer edge, a geared ring mount
+## with cyan lamps for the rail cannon, capacitor banks glowing cyan with
+## conduits to the mount), and at the back a frame with a mine battery
+## either side (launcher tubes in rows, hazard bands).
+static func _omega_wings() -> ArrayMesh:
+	var gb = Bosses.KINDS["omega_cortex"]
+	var rail: Vector3 = gb.RAIL_OFF[1]
+	var bat: Vector3 = gb.BATTERY_OFF[1]
+	var v := Vox.new(230, 8, 112)
+	# the girders out to the decks: two chords and their bracing each
+	for zc: float in [-2.6, 1.1]:
+		for zz: float in [zc - 0.4, zc + 0.3]:
+			_obox(v, 5.6, 9.0, 4, 4, zz, zz + 0.15, STEEL_M)
+		var x := 5.6
+		var k := 0
+		while x < 9.0:
+			_obox(v, x, x + OU, 3, 4, zc - 0.4, zc + 0.45, GUN_D)
+			var n := 5
+			for t in n:
+				var f := float(t) / n
+				var zz := lerpf(zc - 0.35, zc + 0.35, f if k % 2 == 0 else 1.0 - f)
+				_obox(v, x + f * 0.7, x + f * 0.7 + OU, 4, 4, zz, zz + OU, GUN_D)
+			x += 0.7
+			k += 1
+	# the decks
+	for zi in range(int(round(-4.2 / OU)), int(round(2.4 / OU))):
+		for xi in range(int(round(8.8 / OU)), int(round(14.6 / OU))):
+			var q := Vector2((xi + 0.5) * OU, (zi + 0.5) * OU)
+			var top := 3
+			var c: Color = GUN if posmod(int(floor(q.x / 1.2)) + int(floor(q.y / 1.2)), 2) == 0 else DUSK_L
+			if fposmod(q.x, 1.2) < OU or fposmod(q.y, 1.2) < OU:
+				c = DUSK
+			var n := Vox._hash(int(floor(q.x / 0.6)), 5, int(floor(q.y / 0.6)))
+			if n > 0.8:
+				top = 4
+				c = STEEL_M
+			if q.x > 14.0:
+				top = 5
+				c = STEEL_L if posmod(zi, 4) != 0 else GUN
+			var d := Vector2(q.x - rail.x, q.y - rail.z).length()
+			if d < 1.95:
+				if d < 1.5:
+					top = 2
+					c = DUSK_D
+				else:
+					top = 4
+					c = STEEL_M if posmod(int(floor((atan2(q.y - rail.z, q.x - rail.x) + PI) * 10.0 / PI)), 2) == 0 else DUSK
+			for y in range(0, top + 1):
+				var cc := c if y == top else (GUN if y > 1 else GUN_D)
+				v.put(xi, y, zi, cc)
+				v.put(-1 - xi, y, zi, cc)
+	# lamps round the mounts
+	for k in 8:
+		var a := TAU * k / 8.0
+		var p := Vector2(rail.x, rail.z) + Vector2(cos(a), sin(a)) * 1.75
+		_obox(v, p.x - OU * 0.5, p.x + OU * 0.5, 5, 5, p.y - OU * 0.5, p.y + OU * 0.5, OMEGA_CYAN, true, true)
+	# capacitor banks, cells glowing, and conduits to the mount
+	for cb: Vector2 in [Vector2(9.3, 1.0), Vector2(12.7, -4.0)]:
+		_obox(v, cb.x, cb.x + 1.3, 3, 4, cb.y, cb.y + 1.2, GUN)
+		for i in 3:
+			for j in 2:
+				_obox(v, cb.x + 0.15 + i * 0.4, cb.x + 0.4 + i * 0.4, 5, 5, cb.y + 0.15 + j * 0.5, cb.y + 0.45 + j * 0.5, OMEGA_CYAN, true, true)
+	_obox(v, 10.0, 10.3, 4, 4, -0.6, 1.0, OMEGA_CYAN, true, true)
+	_obox(v, 12.8, 13.1, 4, 4, -3.0, -1.3, OMEGA_CYAN, true, true)
+	# hazard bands along the decks' front edges
+	for xi in range(int(round(8.8 / OU)), int(round(14.6 / OU))):
+		var hz := Models.HAZARD if posmod(xi, 4) < 2 else GUN_D
+		v.put(xi, 3, int(round(2.4 / OU)) - 1, hz)
+		v.put(-1 - xi, 3, int(round(2.4 / OU)) - 1, hz)
+	# the back frame and the mine batteries on it
+	_obox(v, 0.0, 7.6, 2, 3, -5.0, -4.6, STEEL_M, true)
+	_obox(v, 0.0, 7.6, 2, 3, -7.6, -7.2, STEEL_M, true)
+	for x in range(1, 8):
+		_obox(v, float(x), float(x) + 0.2, 2, 3, -7.6, -4.6, GUN_D, true)
+	_obox(v, bat.x - 1.6, bat.x + 1.6, 0, 4, bat.z - 1.1, bat.z + 1.1, GUN)
+	_obox(v, bat.x - 1.6, bat.x + 1.6, 5, 5, bat.z - 1.1, bat.z + 1.1, STEEL_M)
+	for i in 3:
+		for j in 2:
+			var tx := bat.x - 1.1 + i * 0.85
+			var tz := bat.z - 0.7 + j * 0.85
+			_obox(v, tx, tx + 0.45, 5, 5, tz, tz + 0.45, DUSK_D)
+	_obox(v, bat.x - 1.6, bat.x + 1.6, 4, 4, bat.z + 1.0, bat.z + 1.15, Models.HAZARD)
+	return v.mesh(OU, Vector3(0.5, 5.0, 0.5), true)
+
+
+## OMEGA CORTEX's rail cannon (forward = +z): a turret on its ring, twin
+## rails out to a muzzle block, cyan coils between them every few voxels
+## and a cyan sight lamp on the housing.
+static func _omega_rail() -> ArrayMesh:
+	var v := Vox.new(28, 8, 64)
+	for z in range(-12, 12):
+		for x in range(-12, 12):
+			var r := Vector2(x + 0.5, z + 0.5).length()
+			if r < 11.5:
+				v.fill(x, 0, z, x, 1, z, DUSK if r > 10.0 else GUN_D)
+	v.fill(-7, 2, -8, 6, 5, 6, GUN)
+	v.fill(-7, 6, -8, 6, 6, 6, STEEL_M)
+	v.fill(-5, 6, -6, 4, 6, -2, DUSK_L)
+	v.put(5, 7, 4, OMEGA_CYAN, true)
+	for s: int in [-4, 2]:
+		v.fill(s, 3, 6, s + 1, 4, 27, STEEL_L)
+	for z in range(9, 27, 4):
+		v.fill(-2, 3, z, 1, 4, z, OMEGA_CYAN, true)
+	v.fill(-5, 2, 27, 4, 5, 30, DUSK_L)
+	v.fill(-2, 3, 30, 1, 4, 30, DUSK_D)
+	return v.mesh(0.12, Vector3(0.5, 2.0, 0.5), true)

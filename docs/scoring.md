@@ -55,6 +55,10 @@
 | 中ボス GORGON の目（2 つ、それぞれ別の耐久） | 10,000 | 620 | `scripts/bosses/gorgon.gd` `EYE_SCORE` / `EYE_HP` |
 | 中ボス GORGON の撃破（両目を壊す） | 20,000 | | `scripts/bosses/gorgon.gd` `SCORE` |
 | 中ボス GORGON の TWIN BREAK（2 つ目の目を 1 つ目から 1.5 秒以内に壊す） | 50,000 | | `scripts/bosses/gorgon.gd` `TWIN_BONUS` / `TWIN_WINDOW` |
+| ボス OMEGA CORTEX のポッド（4 基） | 5,000 | 110 | `scripts/bosses/omega_cortex.gd` `POD_SCORE` / `POD_HP` |
+| ボス OMEGA CORTEX のシャッター（2 枚） | 6,000 | 240 | `scripts/bosses/omega_cortex.gd` `SHUTTER_SCORE` / `SHUTTER_HP` |
+| ボス OMEGA CORTEX のレールキャノン（2 基） | 12,000 | 320 | `scripts/bosses/omega_cortex.gd` `RAIL_SCORE` / `RAIL_HP` |
+| ボス OMEGA CORTEX の目 | 80,000 | 1,150 | `scripts/bosses/omega_cortex.gd` `EYE_SCORE` / `EYE_HP` |
 
 撃破した敵の弾は消えてエネルギーになる（スコアはエネルギー取得分のみ）。
 
@@ -102,6 +106,7 @@
 | TEMPEST 避雷塔 / 発生機 / 最期 | 10 / 30 / 24 | `scripts/bosses/tempest.gd` |
 | BEHEMOTH 副砲 / 主砲塔 | 10 / 16 | `scripts/bosses/behemoth.gd` |
 | GORGON トーチカの砲台（＋撃っていた弾） / 中央砲台 / 目 / 最期 | 10 / 14 / 20 / 30 | `scripts/bosses/gorgon.gd` |
+| OMEGA CORTEX ポッド / シャッター / レールキャノン | 12 / 10 / 16 | `scripts/bosses/omega_cortex.gd` |
 | タイル コンテナ / タンク / 倉庫 | 2 / 5 / 10 | `scripts/terrain/island.gd` `TILE_ENERGY` |
 | 消した弾（撃破・スピア） | 1 発につき 1 | `scripts/game.gd` |
 
@@ -130,7 +135,7 @@
 | 3（ステージ 3 から始めて、第 1 形態から） | 約 47 万 | 約 42 万（うちスター 44 個） | 約 18 万 | 約 120 秒 |
 | 4（ステージ 3 から続けて） | 約 46 万 | 約 72 万（うちスター 50 個） | 約 12 万 | 約 169 秒（ボス戦が長引いた回。ボス戦は 40〜60 秒とぶれる） |
 | 4（ステージ 4 から始めて、第 1 形態から） | 約 47 万 | 約 64 万（うちスター 61 個） | 約 13 万 | 約 157 秒 |
-| 5（ステージ 5 から始めて、第 1 形態から。AREA 4 まで、ボスはまだ） | 約 58 万 | 約 64 万（うちスター 46 個） | 約 12 万 | 約 164 秒（最後のウェーブでクリア） |
+| 5（ステージ 5 から始めて、第 1 形態から。ボス 1 体目 OMEGA CORTEX まで） | 約 75 万 | 約 65 万（うちスター 46 個） | 約 8 万 | 約 199 秒（OMEGA CORTEX の撃破でクリア） |
 
 自動操縦はほぼ秒間 7.5 回連打するので、ショットはおおむね ×8（最大）。
 
@@ -144,7 +149,7 @@
 | 2 | 13.9 | INTAKE DUCT 14.9、ASSEMBLY LINE 19.2、（OUROBOROS）14.1、FURNACE ROW 17.3、ボス戦 8.1 |
 | 3 | 13.9 | DRIFT FIELD 15.7、QUARRY ROCKS 17.6、（LODESTAR）10.3、CRUSH ZONE 16.5、ボス戦 6.9（ステージ 3 から始めた値） |
 | 4 | 11.7 | UPPER ATMOSPHERE 15.1、STORM LAYER 13.8、（TEMPEST）15.3、HANGAR SHAFT 13.2、CORE ACCESS 16.9、ボス戦 3.4（壁際の貨物）（ステージ 4 から始めた値） |
-| 5 | 16.5 | EXIT SHAFT 22.8（4 秒だけ）、CRATER PLAINS 16.6、RED RIFT 17.5、（GORGON のクレーターは区画なし）、HIGH ORBIT 12.5（スクロール 10）、DEFENSE GRID 16.9（ステージ 5 から始めた値） |
+| 5 | 14.4 | EXIT SHAFT 22.8（4 秒だけ）、CRATER PLAINS 16.6、RED RIFT 17.5、（GORGON のクレーターは区画なし）、HIGH ORBIT 12.5（スクロール 10）、DEFENSE GRID 17.1、ボス戦 8.5（ステージ 5 から始めた値） |
 
 ステージ 2 はスクロールが 1.5 倍なので、区画の間隔（`stage2.gd` の `gap`）を広げて密度を下げている。区画に硬いタイル（倉庫：スターが隠れている率 6%、ほかは 2%）が多いので、密度が同じならスターはステージ 1 より多めに出る。
 

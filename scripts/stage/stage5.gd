@@ -13,13 +13,14 @@ extends StageDef
 ## rotary guns, laser lances) set to close the ship in, rocks drifting
 ## among them to hide behind; then fast waves with the satellites mixed in.
 ## More fighters at a time than ever, and they fire three times as often
-## (zako_fire 3). (No boss yet: the stage ends after the last wave.)
+## (zako_fire 3). (The first of its two bosses so far: the stage ends when it falls.)
 ##   (the exit shaft)      the base's last tunnel
 ##   AREA 1 CRATER PLAINS  craters, boulders, mesas with storehouses
 ##   AREA 2 RED RIFT       a canyon: bridges, outposts on the walls
 ##   (the crater)          GORGON
 ##   AREA 3 HIGH ORBIT     the climb: satellites in groups, rocks for cover
 ##   AREA 4 DEFENSE GRID   fast waves with satellites, no rocks
+##   OMEGA CORTEX          the first of the last stage's two bosses
 
 ## the meteor stream's count (every other one a giant rock)
 var drift_n := 0
@@ -28,7 +29,9 @@ var drift_n := 0
 func _init() -> void:
 	title = "STAGE 5"
 	subtitle = "DEAD WORLD"
-	boss = ""
+	boss = "omega_cortex"
+	boss_warning = ["WARNING", "THE STAR CORTEX REBUILT AND ARMED: OMEGA"]
+	clear_note = "TO BE CONTINUED"
 	scroll = 16.0
 	boss_scroll = 8.0
 	zako_fire = 3
@@ -72,14 +75,20 @@ func _init() -> void:
 			"sections": [["hull", 8, 6, 2], ["reactor", 8, 8, 2], ["trench", 10, 6, 2], ["solar", 12, 4, 1], ["hull", 7, 5, 2]],
 			"gap": [6.0, 11.0],
 		},
+		# the boss in orbit: wreckage drifting by (tiles refill the homing
+		# lasers), no guns on it
+		"boss": {
+			"sections": [["fragment", 7, 5, 0], ["hull", 6, 5, 0], ["solar", 9, 4, 0]],
+			"gap": [5.0, 10.0],
+		},
 	}
 	backdrop = {
 		# space, under the ground and the planet until the climb
 		"nebula": {"y": -240.0, "size": 760.0},
 		"stars": [[-120.0, 420, 0.42], [-175.0, 300, 0.5]],
 		"globe": {"radius": 120.0, "top": [16.0, 34.0], "shift": 150.0, "rate": 0.06,
-			"from": {"ascent": 0.0, "orbit": 1.0}, "to": {"ascent": 1.0, "orbit": 1.0}},
-		"tunnel": {"styles": {"exit": "hangar", "plains": "regolith", "rift": "rift", "basin": "basin", "ascent": "open", "orbit": "open"}, "first": "hangar", "seed": 83},
+			"from": {"ascent": 0.0, "orbit": 1.0, "boss": 1.0}, "to": {"ascent": 1.0, "orbit": 1.0, "boss": 1.0}},
+		"tunnel": {"styles": {"exit": "hangar", "plains": "regolith", "rift": "rift", "basin": "basin", "ascent": "open", "orbit": "open", "boss": "open"}, "first": "hangar", "seed": 83},
 	}
 
 
