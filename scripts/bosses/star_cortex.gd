@@ -7,18 +7,18 @@ extends BossBase
 ## The two shutter halves can be shot off: with one gone, shots get in on
 ## that side even while the eye is shut.
 ## Phase A: the pods fire shell fans; the eye opens for longer than it is
-## shut, and while open fires a needle shotgun, a pair of serpents (armoured
-## IRON balls that weave down at the ship and stop your shots, after the
-## NES Star Soldier's big bullets; announced) and a flower of shell rings.
+## shut, and while open fires a needle shotgun, two gaze strikes (a sight
+## follows the ship a little slower than it flies, holds still and the spot
+## bursts: GazeStrikes) and a flower of shell rings.
 ## Phase B, ENRAGED (pods gone or after a while): the fortress sways, the
 ## eye opens even more, the empty pod sockets spin shell spirals while it
-## is shut, and each opening brings three serpents, a longer flower, a wide
+## is shut, and each opening brings three gaze strikes, a longer flower, a wide
 ## needle shotgun and shells that burst into rings. There is a quiet moment
 ## in every round to come in with the Spear.
 
 const INFO := {
 	"name": "STAR CORTEX", "role": "boss",
-	"desc": "目が開いた時だけ効く（閉じている時間より長く開く）。目を覆うシャッター（左右 2 枚）は壊せて、壊した側からは閉じていても撃ち込める。開くと針弾・蛇行する大型弾（破壊不能でショットを防ぐ、予兆あり）・花びら状の物理弾。ポッドは扇状の物理弾。ポッドを失うか時間で発狂：揺れながら、閉じている間は空いた穴から渦巻き弾、開くと大型弾 3 つ・長い花びら・広い散弾・はじけて輪になる弾",
+	"desc": "目が開いた時だけ効く（閉じている時間より長く開く）。目を覆うシャッター（左右 2 枚）は壊せて、壊した側からは閉じていても撃ち込める。開くと針弾・照準爆撃（照準が自機を少し遅れて追い、止まるとその場が炸裂）・花びら状の物理弾。ポッドは扇状の物理弾。ポッドを失うか時間で発狂：揺れながら、閉じている間は空いた穴から渦巻き弾、開くと照準爆撃 3 つ・長い花びら・広い散弾・はじけて輪になる弾",
 	"demos": [["FULL", ""], ["ENRAGED", "B"]],
 }
 const EYE_HP := 1000.0
@@ -54,7 +54,7 @@ var open_want := false
 var fired := {}
 var spiral_a := 0.0
 var spiral_t := 0.0
-var serpent_to := Vector3.ZERO
+var gaze: GazeStrikes
 var flower_a := 0.0
 var pod_t := 1.0
 var pod_k := 0
@@ -64,6 +64,7 @@ var dying_t := 0.0
 
 func setup(g: Game) -> void:
 	game = g
+	gaze = GazeStrikes.new(g, self)
 	center = Vector3(0, 0, game.field_top - 9.0)
 	# order matters: shots test enemies in list order, so the shutters come
 	# before the eye they cover, and the eye and pods before the hull armour
@@ -218,6 +219,8 @@ func tick(dt: float) -> void:
 					q.visible = false
 				game.boss_destroyed(self)
 				return
+	if phase == 1 or phase == 2:
+		gaze.tick(dt)
 	open = move_toward(open, 1.0 if open_want else 0.0, dt * 2.5)
 	# shut, the eye is armoured while both shutters hold; with one shot off,
 	# shots get in on that side
@@ -228,7 +231,7 @@ func tick(dt: float) -> void:
 
 ## Pods gone (or time up): the fortress rages. It sways, the eye opens more
 ## often, the empty sockets spin shell spirals while it is shut, and every
-## opening brings three serpents, a longer flower and a wider shotgun.
+## opening brings three gaze strikes, a longer flower and a wider shotgun.
 func _enrage() -> void:
 	phase = 2
 	st = 0.0
@@ -250,13 +253,13 @@ func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
 			_warn_at("shotgun1", c + 0.3 + w, w, Game.Warn.SHOT)
 			if _fire_once("shotgun1", c + 0.3 + w):
 				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 5, 14.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
-			_serpents(c + 1.2, 2, 14.0)
+			_gaze(c + 1.0, 2, 0.5)
 			_flower(c + 2.4, 3, 16, 4.0)
 			_warn_at("shotgun2", c + 3.6 + w, w, Game.Warn.SHOT)
 			if _fire_once("shotgun2", c + 3.6 + w):
 				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 5, 16.0, 9.5, Bullets.ORB, self)
 		else:
-			_serpents(c + 0.2, 3, 22.0)
+			_gaze(c + 0.2, 3, 0.45)
 			_flower(c + 1.4, 4, 20, 4.6)
 			_warn_at("shotgun1", c + 2.9 + w, w, Game.Warn.SHOT)
 			if _fire_once("shotgun1", c + 2.9 + w):
@@ -271,23 +274,12 @@ func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
 		fired.clear()
 
 
-## The boss's own attack (after the big bullets of the NES Star Soldier):
-## `count` armoured IRON balls that cannot be shot down or erased and stop
-## your shots, weaving down toward where the ship was. A lock-on marks the
-## line first.
-func _serpents(at: float, count: int, spread: float) -> void:
-	var dur := 0.8
-	if cycle_t >= at - dur and not fired.has("w_serpent"):
-		fired["w_serpent"] = true
-		serpent_to = game.player.position
-		game.warn(eye, dur, Game.Warn.MOVE, eye.radius, serpent_to)
-	if _fire_once("serpent", at):
-		var d := serpent_to - eye.position
-		var base := atan2(d.z, d.x)
-		for i in count:
-			var a := base + deg_to_rad(spread) * (i - (count - 1) * 0.5)
-			game.bullets.fire(eye.position + Vector3(0, 0, 1.2), a, 4.6 if phase == 1 else 5.0, Bullets.IRON, self)
-			game.bullets.snake(2.2 if phase == 1 else 2.6, 3.0 if phase == 1 else 3.4)
+## The eye's gaze strikes: `count` sights dropped on the ship one after
+## another, `gap` apart, from `at` (each follows it, holds still and bursts).
+func _gaze(at: float, count: int, gap: float) -> void:
+	for i in count:
+		if _fire_once("gaze%d" % i, at + i * gap):
+			gaze.drop(0, Vector3.ZERO, i == 0)
 
 
 func _pods(dt: float) -> void:
@@ -348,6 +340,7 @@ func _die() -> void:
 	phase = 3
 	dying_t = 0.0
 	open_want = true
+	gaze.clear()
 	for q in pods + shutters:
 		if not q.dead:
 			game.kill(q)

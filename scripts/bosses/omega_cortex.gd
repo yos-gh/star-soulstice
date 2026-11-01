@@ -29,17 +29,18 @@ extends BossBase
 ## Phase A: the pods fire shell fans in turn, rail shots, arc tripwires. The
 ## eye (only vulnerable while open, open longer than shut; with a shutter
 ## shot off, shots get in on that side while it is shut) opens with a needle
-## shotgun, then by turns the shutter blades, or three serpents (iron balls
-## weaving at the ship, announced) and a second shotgun.
+## shotgun, then by turns the shutter blades, or three gaze strikes (a sight
+## follows the ship, holds still and the spot bursts with a few slow shells:
+## GazeStrikes) and a second shotgun.
 ## OVERDRIVE (both rail cannons gone, all four pods gone, or after a while):
 ## the fortress sways; a living rail cannon marks two lines at a time (one
 ## through the ship, one where it is heading), broken decks discharge, mines
-## come as cages; the eye opens longer: four serpents, a wide needle fan and
-## the vortex.
+## come as cages; the eye opens longer: four gaze strikes (every other one
+## ahead of where the ship is heading), a wide needle fan and the vortex.
 
 const INFO := {
 	"name": "OMEGA CORTEX", "role": "boss",
-	"desc": "ステージ 1 の STAR CORTEX を完成させて武装した最終面のボス 1 体目。八角形の本体と目（シャッター 2 枚、4 つのポッド）はそのまま、トラスの桁で左右に砲甲板を張り出してレールキャノン（コンデンサーで光る）を載せ、後ろの架台に機雷の発射機が 2 基。見えない装甲はなし（外れた弾は本体の上を抜ける）。目は開いている時だけ効く（閉じている時間より長く開く。シャッターを片方壊せばその側からは閉じていても撃ち込める）。通常：ポッドが交代で物理弾の扇。レール射撃（砲塔が自機を向き、自機を通って下端までの線を予兆、そのあと鉄球弾 4 発を速く）。電磁機雷（自機の左右に止まって、予兆のあと電撃の線でつながる。撃ち落とせばその線が消える）。目が開くと針弾の散弾、そして交互に、シャッター刃（シャッターが外れて回転しながら画面の左右を大きく回って戻る。軌道を予兆、飛んでいる間は目がむき出しで、刃も撃ち落とせる）か、大型弾（蛇行する鉄球弾）3 つともう一度散弾。レールキャノンを両方壊すか、ポッドを全部壊すか、時間で OVERDRIVE：揺れながら、レールキャノンは 2 本同時、壊れた砲甲板からは放電（自機へ枝分かれする稲妻、予兆つき）、機雷は 4 つで自機を囲む檻になって縮む（1 つ撃てば抜けられる）。目は長く開き、大型弾 4 つ、広い針弾、そして大技の重力渦：自機を目に引き寄せ、NOVA（鉄球弾と物理弾の輪が自機のあたりまで広がって止まる）、そのあと自分の遅い弾を全部吸い戻す（自機を通り過ぎた弾が下から戻ってくる）",
+	"desc": "ステージ 1 の STAR CORTEX を完成させて武装した最終面のボス 1 体目。八角形の本体と目（シャッター 2 枚、4 つのポッド）はそのまま、トラスの桁で左右に砲甲板を張り出してレールキャノン（コンデンサーで光る）を載せ、後ろの架台に機雷の発射機が 2 基。見えない装甲はなし（外れた弾は本体の上を抜ける）。目は開いている時だけ効く（閉じている時間より長く開く。シャッターを片方壊せばその側からは閉じていても撃ち込める）。通常：ポッドが交代で物理弾の扇。レール射撃（砲塔が自機を向き、自機を通って下端までの線を予兆、そのあと鉄球弾 4 発を速く）。電磁機雷（自機の左右に止まって、予兆のあと電撃の線でつながる。撃ち落とせばその線が消える）。目が開くと針弾の散弾、そして交互に、シャッター刃（シャッターが外れて回転しながら画面の左右を大きく回って戻る。軌道を予兆、飛んでいる間は目がむき出しで、刃も撃ち落とせる）か、照準爆撃 3 つ（照準が自機を少し遅れて追い、止まるとその場が炸裂して遅い物理弾を少し撒く）ともう一度散弾。レールキャノンを両方壊すか、ポッドを全部壊すか、時間で OVERDRIVE：揺れながら、レールキャノンは 2 本同時、壊れた砲甲板からは放電（自機へ枝分かれする稲妻、予兆つき）、機雷は 4 つで自機を囲む檻になって縮む（1 つ撃てば抜けられる）。目は長く開き、照準爆撃 4 つ（1 つおきに自機の向かう先）、広い針弾、そして大技の重力渦：自機を目に引き寄せ、NOVA（鉄球弾と物理弾の輪が自機のあたりまで広がって止まる）、そのあと自分の遅い弾を全部吸い戻す（自機を通り過ぎた弾が下から戻ってくる）",
 	"demos": [["FULL", ""], ["OVERDRIVE", "B"], ["RAILS DOWN", "C"]],
 }
 const EYE_HP := 1450.0
@@ -97,7 +98,8 @@ const VORTEX_AT := 2.2
 const NOVA_LOCK := 1.3
 const NOVA_FLY := 1.3
 const WELL_T := 1.4
-const PULL := 5.0  # the drag on the ship (it flies 17)
+const PULL := 5.0  # the drag on the ship (it flies 17) ...
+const DRAG_STOP := 9.0  # ... never closer than this below the core (clear of its body)
 const WELL := 9.0
 
 static var _arc_mat: ShaderMaterial
@@ -138,7 +140,7 @@ var cycle_t := 0.0
 var open := 0.0
 var open_want := false
 var fired := {}
-var serpent_to := Vector3.ZERO
+var gaze: GazeStrikes
 var pod_t := 1.0
 var pod_k := 0
 var destroyed := false
@@ -149,6 +151,7 @@ var ship_last := Vector3.ZERO
 
 func setup(g: Game) -> void:
 	game = g
+	gaze = GazeStrikes.new(g, self)
 	center = Vector3(0, 0, game.field_top - 10.0)
 	ship_last = game.player.position
 	# order matters: shots test enemies in list order, so the shutters come
@@ -378,6 +381,8 @@ func tick(dt: float) -> void:
 				game.boss_destroyed(self)
 				return
 	_rail_shots(dt)
+	if phase == 1 or phase == 2:
+		gaze.tick(dt)
 	_fly_blades(dt)
 	_nets(dt)
 	_tick_bolts(dt)
@@ -417,12 +422,12 @@ func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
 			if eye_round % 2 == 0 and shutters_alive() > 0:
 				_blades(c + 0.7)
 			else:
-				_serpents(c + 1.4, 3, 20.0)
+				_gaze(c + 1.2, 3, 0.5, 4, false)
 				_warn_at("shotgun2", c + 3.3 + w, w, Game.Warn.SHOT)
 				if _fire_once("shotgun2", c + 3.3 + w):
 					game.bullets.fan(eye.position, game.bullets.aim(eye.position), 9, 40.0, 9.5, Bullets.ORB, self)
 		else:
-			_serpents(c + 0.2, 4, 18.0)
+			_gaze(c + 0.2, 4, 0.4, 6, true)
 			_warn_at("shotgun1", c + 0.9 + w, w, Game.Warn.SHOT)
 			if _fire_once("shotgun1", c + 0.9 + w):
 				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 11, 60.0, 9.5, Bullets.ORB, self, Bullets.NEEDLE)
@@ -433,21 +438,16 @@ func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
 		eye_round += 1
 
 
-## `count` armoured IRON serpents weaving down toward where the ship was (a
-## lock-on marks the line first).
-func _serpents(at: float, count: int, spread: float) -> void:
-	var dur := 0.8
-	if cycle_t >= at - dur and not fired.has("w_serpent"):
-		fired["w_serpent"] = true
-		serpent_to = game.player.position
-		game.warn(eye, dur, Game.Warn.MOVE, eye.radius, serpent_to)
-	if _fire_once("serpent", at):
-		var d := serpent_to - eye.position
-		var base := atan2(d.z, d.x)
-		for i in count:
-			var a := base + deg_to_rad(spread) * (i - (count - 1) * 0.5)
-			game.bullets.fire(eye.position + Vector3(0, 0, 1.2), a, 4.8 if phase == 1 else 5.2, Bullets.IRON, self)
-			game.bullets.snake(2.3 if phase == 1 else 2.7, 3.1 if phase == 1 else 3.5)
+## The eye's gaze strikes: `count` sights dropped one after another, `gap`
+## apart, from `at`, each bursting with `shells` slow shells; with `lead`,
+## every other one goes ahead of where the ship is heading.
+func _gaze(at: float, count: int, gap: float, shells: int, lead: bool) -> void:
+	for i in count:
+		if _fire_once("gaze%d" % i, at + i * gap):
+			var off := Vector3.ZERO
+			if lead and i % 2 == 1:
+				off = Vector3(ship_v.x, 0, ship_v.z).limit_length(10.0) * 0.4
+			gaze.drop(shells, off, i == 0)
 
 
 # ------------------------------------------------------------ shutter blades
@@ -583,12 +583,17 @@ func _vortex(at: float) -> void:
 		game.sfx.play("exp_m")
 
 
-## The ship drawn toward the eye (it can fly against it), streaks pouring in.
+## The ship drawn toward the eye (it can fly against it), streaks pouring in;
+## the drag gives out short of the fortress, so it never pulls the ship into
+## the hull.
 func _drag(dt: float) -> void:
 	var d := eye.position - game.player.position
 	d.y = 0.0
 	if d.length() > 3.0 and game.state != Game.State.VIEWER:
-		game.player.drift(d.normalized() * PULL, dt)
+		var v := d.normalized() * PULL
+		if game.player.position.z + v.z * dt < center.z + DRAG_STOP:
+			v.z = 0.0
+		game.player.drift(v, dt)
 	_inflow(8.0, 20.0)
 
 
@@ -724,6 +729,7 @@ func _launch_mines() -> void:
 		m.energy_drop = 4.0
 		m.blast = 1.2
 		m.debris_col = Models.STEEL_M
+		m.ram = false  # only its arcs hurt, like a ground gun's body
 		m.position = at
 		m.hit_pos = at
 		ms.append(m)
@@ -993,6 +999,7 @@ func _die() -> void:
 	dying_t = 0.0
 	open_want = true
 	pulling = false
+	gaze.clear()
 	game.bullets.well_pull = 0.0
 	rail_shots.clear()
 	bolts.clear()
