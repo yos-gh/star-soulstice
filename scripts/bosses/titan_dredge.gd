@@ -22,15 +22,18 @@ extends BossBase
 ## vents fire shell fans, the core telegraphed needle bursts.
 ## RAMPAGE (both wheels broken, or after a while): it pushes forward and
 ## sways, the belt runs fast, and the core opens up: big shells that burst
-## into rings, a shell spiral, rings of shells, three big armoured balls
-## weaving down at the ship (marked), a wide needle burst; the asteroid
+## into rings, a shell spiral, rings of shells, three lumps of ore hurled
+## high onto a column of marked spots through the ship (they burst into
+## gravel where they land; MarkedStrikes), a wide needle burst; the asteroid
 ## sheds boulders down marked lanes scattered across the screen (one near
 ## the ship) twice a round, the driver fires three-way; wheels still up
 ## keep sweeping.
 
+const MarkedStrikes := preload("res://scripts/bosses/marked_strikes.gd")
+
 const INFO := {
 	"name": "TITAN DREDGE", "role": "boss",
-	"desc": "巨大な小惑星に食い込んだ採掘機。弱点は前の真ん中で回る核だけ。カッターホイールが小惑星を掘り、削った岩を積んだ装甲トロッコが左の坑道から出てきて、ベルトで左側を下り、核の前を横切る。トロッコは壊せず弾を弾くので、核は通る間だけふさがり、隙間から撃ち込む（そのぶん核は柔らかい）。右端の積み込み口に着いたトロッコの岩は隣の質量投射機に装填され、予兆（線）のあと自機のいた所へ下端まで撃ち出される。2 つのカッターホイールが左右交互に間を空けず、自機までの距離にブームを伸ばし（最小半径あり）、予兆（道筋全体）のあと画面の端から自機の向こうまで弧を描いて薙ぎ払い、物理弾の砂利を外へまいて同じ弧を戻る：弧の帯から外れるか、最小半径の内側（支点の下）に潜るか、弧の終わりの先へ。端の噴出口は扇状の物理弾、核は針弾。ホイールを両方失うか時間で発狂（RAMPAGE）：迫り出して揺れ、ベルトが速まり、核から、はじけて輪になる大きな物理弾・渦巻き弾・物理弾の輪・蛇行する大玉の鉄球弾 3 つ（予兆つき）・広い針弾。小惑星から岩塊がばらけた列に予兆つきで落ちてくる（1 つは自機の近く）、投射機は 3 方向。残ったホイールは薙ぎ払いを続ける",
+	"desc": "巨大な小惑星に食い込んだ採掘機。弱点は前の真ん中で回る核だけ。カッターホイールが小惑星を掘り、削った岩を積んだ装甲トロッコが左の坑道から出てきて、ベルトで左側を下り、核の前を横切る。トロッコは壊せず弾を弾くので、核は通る間だけふさがり、隙間から撃ち込む（そのぶん核は柔らかい）。右端の積み込み口に着いたトロッコの岩は隣の質量投射機に装填され、予兆（線）のあと自機のいた所へ下端まで撃ち出される。2 つのカッターホイールが左右交互に間を空けず、自機までの距離にブームを伸ばし（最小半径あり）、予兆（道筋全体）のあと画面の端から自機の向こうまで弧を描いて薙ぎ払い、物理弾の砂利を外へまいて同じ弧を戻る：弧の帯から外れるか、最小半径の内側（支点の下）に潜るか、弧の終わりの先へ。端の噴出口は扇状の物理弾、核は針弾。ホイールを両方失うか時間で発狂（RAMPAGE）：迫り出して揺れ、ベルトが速まり、核から、はじけて輪になる大きな物理弾・渦巻き弾・物理弾の輪・鉱石の塊 3 つを自機の縦の列へ山なりに投げ落とす（落ちる所を予兆、着弾で砂利が散る）・広い針弾。小惑星から岩塊がばらけた列に予兆つきで落ちてくる（1 つは自機の近く）、投射機は 3 方向。残ったホイールは薙ぎ払いを続ける",
 	"demos": [["FULL", ""], ["SWEEP", "A"], ["RAMPAGE", "C"]],
 }
 const CORE_HP := 1200.0
@@ -91,7 +94,7 @@ var fired := {}
 var ammo := 1
 var skip_t := 0.0
 var aim_to := Vector3.ZERO
-var aim_ball := Vector3.ZERO
+var ore: MarkedStrikes  # RAMPAGE's hurled lumps of ore
 var sweep_k := 0  # the wheel to sweep next
 var sweep_wait := 0.8  # until the next sweep may start
 var fan_to: Array[Vector3] = []
@@ -138,6 +141,7 @@ func setup(g: Game) -> void:
 	core.max_hp = CORE_HP
 	core.score = CORE_SCORE
 	core.blast = 6.0
+	ore = MarkedStrikes.new(g, self, MarkedStrikes.LOB, Color(1.0, 0.72, 0.38), "belt_rock_b")
 	core.ram = false
 	for a: Array in ARMOUR:
 		var e := game.spawn_part(self, "", a[1])
@@ -264,6 +268,8 @@ func tick(dt: float) -> void:
 	_belt(dt)
 	for b in booms:
 		_boom(b, dt)
+	if phase >= 1 and phase <= 3:
+		ore.tick(dt)
 	_place(dt)
 
 
@@ -339,23 +345,13 @@ func _ring_a(k: int) -> float:
 	return fight_t * 0.7 + k * 0.2
 
 
-## RAMPAGE: three big armoured balls from the core (they can't be shot or
-## erased and stop your shots), weaving down at where the ship was; the
-## line is marked at `at`, they fly 0.8 s later.
+## RAMPAGE: the core hurls three lumps of ore high over the field onto a
+## column of spots through the ship (above it, on it, below it; each marked
+## where it will land), from `at`, top first.
 func _big_balls(key: String, at: float) -> void:
-	if _once("w_" + key, at):
-		aim_ball = game.player.position
-		game.warn(core, 0.8, Game.Warn.MOVE, core.radius, aim_ball)
-		game.sfx.play("slam")
-	if _once(key, at + 0.8):
-		var cp := core.position + Vector3(0, 0, 1.8)
-		if not game.can_fire(cp):
-			return
-		var d := aim_ball - cp
-		var base := atan2(d.z, d.x)
-		for k in 3:
-			game.bullets.fire(cp, base + deg_to_rad(22.0) * (k - 1), 5.2, Bullets.IRON, self)
-			game.bullets.snake(2.0, 3.0)
+	for k in 3:
+		if _once("%s%d" % [key, k], at + k * 0.2):
+			ore.drop(core, Vector3(0, 0, 1.8), Vector3(0, 0, (k - 1) * 4.0), 4, k == 0)
 
 
 func _rampage() -> void:
@@ -787,6 +783,7 @@ func _die() -> void:
 	defeated = true
 	phase = 4
 	dying_t = 0.0
+	ore.clear()
 	for b in booms:
 		if not b["dead"]:
 			game.kill(b["wheel"])

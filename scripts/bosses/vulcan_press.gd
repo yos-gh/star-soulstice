@@ -15,15 +15,18 @@ extends BossBase
 ## while both hammers strike either side of the ship at once.
 ## MELTDOWN (both hammers destroyed; they are tough, and breaking them is
 ## the player's choice): the crucible boils over. The press stays forward
-## and sways wide; each round it sweeps twin hoses of shells, sends two
-## serpents weaving down at the ship, fires armoured IRON slugs down the
+## and sways wide; each round it sweeps twin hoses of shells, lobs globs
+## of molten metal from the crucible onto the ship's spot and either side of
+## it (marked first; MarkedStrikes), fires armoured IRON slugs down the
 ## ship's lane and one either side from the empty hammer sockets (marked;
 ## they stop your shots) twice, lobs shells that burst into rings and
 ## fires a wide needle burst. Every round ends in a quiet gap to come in with the Spear.
 
+const MarkedStrikes := preload("res://scripts/bosses/marked_strikes.gd")
+
 const INFO := {
 	"name": "VULCAN PRESS", "role": "boss",
-	"desc": "核（坩堝）だけが弱点。核のまわりを回る 3 枚の装甲板の隙間を撃ち抜く（装甲板は 1 枚ずつ壊せる）。2 基のハンマーが自機の列に寄って予兆のあと画面の下端まで打ち下ろし、物理弾が上へ散る。角の砲塔は扇状の物理弾。時間で暴走：本体ごと迫り出して渦巻き弾、ハンマーが自機の両脇を同時に叩く。ハンマー（硬い）を両方失うと発狂（MELTDOWN）：大きく揺れながら 2 本の物理弾の薙ぎ払い、蛇行する鉄球弾 2 つ、空いた穴から自機の列と両脇の 3 列へ鉄球弾を 2 回、はじけて輪になる弾、広い針弾",
+	"desc": "核（坩堝）だけが弱点。核のまわりを回る 3 枚の装甲板の隙間を撃ち抜く（装甲板は 1 枚ずつ壊せる）。2 基のハンマーが自機の列に寄って予兆のあと画面の下端まで打ち下ろし、物理弾が上へ散る。角の砲塔は扇状の物理弾。時間で暴走：本体ごと迫り出して渦巻き弾、ハンマーが自機の両脇を同時に叩く。ハンマー（硬い）を両方失うと発狂（MELTDOWN）：大きく揺れながら 2 本の物理弾の薙ぎ払い、坩堝から溶けた鉄の塊を自機の位置とその左右へ山なりに投げ落とす（落ちる所を予兆、着弾で炸裂）、空いた穴から自機の列と両脇の 3 列へ鉄球弾を 2 回、はじけて輪になる弾、広い針弾",
 	"demos": [["FULL", ""], ["OVERDRIVE", "B"], ["MELTDOWN", "C"]],
 }
 const CORE_HP := 1400.0
@@ -77,7 +80,7 @@ var spiral_t := 0.0
 var muzzles: Array[Enemy] = []  # where MELTDOWN's slugs leave (marked by the lock-ons)
 var lanes := PackedFloat32Array()
 var hose_t := 0.0
-var serpent_to := Vector3.ZERO
+var slag: MarkedStrikes  # MELTDOWN's molten globs
 var dying_t := 0.0
 var destroyed := false
 
@@ -102,6 +105,7 @@ func setup(g: Game) -> void:
 	core.max_hp = CORE_HP
 	core.score = CORE_SCORE
 	core.blast = 6.0
+	slag = MarkedStrikes.new(g, self, MarkedStrikes.LOB, Color(1.0, 0.5, 0.15))
 	core.ram = false
 	for s in [-1, 1]:
 		var h := game.spawn_part(self, "press_hammer", 1.5)
@@ -260,6 +264,8 @@ func tick(dt: float) -> void:
 	plate_a += dt * ([1.5, 1.5, 2.5, 3.2, 1.5][phase])
 	for i in hammers.size():
 		_hammer(i, dt)
+	if phase >= 1 and phase <= 3:
+		slag.tick(dt)
 	_place(dt)
 
 
@@ -355,8 +361,8 @@ func _meltdown() -> void:
 
 
 ## Phase C: the press stays forward and sways wide. Twin hoses of shells
-## sweep the tunnel from both sides at once while two serpents (snaking IRON
-## balls, marked) weave down at the ship; then IRON slugs fire down three
+## sweep the tunnel from both sides at once while the crucible lobs three
+## molten globs onto the ship's spot and either side of it (marked); then IRON slugs fire down three
 ## lanes (the ship's own and one either side, marked), shells burst into
 ## rings, the vents fire, a wide needle burst, and a second round of slugs
 ## before a short rest.
@@ -372,15 +378,11 @@ func _round_c(dt: float) -> void:
 			var sw := sin(cycle_t * 2.6) * 1.0
 			for s in [-1, 1]:
 				game.bullets.fire(cp, PI / 2.0 + s * sw, 6.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if s < 0 else Bullets.SMALL)
-	# serpents from the core, weaving down at the ship (marked)
-	if _once("w_serpent", 0.6):
-		serpent_to = game.player.position
-		game.warn(core, 0.8, Game.Warn.MOVE, core.radius, serpent_to)
-	if _once("serpent", 1.4):
-		var d := serpent_to - cp
-		for s in [-1, 1]:
-			game.bullets.fire(cp, atan2(d.z, d.x) + s * deg_to_rad(18.0), 5.2, Bullets.IRON, self)
-			game.bullets.snake(2.6, 3.4)
+	# molten globs from the crucible: the ship's spot first, then either side
+	for k in 3:
+		if _once("slag%d" % k, 0.6 + k * 0.25):
+			var dx := 0.0 if k == 0 else (-4.5 if k == 1 else 4.5)
+			slag.drop(core, Vector3(0, 0, 1.4), Vector3(dx, 0, 0), 5, k == 0)
 	# slugs down three lanes, twice a round
 	_slugs("a", 2.2)
 	_slugs("b", 5.4)
@@ -649,6 +651,7 @@ func _die() -> void:
 	defeated = true
 	phase = 4
 	dying_t = 0.0
+	slag.clear()
 	for h in hammers:
 		if not h["dead"]:
 			game.kill(h["head"])

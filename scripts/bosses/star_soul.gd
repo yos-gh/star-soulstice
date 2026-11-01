@@ -9,8 +9,9 @@ extends BossBase
 ## later, so the barrier takes some of the fire, never all of it.
 ## Three forms, one after another as its light runs down (or after a while):
 ##   BRILLIANT  the whole gem, turning: shell spokes from its eight points,
-##              aimed needle volleys, a flower of shells, iron balls weaving
-##              at the ship; its signature, the REFRACTION: a beam into a
+##              aimed needle volleys, a flower of shells, homing lances
+##              of light from the two points nearest the ship onto sights
+##              that follow it (MarkedStrikes); its signature, the REFRACTION: a beam into a
 ##              prism of light hung over the ship, three beams fanning out
 ##              of it down the screen (all the lines marked first: the ship
 ##              goes between them)
@@ -27,9 +28,11 @@ extends BossBase
 ## The wedges can't be shot (shots pass by them), but they ram. A quiet
 ## moment while it changes form: the heart can be hit then too.
 
+const MarkedStrikes := preload("res://scripts/bosses/marked_strikes.gd")
+
 const INFO := {
 	"name": "STAR SOUL", "role": "boss",
-	"desc": "最終面のボス 2 体目（最終ボス）。これまでの CORTEX の奥にあったコアだけが独立し、宝石のようにカットされて輝く（8 つのくさびが組み合った八角のブリリアントと、中の小さな心臓。エメラルド色で内から光り、回るとファセットにきらめきが走る）。当たるのは宝石（心臓）だけ。まわりを六角形の光のバリアが回る（12 枠のうち 2 枠は空き）：壊せる覆いなので青、数発で割れて数秒後に張り直す。光が減るにつれて（または時間で）姿を変える。BRILLIANT：宝石のまま回り、8 つの角から物理弾の放射、狙いの針弾、花びら、蛇行する鉄球弾。大技 REFRACTION：自機の上に光のプリズムを吊り、そこへビームを撃ち込むと 3 本に分かれて下へ広がる（線は先に予兆、あいだに入る）。SCATTER：8 つのくさびが分かれて心臓のまわりを回り、交代で撃つ。2 つずつ自機を向いて画面を突き抜け（通り道を予兆）、物理弾をこぼし、上から戻ってくる。心臓が下側の 3 つへビームを当て、くさびがそれを自機へ曲げる。SOULSTICE（発狂）：くさびが先を外へ向けて戻り、星形で速く回る。先から渦巻きの物理弾、輪にはじける大型弾、大技 PRISM CROSS（4 つの先から 4 本のビームが星といっしょに回る。ついて回るか、届かない隙間へ）。くさびは撃てない（ショットは素通り）が、体当たりあり。姿を変える間は静かで、そのあいだも宝石は撃てる",
+	"desc": "最終面のボス 2 体目（最終ボス）。これまでの CORTEX の奥にあったコアだけが独立し、宝石のようにカットされて輝く（8 つのくさびが組み合った八角のブリリアントと、中の小さな心臓。エメラルド色で内から光り、回るとファセットにきらめきが走る）。当たるのは宝石（心臓）だけ。まわりを六角形の光のバリアが回る（12 枠のうち 2 枠は空き）：壊せる覆いなので青、数発で割れて数秒後に張り直す。光が減るにつれて（または時間で）姿を変える。BRILLIANT：宝石のまま回り、8 つの角から物理弾の放射、狙いの針弾、花びら、近い 2 つの角から追尾する光の槍（照準が自機を追い、点線の照準線のあと飛んでくる）。大技 REFRACTION：自機の上に光のプリズムを吊り、そこへビームを撃ち込むと 3 本に分かれて下へ広がる（線は先に予兆、あいだに入る）。SCATTER：8 つのくさびが分かれて心臓のまわりを回り、交代で撃つ。2 つずつ自機を向いて画面を突き抜け（通り道を予兆）、物理弾をこぼし、上から戻ってくる。心臓が下側の 3 つへビームを当て、くさびがそれを自機へ曲げる。SOULSTICE（発狂）：くさびが先を外へ向けて戻り、星形で速く回る。先から渦巻きの物理弾、輪にはじける大型弾、大技 PRISM CROSS（4 つの先から 4 本のビームが星といっしょに回る。ついて回るか、届かない隙間へ）。くさびは撃てない（ショットは素通り）が、体当たりあり。姿を変える間は静かで、そのあいだも宝石は撃てる",
 	"demos": [["FULL", ""], ["SCATTER", "B"], ["SOULSTICE", "C"]],
 }
 
@@ -106,6 +109,7 @@ var volley_k := 0
 var flower_a := 0.0
 var cross_dir := 1.0
 var aim_at := Vector3.ZERO
+var lances: MarkedStrikes  # BRILLIANT's homing lances of light
 var destroyed := false
 var dying_t := 0.0
 var heat := 0.0
@@ -151,6 +155,7 @@ func setup(g: Game) -> void:
 	heart.armored = true
 	heart.blast = 3.0
 	heart.debris_col = CoreModels.EMERALD
+	lances = MarkedStrikes.new(g, self, MarkedStrikes.LANCE, Color(0.3, 1.0, 0.5))
 	heart_mesh = MeshInstance3D.new()
 	heart_mesh.mesh = Vox.get_mesh("soul_heart")
 	heart_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -260,6 +265,8 @@ func tick(dt: float) -> void:
 	_wards(dt)
 	_beams(dt)
 	_draw_beams()
+	if phase >= 1 and phase <= 3:
+		lances.tick(dt)
 	heart.radius = HIT_R[clampi(phase - 1, 0, 2)]
 	heart_mesh.rotation.y = -spin_a * 1.3
 	var hs := 0.9 if phase <= 1 else (1.3 if phase == 2 else 1.1)
@@ -544,19 +551,14 @@ func _brilliant(dt: float) -> void:
 		if _once("flower%d" % i, 7.1 + i * 0.3):
 			flower_a += 0.2
 			game.bullets.ring(center, 18, 4.2, Bullets.SHELL, self, flower_a)
-	# iron balls from the two points nearest the ship, weaving at it
-	if cycle_t >= 8.0 - 0.8 and not fired.has("w_iron"):
-		fired["w_iron"] = true
-		aim_at = game.player.position
-		game.warn(heart, 0.8, Game.Warn.MOVE, heart.radius, aim_at)
-	if _once("iron", 8.0):
-		var d := aim_at - center
-		var base := atan2(d.z, d.x)
-		for s in [-1.0, 1.0]:
-			var a: float = base + s * 0.5
-			var at := center + Vector3(cos(a), 0, sin(a)) * CoreModels.R
-			game.bullets.fire(at, atan2(aim_at.z - at.z, aim_at.x - at.x), 5.0, Bullets.IRON, self)
-			game.bullets.snake(1.8, 3.2)
+	# homing lances of light from the two points nearest the ship, onto
+	# sights that follow it
+	for i in 2:
+		if _once("lance%d" % i, 7.2 + i * 0.4):
+			var d := game.player.position - center
+			var a := atan2(d.z, d.x) + (0.5 if i == 0 else -0.5)
+			var side := signf(cos(a)) if absf(cos(a)) > 0.1 else (1.0 if i == 0 else -1.0)
+			lances.drop(heart, Vector3(cos(a), 0, sin(a)) * CoreModels.R, Vector3.ZERO, 0, i == 0, side)
 
 
 func _scatter(dt: float) -> void:
@@ -886,6 +888,7 @@ func _die() -> void:
 	phase = 4
 	dying_t = 0.0
 	_cancel_beams()
+	lances.clear()
 	for k in wards.size():
 		if not wards[k].dead:
 			_break_ward(k, false)

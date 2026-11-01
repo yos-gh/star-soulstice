@@ -15,8 +15,9 @@ extends Node3D
 ##   IRON   big armoured ball (boss): cannot be shot or erased by the Spear,
 ##          and it stops your shots (after the big bullets of the NES Star
 ##          Soldier). Always announced. Violet steel, lit rim, hot core.
-## A bullet can also `snake` (weave across its line of flight) or `split`
-## (burst into a ring of shells after a while).
+## A bullet can also `split` (burst into a ring of shells after a while), or
+## `snake` (weave across its line of flight; no enemy uses it now: yos found
+## weaving iron balls more stress than fun).
 ## Every bullet remembers its shooter so a kill can turn them into energy.
 ## Ground guns `launch` theirs: for LIFT seconds the bullet climbs from the
 ## gun up to the flight level (drawn small and dim, rising along the view

@@ -372,7 +372,7 @@ func _round_a(dt: float) -> void:
 	if _once("gaze", 0.3):
 		_gaze_pair()
 	if _once("maw", 2.8):
-		_maw(3, 26.0, false)
+		_maw(3, 26.0)
 	if _once("fan0", 3.7):
 		_eye_fan(0, 5, 34.0)
 	if _once("fan1", 4.1):
@@ -386,7 +386,7 @@ func _round_a(dt: float) -> void:
 		if _once("g1", 5.7):
 			_gaze(1, 0.0)
 	if _once("maw2", 8.0):
-		_maw(3, 40.0, false)
+		_maw(3, 40.0)
 	_next_round(ROUND_A)
 
 
@@ -398,7 +398,7 @@ func _round_wrath(dt: float) -> void:
 	if _once("open", 0.3):
 		_cross(true)
 	if _once("maw", 2.6):
-		_maw(5, 60.0, true)
+		_maw(5, 60.0)
 	if _once("gaze", 3.3):
 		_gaze_pair()
 	if _once("fans", 4.4):
@@ -407,7 +407,7 @@ func _round_wrath(dt: float) -> void:
 	if _once("close", 5.5):
 		_cross(false)
 	if _once("maw2", 7.6):
-		_maw(4, 48.0, false)
+		_maw(4, 48.0)
 	_next_round(ROUND_W)
 
 
@@ -421,7 +421,7 @@ func _round_stare(dt: float) -> void:
 		_stare_beam(k)
 	spraying = cycle_t > 1.0 and cycle_t < 4.6
 	if _once("maw", 4.6):
-		_maw(4, 44.0, true)
+		_maw(4, 44.0)
 	if _once("fan", 5.3):
 		_eye_fan(k, 9, 70.0)
 	if _once("gaze", 6.2):
@@ -750,9 +750,10 @@ func _chevrons(o: Vector3, a0: float, a1: float) -> void:
 # ------------------------------------------------------------ guns
 
 ## The central gun lobs `n` iron balls over `spread` degrees at the ship
-## (they burst into rings of shells); `snaking` makes them weave. Not once
+## (they burst into rings of shells; they no longer weave: yos found weaving
+## iron balls more stress than fun). Not once
 ## it is destroyed.
-func _maw(n: int, spread: float, snaking: bool) -> void:
+func _maw(n: int, spread: float) -> void:
 	if cannon.dead or not game.can_fire(cannon.hit_pos):
 		return
 	game.warn_then(cannon, 0.7, Game.Warn.SHOT, func() -> void:
@@ -763,8 +764,6 @@ func _maw(n: int, spread: float, snaking: bool) -> void:
 			var a := aim + deg_to_rad(spread) * ((float(i) / maxf(n - 1, 1)) - 0.5) if n > 1 else aim
 			game.bullets.launch(muzzle, a, 5.2, Bullets.IRON, self)
 			game.bullets.split(1.15 + 0.08 * absf(i - (n - 1) * 0.5), 12)
-			if snaking:
-				game.bullets.snake(0.8, 5.0)
 		game.fx.flash(muzzle, 0.6)
 		game.shake(0.3)
 		game.sfx.play("exp_s"))

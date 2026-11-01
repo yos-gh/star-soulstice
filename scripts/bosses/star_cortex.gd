@@ -10,14 +10,14 @@ extends BossBase
 ## Phase A: the pods fire shell fans; the eye opens for longer than it is
 ## shut, and while open fires a needle shotgun, two gaze strikes (a sight
 ## follows the ship a little slower than it flies, holds still and the spot
-## bursts: GazeStrikes) and a flower of shell rings.
+## bursts: MarkedStrikes) and a flower of shell rings.
 ## Phase B, ENRAGED (pods gone or after a while): the fortress sways, the
 ## eye opens even more, the empty pod sockets spin shell spirals while it
 ## is shut, and each opening brings three gaze strikes, a longer flower, a wide
 ## needle shotgun and shells that burst into rings. There is a quiet moment
 ## in every round to come in with the Spear.
 
-const GazeStrikes := preload("res://scripts/bosses/gaze_strikes.gd")
+const MarkedStrikes := preload("res://scripts/bosses/marked_strikes.gd")
 const INFO := {
 	"name": "STAR CORTEX", "role": "boss",
 	"desc": "目が開いた時だけ効く（閉じている時間より長く開く）。目を覆うシャッター（左右 2 枚）は壊せて、壊した側からは閉じていても撃ち込める。開くと針弾・照準爆撃（照準が自機を少し遅れて追い、止まるとその場が炸裂）・花びら状の物理弾。ポッドは扇状の物理弾。ポッドを失うか時間で発狂：揺れながら、閉じている間は空いた穴から渦巻き弾、開くと照準爆撃 3 つ・長い花びら・広い散弾・はじけて輪になる弾",
@@ -53,7 +53,7 @@ var open_want := false
 var fired := {}
 var spiral_a := 0.0
 var spiral_t := 0.0
-var gaze: GazeStrikes
+var gaze: MarkedStrikes
 var flower_a := 0.0
 var pod_t := 1.0
 var pod_k := 0
@@ -85,7 +85,7 @@ func setup(g: Game) -> void:
 	eye.armored = true
 	eye.score = EYE_SCORE
 	eye.blast = 6.0
-	gaze = GazeStrikes.new(g, self, eye)
+	gaze = MarkedStrikes.new(g, self, MarkedStrikes.LANCE, Color(1.0, 0.35, 0.75))
 	for k in 4:
 		var e := game.spawn_part(self, "boss_pod", 1.45)
 		e.hp = POD_HP
@@ -270,7 +270,7 @@ func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
 func _gaze(at: float, count: int, gap: float) -> void:
 	for i in count:
 		if _fire_once("gaze%d" % i, at + i * gap):
-			gaze.drop(0, Vector3.ZERO, i == 0)
+			gaze.drop(eye, Vector3.ZERO, Vector3.ZERO, 0, i == 0, 1.0 if i % 2 == 0 else -1.0)
 
 
 func _pods(dt: float) -> void:

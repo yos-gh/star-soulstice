@@ -31,14 +31,14 @@ extends BossBase
 ## shot off, shots get in on that side while it is shut) opens with a needle
 ## shotgun, then by turns the shutter blades, or three gaze strikes (a sight
 ## follows the ship, holds still and the spot bursts with a few slow shells:
-## GazeStrikes) and a second shotgun.
+## MarkedStrikes) and a second shotgun.
 ## OVERDRIVE (both rail cannons gone, all four pods gone, or after a while):
 ## the fortress sways; a living rail cannon marks two lines at a time (one
 ## through the ship, one where it is heading), broken decks discharge, mines
 ## come as cages; the eye opens longer: four gaze strikes (every other one
 ## ahead of where the ship is heading), a wide needle fan and the vortex.
 
-const GazeStrikes := preload("res://scripts/bosses/gaze_strikes.gd")
+const MarkedStrikes := preload("res://scripts/bosses/marked_strikes.gd")
 const INFO := {
 	"name": "OMEGA CORTEX", "role": "boss",
 	"desc": "ステージ 1 の STAR CORTEX を完成させて武装した最終面のボス 1 体目。八角形の本体と目（シャッター 2 枚、4 つのポッド）はそのまま、トラスの桁で左右に砲甲板を張り出してレールキャノン（コンデンサーで光る）を載せ、後ろの架台に機雷の発射機が 2 基。見えない装甲はなし（外れた弾は本体の上を抜ける）。目は開いている時だけ効く（閉じている時間より長く開く。シャッターを片方壊せばその側からは閉じていても撃ち込める）。通常：ポッドが交代で物理弾の扇。レール射撃（砲塔が自機を向き、自機を通って下端までの線を予兆、そのあと鉄球弾 4 発を速く）。電磁機雷（自機の左右に止まって、予兆のあと電撃の線でつながる。撃ち落とせばその線が消える）。目が開くと針弾の散弾、そして交互に、シャッター刃（シャッターが外れて回転しながら画面の左右を大きく回って戻る。軌道を予兆、飛んでいる間は目がむき出しで、刃も撃ち落とせる）か、照準爆撃 3 つ（照準が自機を少し遅れて追い、止まるとその場が炸裂して遅い物理弾を少し撒く）ともう一度散弾。レールキャノンを両方壊すか、ポッドを全部壊すか、時間で OVERDRIVE：揺れながら、レールキャノンは 2 本同時、壊れた砲甲板からは放電（自機へ枝分かれする稲妻、予兆つき）、機雷は 4 つで自機を囲む檻になって縮む（1 つ撃てば抜けられる）。目は長く開き、照準爆撃 4 つ（1 つおきに自機の向かう先）、広い針弾、そして大技の重力渦：自機を目に引き寄せ、NOVA（鉄球弾と物理弾の輪が自機のあたりまで広がって止まる）、そのあと自分の遅い弾を全部吸い戻す（自機を通り過ぎた弾が下から戻ってくる）",
@@ -141,7 +141,7 @@ var cycle_t := 0.0
 var open := 0.0
 var open_want := false
 var fired := {}
-var gaze: GazeStrikes
+var gaze: MarkedStrikes
 var pod_t := 1.0
 var pod_k := 0
 var destroyed := false
@@ -174,7 +174,7 @@ func setup(g: Game) -> void:
 	eye.armored = true
 	eye.score = EYE_SCORE
 	eye.blast = 6.0
-	gaze = GazeStrikes.new(g, self, eye)
+	gaze = MarkedStrikes.new(g, self, MarkedStrikes.LANCE, Color(1.0, 0.35, 0.75))
 	for k in 4:
 		var e := game.spawn_part(self, "boss_pod", 1.45)
 		e.hp = POD_HP
@@ -448,7 +448,7 @@ func _gaze(at: float, count: int, gap: float, shells: int, lead: bool) -> void:
 			var off := Vector3.ZERO
 			if lead and i % 2 == 1:
 				off = Vector3(ship_v.x, 0, ship_v.z).limit_length(10.0) * 0.4
-			gaze.drop(shells, off, i == 0)
+			gaze.drop(eye, Vector3.ZERO, off, shells, i == 0, 1.0 if i % 2 == 0 else -1.0)
 
 
 # ------------------------------------------------------------ shutter blades
