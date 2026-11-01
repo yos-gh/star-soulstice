@@ -16,6 +16,7 @@ extends BossBase
 ## needle shotgun and shells that burst into rings. There is a quiet moment
 ## in every round to come in with the Spear.
 
+const GazeStrikes := preload("res://scripts/bosses/gaze_strikes.gd")
 const INFO := {
 	"name": "STAR CORTEX", "role": "boss",
 	"desc": "目が開いた時だけ効く（閉じている時間より長く開く）。目を覆うシャッター（左右 2 枚）は壊せて、壊した側からは閉じていても撃ち込める。開くと針弾・照準爆撃（照準が自機を少し遅れて追い、止まるとその場が炸裂）・花びら状の物理弾。ポッドは扇状の物理弾。ポッドを失うか時間で発狂：揺れながら、閉じている間は空いた穴から渦巻き弾、開くと照準爆撃 3 つ・長い花びら・広い散弾・はじけて輪になる弾",

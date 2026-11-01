@@ -1,4 +1,3 @@
-class_name GazeStrikes
 extends RefCounted
 ## The Cortex eye's gaze strike (STAR CORTEX, OMEGA CORTEX), in place of the
 ## old weaving iron balls (they took big dodges and swallowed your shots): a
@@ -10,6 +9,8 @@ extends RefCounted
 ## throw out a few slow shells (OMEGA).
 ## Each sight hangs on an anchor part with no hit zone, which carries the
 ## warning (the autopilot keeps out of the ring).
+## Not a global class: the bosses preload it, so a fresh copy of the project
+## runs without re-importing the class list.
 
 const TRACK := 0.9  # following the ship ...
 const LOCK := 0.45  # ... then held still; then the burst
