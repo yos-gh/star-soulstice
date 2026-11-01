@@ -26,7 +26,9 @@ extends RefCounted
 ##
 ## The models live in one script per group (each extends this one, so the
 ## colours below are at hand): ShipModels, EnemyModels, BossModels,
-## ItemModels, GroundModels, TunnelModels, BeltModels, PlanetModels. To add a model, add its name to the group's
+## ItemModels, GroundModels, TunnelModels, BeltModels, PlanetModels,
+## SurfaceModels, CoreModels (stage 5's last boss: cut facets, not
+## voxels). To add a model, add its name to the group's
 ## NAMES and build it in the group's make(); Vox.get_mesh(name) finds it
 ## and the viewer's MODELS list shows it.
 
@@ -107,7 +109,7 @@ static func body_col(name: String, fallback: Color) -> Color:
 
 ## [group label, script] in viewer order.
 static func groups() -> Array:
-	return [["SHIP", ShipModels], ["ENEMIES", EnemyModels], ["BOSSES", BossModels], ["ITEMS", ItemModels], ["GROUND", GroundModels], ["TUNNEL", TunnelModels], ["BELT", BeltModels], ["PLANET", PlanetModels], ["SURFACE", SurfaceModels]]
+	return [["SHIP", ShipModels], ["ENEMIES", EnemyModels], ["BOSSES", BossModels], ["ITEMS", ItemModels], ["GROUND", GroundModels], ["TUNNEL", TunnelModels], ["BELT", BeltModels], ["PLANET", PlanetModels], ["SURFACE", SurfaceModels], ["CORE", CoreModels]]
 
 
 static func build(name: String) -> ArrayMesh:

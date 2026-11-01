@@ -39,7 +39,17 @@ extends Node3D
 ##           ground it takes over from). Each area eases p toward its `to`.
 ##           Keep `far` shallow enough that the limb stays above the star
 ##           layers (they must stay behind it).
-## Palette sets the colours of the nebula, planet, ring and sky.
+##   warp    {y, from: {area: w}, to: {area: w}, rate, speed,
+##           streaks: [[height, count, width], ...]}  warp space (stage 5's
+##           last boss): `w` 0 = normal space, 1 = full warp. A plane at y
+##           over the nebula (shaders/warp.gdshader: space bent into a
+##           funnel toward a point past the top of the screen, streaks of
+##           light and coloured clouds running out of it) fades in with w,
+##           and layers of stars streak down the screen (shaders/streak:
+##           trails behind their heads), faster and longer as w grows,
+##           while the ordinary stars fade out. Each area eases w toward
+##           its `to` (an area started at once takes its `from`).
+## Palette sets the colours of the nebula, planet, ring, sky and warp.
 
 var game: Game
 var config := {}
@@ -70,6 +80,14 @@ var globe_p := 0.0
 var globe_to := 0.0
 var globe_rate := 0.05
 var globe_spin := 0.0
+var warp_mat: ShaderMaterial
+var warp_cfg := {}
+var warp_w := 0.0
+var warp_to := 0.0
+var warp_rate := 0.4
+var warp_flow := 0.0
+var streaks: Array = []  # {mm, pos: PackedVector3Array, rect: Rect2, width}
+var warp_rng := RandomNumberGenerator.new()
 
 
 ## Builds the scenery for `cfg` (does nothing if it is already showing).
@@ -94,6 +112,12 @@ func use(cfg: Dictionary) -> void:
 	globe_p = 0.0
 	globe_to = 0.0
 	globe_spin = 0.0
+	warp_mat = null
+	warp_cfg = {}
+	warp_w = 0.0
+	warp_to = 0.0
+	warp_flow = 0.0
+	streaks.clear()
 	level = 0.0
 	level_to = 0.0
 	sky_off = Vector2.ZERO
@@ -227,6 +251,8 @@ func build(cfg: Dictionary) -> void:
 			belt.append({"m": m, "a": a, "b": b, "spin": Vector3(belt_rng.randf_range(-0.25, 0.25), belt_rng.randf_range(-0.3, 0.3), 0)})
 	if cfg.has("globe"):
 		_build_globe(cfg["globe"])
+	if cfg.has("warp"):
+		_build_warp(cfg["warp"])
 	if cfg.has("sky"):
 		_build_sky(cfg["sky"])
 	if cfg.has("tunnel"):
@@ -314,6 +340,107 @@ func _globe_view(dt: float, speed: float) -> void:
 	globe.visible = globe_p < 0.999
 
 
+## Star tints in warp space: mostly white and pale blue, some violet and rose.
+const WARP_TINTS := [Color(0.9, 0.93, 1.0), Color(0.7, 0.85, 1.0), Color(0.8, 0.7, 1.0), Color(1.0, 0.72, 0.85), Color(0.75, 1.0, 0.95)]
+
+
+## Warp space (see the comment at the top): the funnel plane and the
+## layers of streaking stars, all out of sight while w is 0.
+func _build_warp(wc: Dictionary) -> void:
+	warp_cfg = wc
+	warp_rng.seed = int(wc.get("seed", 7))
+	var y: float = wc.get("y", -200.0)
+	var a := game.screen_to_y(Vector2(-240, -360), y)
+	var b := game.screen_to_y(Vector2(1200, 1080), y)
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(b.x - a.x, b.z - a.z)
+	warp_mat = ShaderMaterial.new()
+	warp_mat.shader = load("res://shaders/warp.gdshader")
+	warp_mat.render_priority = -8  # over the nebula (-10), under the stars (-5)
+	# the funnel's mouth, past the top of the screen
+	var vp := game.screen_to_y(Vector2(480, -480), y)
+	warp_mat.set_shader_parameter("vp", Vector2(vp.x, vp.z))
+	warp_mat.set_shader_parameter("span", b.z - a.z)
+	pm.material = warp_mat
+	var plane := MeshInstance3D.new()
+	plane.mesh = pm
+	plane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	plane.position = Vector3((a.x + b.x) * 0.5, y, (a.z + b.z) * 0.5)
+	add_child(plane)
+	var smat := ShaderMaterial.new()
+	smat.shader = load("res://shaders/streak.gdshader")
+	smat.render_priority = -6
+	for layer: Array in wc.get("streaks", []):
+		var ly: float = layer[0]
+		var count: int = layer[1]
+		var a2 := game.screen_to_y(Vector2(-60, -60), ly)
+		var b2 := game.screen_to_y(Vector2(1020, 780), ly)
+		var rect := Rect2(a2.x, a2.z, b2.x - a2.x, b2.z - a2.z)
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
+		var q := PlaneMesh.new()
+		q.size = Vector2(1, 1)
+		q.material = smat
+		mm.mesh = q
+		mm.instance_count = count
+		var pos := PackedVector3Array()
+		for i in count:
+			pos.push_back(Vector3(rect.position.x + warp_rng.randf() * rect.size.x, ly, rect.position.y + warp_rng.randf() * rect.size.y))
+			var tint: Color = WARP_TINTS[warp_rng.randi() % WARP_TINTS.size()]
+			mm.set_instance_color(i, tint * warp_rng.randf_range(0.45, 1.0))
+			mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, pos[i]))
+		var mi := MultiMeshInstance3D.new()
+		mi.multimesh = mm
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.custom_aabb = AABB(Vector3(rect.position.x - 5, ly - 5, rect.position.y - 200), Vector3(rect.size.x + 10, 10, rect.size.y + 400))
+		mi.visible = false
+		add_child(mi)
+		streaks.append({"mm": mm, "mi": mi, "pos": pos, "rect": rect, "width": float(layer[2])})
+	_warp_view(0.0)
+
+
+## Warp space after `dt`: w eases toward the area's; the funnel fades in
+## and runs faster, the stars of the streak layers speed up and stretch
+## out behind their heads (in world units the same speed on every layer,
+## so the deep ones cross the screen slower).
+func _warp_view(dt: float) -> void:
+	if warp_mat == null:
+		return
+	warp_w = move_toward(warp_w, warp_to, warp_rate * dt)
+	var e := smoothstep(0.0, 1.0, warp_w)
+	var speed: float = float(warp_cfg.get("speed", 240.0)) * e * e
+	warp_flow += dt * (0.2 + 1.5 * e)
+	warp_mat.set_shader_parameter("amount", e)
+	warp_mat.set_shader_parameter("flow", warp_flow)
+	for L: Dictionary in streaks:
+		var mi: MultiMeshInstance3D = L["mi"]
+		mi.visible = e > 0.01
+		if not mi.visible:
+			continue
+		var mm: MultiMesh = L["mm"]
+		var pos: PackedVector3Array = L["pos"]
+		var rect: Rect2 = L["rect"]
+		var len := 0.6 + speed * 0.3
+		var w: float = float(L["width"]) * (0.6 + 0.4 * e)
+		for i in pos.size():
+			var p := pos[i]
+			p.z += speed * dt
+			if p.z - len > rect.end.y:
+				p.z -= rect.size.y + len
+				p.x = rect.position.x + warp_rng.randf() * rect.size.x
+			pos[i] = p
+			var l := len * (0.7 + 0.6 * fmod(i * 0.618, 1.0))
+			mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(w, 1.0, l)), p - Vector3(0, 0, l * 0.5)))
+		L["pos"] = pos
+
+
+## Out of warp (the last boss is gone): w eases back to 0 at `rate`.
+func warp_out(rate := 0.3) -> void:
+	warp_to = 0.0
+	warp_rate = rate
+
+
 ## The stage's area changed (a tunnel takes on its style, the sky comes
 ## down toward the area's level, the globe falls away toward the area's);
 ## `now` = at once.
@@ -326,6 +453,12 @@ func set_area(a: String, now := false) -> void:
 		if now:
 			globe_p = float((globe_cfg.get("from", {}) as Dictionary).get(a, globe_to))
 			_globe_view(0.0, 0.0)
+	if warp_mat != null:
+		warp_to = float((warp_cfg.get("to", {}) as Dictionary).get(a, warp_to))
+		warp_rate = float(warp_cfg.get("rate", 0.4))
+		if now:
+			warp_w = float((warp_cfg.get("from", {}) as Dictionary).get(a, warp_to))
+			_warp_view(0.0)
 	if not sky.is_empty():
 		var to: Dictionary = sky.get("to", {})
 		var from: Dictionary = sky.get("from", {})
@@ -415,6 +548,7 @@ func tick(dt: float, speed: float) -> void:
 	scroll_total += speed * dt
 	_sky_view(dt, speed)
 	_globe_view(dt, speed)
+	_warp_view(dt)
 	if tunnel != null:
 		tunnel.tick(dt, speed)
 	if nebula_mat != null:
@@ -434,7 +568,8 @@ func tick(dt: float, speed: float) -> void:
 				p.z -= rect.size.y
 				p.x = rect.position.x + randf() * rect.size.x
 			pos[i] = p
-			var s := size * (0.8 + 0.4 * fmod(i * 0.618, 1.0))
+			# (in warp space the streaks take over from them)
+			var s := size * (0.8 + 0.4 * fmod(i * 0.618, 1.0)) * (1.0 - warp_w * 0.999)
 			mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(s, s, s)), p))
 		L["pos"] = pos
 	for r: Dictionary in belt:

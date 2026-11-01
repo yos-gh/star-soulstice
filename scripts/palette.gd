@@ -89,6 +89,14 @@ static func apply(game: Game, name: String) -> void:
 		t.nebula_mat.set_shader_parameter("neb_b", neb[2])
 		t.nebula_mat.set_shader_parameter("neb_c", neb[3])
 		t.nebula_mat.set_shader_parameter("brightness", p["neb_b"])
+	# warp space (stage 5's last boss): the nebula's colours, brightened
+	if t.warp_mat != null:
+		const WB := 2.0
+		t.warp_mat.set_shader_parameter("base", neb[0])
+		t.warp_mat.set_shader_parameter("col_a", (neb[1] as Color) * WB)
+		t.warp_mat.set_shader_parameter("col_b", (neb[2] as Color) * WB)
+		t.warp_mat.set_shader_parameter("col_c", (neb[3] as Color) * WB)
+		t.warp_mat.set_shader_parameter("brightness", p["neb_b"])
 	var pl: Array = p["planet"]
 	# the planet is scenery: keep it dim so it never competes with the field
 	const PB := 0.5

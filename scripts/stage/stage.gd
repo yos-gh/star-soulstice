@@ -9,6 +9,7 @@ extends RefCounted
 ## last wave: a warning, then the boss.
 
 const GAP := 0.3
+const SURGE := 34.0  # the scroll's top speed between two bosses (see _surge)
 
 var game: Game
 var def: StageDef
@@ -19,11 +20,12 @@ var pending: Array = []
 var members: Array = []
 var gap_t := 2.0
 var carrier_t := 6.0
-var phase := "waves"  # waves, warn, boss (done: a stage with no boss yet is over)
+var phase := "waves"  # waves, warn, boss, then (a second boss) between, warn2, boss2 (done: a stage with no boss yet is over)
 var warn_t := 0.0
 var mid_index := 0
 var area := ""
 var stream_t := 1.0
+var surge_t := 0.0
 
 
 func _init(g: Game, d: StageDef) -> void:
@@ -47,6 +49,14 @@ func start_at(what: String) -> void:
 	elif what == "boss":
 		wi = waves.size()
 		_begin_warn()
+	elif what == "boss2" and def.boss2 != "":
+		wi = waves.size()
+		game.terrain.turrets = false
+		phase = "between"
+		warn_t = 0.5
+		surge_t = 99.0  # (no surge: straight in)
+		_set_area(def.boss2_area)
+		game.backdrop.set_area(def.boss2_area, true)
 	elif what.is_valid_int():
 		wi = clampi(int(what), 1, waves.size()) - 2
 		gap_t = 1.0
@@ -85,6 +95,23 @@ func tick(dt: float) -> void:
 			if warn_t <= 0.0:
 				phase = "boss"
 				game.spawn_boss(def.boss, true)
+		"between":
+			warn_t -= dt
+			_surge(dt)
+			if warn_t <= 0.0:
+				phase = "warn2"
+				warn_t = def.boss_warn_time
+				game.show_msg(def.boss2_warning[0], def.boss2_warning[1], 4.5, true)
+				game.sfx.play("warning")
+		"warn2":
+			warn_t -= dt
+			_surge(dt)
+			if warn_t <= 0.0:
+				phase = "boss2"
+				game.scroll_hold = -1.0
+				# (the first one's death pulled the energy in: no more)
+				game.items.vacuum = false
+				game.spawn_boss(def.boss2, true)
 
 
 ## Early arrival is generous: in a wave of 5+ the last small fighter may
@@ -126,6 +153,28 @@ func _next_wave() -> void:
 				who = Bosses.title(s[1])
 				break
 		game.show_msg("CAUTION", who + " APPROACHING", 2.0, true)
+
+
+## The stage boss is gone: on to the second boss if there is one (true),
+## its area at once (the scenery changes under the first one's last blast).
+func next_boss() -> bool:
+	if def.boss2 == "" or phase != "boss":
+		return false
+	phase = "between"
+	warn_t = def.boss2_wait
+	surge_t = 0.0
+	_set_area(def.boss2_area)
+	return true
+
+
+## Between the two bosses the scroll surges (the jump into the second
+## boss's scenery: what is left of the first fight rushes off), then
+## settles back to the boss speed by the time the second one comes.
+func _surge(dt: float) -> void:
+	surge_t += dt
+	var total := def.boss2_wait + def.boss_warn_time
+	var up := smoothstep(0.0, 1.2, surge_t) * (1.0 - smoothstep(total - 3.0, total - 0.3, surge_t))
+	game.scroll_hold = def.boss_scroll + (SURGE - def.boss_scroll) * up
 
 
 func _begin_warn() -> void:

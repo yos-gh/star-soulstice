@@ -13,7 +13,8 @@ extends StageDef
 ## rotary guns, laser lances) set to close the ship in, rocks drifting
 ## among them to hide behind; then fast waves with the satellites mixed in.
 ## More fighters at a time than ever, and they fire three times as often
-## (zako_fire 3). (The first of its two bosses so far: the stage ends when it falls.)
+## (zako_fire 3). Two bosses: as the first one's last blast goes off, space
+## bends into warp (Backdrop warp) and the core itself comes for the ship.
 ##   (the exit shaft)      the base's last tunnel
 ##   AREA 1 CRATER PLAINS  craters, boulders, mesas with storehouses
 ##   AREA 2 RED RIFT       a canyon: bridges, outposts on the walls
@@ -21,6 +22,7 @@ extends StageDef
 ##   AREA 3 HIGH ORBIT     the climb: satellites in groups, rocks for cover
 ##   AREA 4 DEFENSE GRID   fast waves with satellites, no rocks
 ##   OMEGA CORTEX          the first of the last stage's two bosses
+##   (warp space)          STAR SOUL, the core on its own: the last boss
 
 ## the meteor stream's count (every other one a giant rock)
 var drift_n := 0
@@ -31,7 +33,12 @@ func _init() -> void:
 	subtitle = "DEAD WORLD"
 	boss = "omega_cortex"
 	boss_warning = ["WARNING", "THE STAR CORTEX REBUILT AND ARMED: OMEGA"]
-	clear_note = "TO BE CONTINUED"
+	boss2 = "star_soul"
+	boss2_area = "core"
+	boss2_warning = ["WARNING", "THE CORE ITSELF: STAR SOUL"]
+	clear_note = "ALL STAGES CLEAR"
+	# the whole stage with both bosses: a good run still earns some
+	bonus_t = 330.0
 	scroll = 16.0
 	boss_scroll = 8.0
 	zako_fire = 3
@@ -81,14 +88,21 @@ func _init() -> void:
 			"sections": [["fragment", 7, 5, 0], ["hull", 6, 5, 0], ["solar", 9, 4, 0]],
 			"gap": [5.0, 10.0],
 		},
+		# the last boss in warp space: nothing drifts there (the wreckage
+		# left from the first fight rushes off); its barrier's panels feed
+		# the homing lasers
+		"core": {},
 	}
 	backdrop = {
 		# space, under the ground and the planet until the climb
 		"nebula": {"y": -240.0, "size": 760.0},
 		"stars": [[-120.0, 420, 0.42], [-175.0, 300, 0.5]],
 		"globe": {"radius": 120.0, "top": [16.0, 34.0], "shift": 150.0, "rate": 0.06,
-			"from": {"ascent": 0.0, "orbit": 1.0, "boss": 1.0}, "to": {"ascent": 1.0, "orbit": 1.0, "boss": 1.0}},
-		"tunnel": {"styles": {"exit": "hangar", "plains": "regolith", "rift": "rift", "basin": "basin", "ascent": "open", "orbit": "open", "boss": "open"}, "first": "hangar", "seed": 83},
+			"from": {"ascent": 0.0, "orbit": 1.0, "boss": 1.0, "core": 1.0}, "to": {"ascent": 1.0, "orbit": 1.0, "boss": 1.0, "core": 1.0}},
+		# warp space, from OMEGA CORTEX's last blast on
+		"warp": {"y": -200.0, "rate": 0.45, "speed": 260.0, "from": {"core": 1.0}, "to": {"core": 1.0},
+			"streaks": [[-70.0, 70, 0.32], [-110.0, 110, 0.42], [-160.0, 150, 0.55]]},
+		"tunnel": {"styles": {"exit": "hangar", "plains": "regolith", "rift": "rift", "basin": "basin", "ascent": "open", "orbit": "open", "boss": "open", "core": "open"}, "first": "hangar", "seed": 83},
 	}
 
 

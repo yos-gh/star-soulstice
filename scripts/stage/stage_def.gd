@@ -32,6 +32,14 @@ var boss := ""
 var boss_area := "boss"
 var boss_warning := ["WARNING", ""]
 var boss_warn_time := 5.5
+## a second boss after the first (the last stage): its kind, the area it is
+## fought over (taken up the moment the first one's last blast goes off:
+## its scenery changes under the fire), the wait from that blast until its
+## warning, and the warning
+var boss2 := ""
+var boss2_area := ""
+var boss2_wait := 2.5
+var boss2_warning := ["WARNING", ""]
 ## a line under STAGE CLEAR (a stage still being built: "TO BE CONTINUED")
 var clear_note := ""
 ## The areas of the stage, in order: name -> {

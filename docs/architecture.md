@@ -11,9 +11,9 @@
 | `scripts/game.gd` | 世界（カメラ・地形・ユニット・弾・エフェクト）とルール（スコア・当たり・残機・状態遷移）。ステージの中身は持たない |
 | `scripts/stage/` | `stage_def.gd`（ステージ定義の基底）、`stage1.gd` 〜 `stage5.gd`（各ステージの中身）、`stages.gd`（ステージの並び）、`stage.gd`（定義を実行する：ウェーブ・エリア・ボス戦）、`formations.gd`（編隊の雛形） |
 | `scripts/enemies/` | `enemy.gd`（敵の共通部分）、種類ごとのスクリプト（`dart.gd` など）、`enemy_kinds.gd`（種類の登録表） |
-| `scripts/bosses/` | `boss_base.gd`（中ボス・ボスの共通部分）、`lazaro.gd` / `star_cortex.gd`（ステージ 1）、`ouroboros.gd` / `vulcan_press.gd`（ステージ 2）、`lodestar.gd` / `titan_dredge.gd`（ステージ 3）、`tempest.gd` / `behemoth.gd`（ステージ 4）、`gorgon.gd` / `omega_cortex.gd`（ステージ 5 の中ボスとボス 1 体目）、`bosses.gd`（登録表） |
-| `scripts/terrain/` | `terrain.gd`（地上の区画を流す）、`backdrop.gd`（星雲・惑星・星・深層の構造物・トンネル・降下する空）、`tunnel.gd`（トンネル・惑星の地表の区間を流す）、`islandgen.gd`（区画の生成）、`island.gd`（区画とタイル） |
-| `scripts/models/` | `models.gd`（共通の色と振り分け）、`ship_models.gd` / `enemy_models.gd` / `boss_models.gd` / `item_models.gd` / `ground_models.gd` / `tunnel_models.gd`（トンネルの区間） / `belt_models.gd`（ステージ 3 の巨大岩・敵・ボス・背景の岩） / `planet_models.gd`（ステージ 4 の雲の峰・KESTREL・TEMPEST・BEHEMOTH・基地の扉と隔壁） / `surface_models.gd`（ステージ 5 の惑星の地表の区間・GORGON） |
+| `scripts/bosses/` | `boss_base.gd`（中ボス・ボスの共通部分）、`lazaro.gd` / `star_cortex.gd`（ステージ 1）、`ouroboros.gd` / `vulcan_press.gd`（ステージ 2）、`lodestar.gd` / `titan_dredge.gd`（ステージ 3）、`tempest.gd` / `behemoth.gd`（ステージ 4）、`gorgon.gd` / `omega_cortex.gd` / `star_soul.gd`（ステージ 5 の中ボスとボス 2 体：最後が最終ボス）、`bosses.gd`（登録表） |
+| `scripts/terrain/` | `terrain.gd`（地上の区画を流す）、`backdrop.gd`（星雲・惑星・星・深層の構造物・トンネル・降下する空・ワープ空間）、`tunnel.gd`（トンネル・惑星の地表の区間を流す）、`islandgen.gd`（区画の生成）、`island.gd`（区画とタイル） |
+| `scripts/models/` | `models.gd`（共通の色と振り分け）、`ship_models.gd` / `enemy_models.gd` / `boss_models.gd` / `item_models.gd` / `ground_models.gd` / `tunnel_models.gd`（トンネルの区間） / `belt_models.gd`（ステージ 3 の巨大岩・敵・ボス・背景の岩） / `planet_models.gd`（ステージ 4 の雲の峰・KESTREL・TEMPEST・BEHEMOTH・基地の扉と隔壁） / `surface_models.gd`（ステージ 5 の惑星の地表の区間・GORGON） / `core_models.gd`（ステージ 5 の最終ボス STAR SOUL：宝石のファセットとバリアの板。ボクセルではない） |
 | `scripts/viewer/` | 閲覧モード（`viewer.gd`）、一覧の組み立て（`viewer_catalog.gd`）、左の情報パネル（`viewer_panel.gd`） |
 | `scripts/bot.gd` | 自動操縦（`--autoplay` と閲覧モードの B） |
 | その他 `scripts/*.gd` | 自機・ショット・敵弾・アイテム・エフェクト・HUD・効果音・配色・入力・ボクセル |
@@ -37,7 +37,8 @@ Stages ──> StageDef（stage1.gd …）
    - `areas` はエリア名ごとに `label`（出だしの表示）、`sections`（区画の種類と大きさ）、`gap`（区画の間隔）、`stream`（漂流物、任意）。
    - `layout_seed` を変えると同じ指定でも区画の形が変わる。
    - `scroll` / `boss_scroll` でスクロールの速さ（ステージ 2 は 18 / 10 と速い。ステージ 1 は 12 / 7、ステージ 3 は 15 / 8、ステージ 4・5 は 16 / 8）。
-   - `boss` が `""` のステージは、最後のウェーブが終わるとクリアになる（`Stage._next_wave` → `Game.stage_cleared`）。`clear_note` に書いた行は STAGE CLEAR の下に出る（ステージ 5 は 2 体目のボスができるまで「TO BE CONTINUED」）。
+   - `boss` が `""` のステージは、最後のウェーブが終わるとクリアになる（`Stage._next_wave` → `Game.stage_cleared`）。`clear_note` に書いた行は STAGE CLEAR の下に出る（ステージ 5 は「ALL STAGES CLEAR」）。
+   - `boss2` にもう 1 体のボスを書くと、1 体目が倒れたあとに 2 体目が来る（最終面のステージ 5）。1 体目の最後の大爆発（`game.boss_destroyed`）の瞬間に `boss2_area` のエリアへ移り（背景がその爆発の下で変わる）、`boss2_wait` 秒後に `boss2_warning` の警告、そのあと 2 体目。そのあいだスクロールが一度速くなり（`Stage._surge`：1 体目の戦いの残骸が流れ去る）、2 体目が来るまでにボスの速さへ戻る。`--start=boss2` で 2 体目から始められる。
    - エリアに `scroll` を書くと、そのエリアのウェーブの間はその速さになる（`Game.area_scroll`。ステージ 5 の宇宙：AREA 3 は 7.5（衛星が画面にいて、レーザーを回す時間を稼ぐ）、AREA 4 は 17）。
    - 区画を流さないエリアは `{}`。ステージ 4 のボス戦は闘技場の床が区画の高さまで上がっているので、区画の代わりに貨物（`cargo`：床に直に置いたパレットの上のタイル）を壁際に流す。`lead` を書くと、そのエリアに入ってから最初の区画までスクロールをその距離だけ空ける（闘技場の床が来てから）。
    - `zako_fire` / `zako_early` で難しさ：小型機と砲台が `zako_fire` 倍の頻度で撃ち、`zako_early` なら撃ち始めの遅い敵（周回円盤・砲台）が早く撃ち始める（ステージ 3・4 は 2 / true、ステージ 5 は 3 / true。ステージ 1・2 は 1 / false）。ダートは 2 発目（3 倍なら 3 発目も）を 0.6 秒おきに、円盤はループの半周先で、後方強襲機は続けてもう 1 発、周回円盤はループに乗るところでも、砲台は撃つ間隔が半分（どれも予兆つき）。敵のスクリプトは `game.zako_fire()` / `game.zako_early()` で読む。
@@ -73,7 +74,7 @@ Stages ──> StageDef（stage1.gd …）
    - 地上にあるボス（GORGON）は地面といっしょにスクロールで来て、`game.scroll_hold` に欲しい速さを毎フレーム入れるとスクロールを握れる（自分の真上で止め、去るときに少しずつ戻して最後に -1 で手放す。`Game._tick_play` はその間 `scroll_hold` をそのまま使う。閲覧モード用に `game.scroll_speed` も同じ値にする）。部位は `ground = true` にすると、当たりは見えている位置（プレイ面への投影）で取る。地上の深いところまである要塞は、撃破のときに `Vox.sink_node`（爆発の下に描く）をかけない（深い形を沈めると絵が崩れる。もともと爆発より下にある。`GORGON.disarm`）。見えない装甲の当たり（`armored` の部位）は、狙わせたい部位の手前（下側）に置かない（ショットを吸ってしまう）。
    - `gauge()` の辞書に `fracs`（割合の配列）を入れると、ゲージが核ごとに横に並ぶ（GORGON の 2 つの目）。
    - 体力が尽きて最期の演出に入るときは `disarm()` を呼ぶ（全部位の当たり判定が消え、自機がぶつからず、弾も素通りする）。最後の大爆発は `game.big_blast(位置, 大きさ, 破片の色)`（1 = ボス、0.7 = 中ボス）。
-   - ステージのボス（`final`）は、倒れきったら `game.boss_destroyed(self)` を呼ぶとステージクリアになる。中ボスは去るときに `finished = true` にして `game.remove_boss(self)`。
+   - ステージのボス（`final`）は、倒れきったら `game.boss_destroyed(self)` を呼ぶとステージクリアになる（`boss2` のあるステージでは 2 体目へ）。中ボスは去るときに `finished = true` にして `game.remove_boss(self)`。
 2. `scripts/bosses/bosses.gd` の `KINDS` に足す。
 3. モデルを `scripts/models/boss_models.gd`（またはそのステージのモデルのグループ：ステージ 5 は `surface_models.gd`）に足す。
 4. ステージ定義の `boss`、または中ボスのウェーブに名前を書く。
@@ -92,7 +93,7 @@ Stages ──> StageDef（stage1.gd …）
 
 ## 背景を足す
 
-ステージ定義の `backdrop` に `nebula` / `planet` / `stars` / `deep` / `rocks` / `tunnel` / `sky` / `globe` を書く（どれも省略可。中身は `scripts/terrain/backdrop.gd` の冒頭）。ステージが変わると作り直される。色合いは配色（`palette.gd`、F2）が決める。
+ステージ定義の `backdrop` に `nebula` / `planet` / `stars` / `deep` / `rocks` / `tunnel` / `sky` / `globe` / `warp` を書く（どれも省略可。中身は `scripts/terrain/backdrop.gd` の冒頭）。ステージが変わると作り直される。色合いは配色（`palette.gd`、F2）が決める。
 
 ### トンネル（ステージ 2）
 
@@ -134,6 +135,14 @@ Stages ──> StageDef（stage1.gd …）
 - 巨大な岩（`solid`）は敵弾を種類を問わず止め（`Game._solids`）、ビーム（GORGON の目、衛星のレーザー）も `Game.solid_cut` で岩の手前で止まる。新しいビームの攻撃もこれを通す。
 - 重力の井戸（OMEGA CORTEX の重力渦）：`Bullets.well` / `well_pull` / `well_owner` を立てている間、その持ち主の遅い弾（`Bullets.WELL_MAX` 未満）は井戸へ引き寄せられ、届くと消える。自機を引くのは `Player.drift`（自機の動ける範囲に収める）。ボスが毎フレーム立て直すので、ボスがいなくなれば止まる。
 
+### ワープ空間（ステージ 5 の最終ボス）
+
+`backdrop.warp = {y, from: {エリア: w}, to: {エリア: w}, rate, speed, streaks: [[高さ, 数, 幅], ...]}` で、宇宙をワープ空間に変える（中身は `backdrop.gd` の `_build_warp` / `_warp_view`）。`w` は 0 がふつうの宇宙、1 がワープ。エリアごとに `to` へ `rate` の速さで近づく（ステージ 5 は 1 体目のボスの最後の大爆発で `core` へ移り、約 2 秒でワープになる。最終ボスの最期で `Backdrop.warp_out` が 0 へ戻す）。
+
+- 星雲の上（y −200）の板（`shaders/warp.gdshader`）：画面の上の外の 1 点へ向かって宇宙がじょうごのように歪み、そこから光の筋と色の雲がねじれながら流れ出してくる。色は配色の星雲の色を明るくしたもの（`Palette`）。戦いのある真ん中は暗く、左右ほど色が濃い。`w` につれて星雲の上に溶け込む。
+- 星の筋（`shaders/streak.gdshader`）：`streaks` の高さごとの層。`w` が上がるほど速く、長く尾を引いて画面の下へ流れる（どの層も同じ速さなので、深い層ほど画面ではゆっくり）。ふつうの星はそのぶん消えていく。
+- 閲覧モードの SCENERY の `S5 INTO WARP`（宇宙からワープへ）と `S5 WARP`。
+
 ### 小惑星帯（ステージ 3）
 
 `backdrop.rocks = {y: [近い, 遠い], count, meshes, size: [最小, 最大], seed}` で、地上の区画と深層のあいだに小惑星帯の岩を浮かべる（近いものから遠いものへ高さを散らし、ゆっくり転がりながら流れる）。地上と同じ沈んだ材質で暗く作り、プレイ面の岩（当たる岩）と見分けがつくようにする。`deep` にも遠くの巨大な岩（`deep_rock_a` / `deep_rock_b`）を置いている。
@@ -158,10 +167,10 @@ Stages ──> StageDef（stage1.gd …）
 | SHIP | 自機の 3 形態、並べた比較、形態ごとの武器（連射・スピア・ホーミング 8 発） |
 | SMALL | 小型機の編隊（`INFO.demos` の数だけ） |
 | MEDIUM | 中型機・コンテナ・小惑星・砲台（その敵が最初に出るステージの地形・背景の上で） |
-| BOSS | 中ボス・ボス（STAR CORTEX は発狂から、OUROBOROS は突進から、VULCAN PRESS は暴走・発狂から、LODESTAR は暴走から、TITAN DREDGE は薙ぎ払いと発狂から、TEMPEST は SUPERCELL から、BEHEMOTH は突進と OVERRUN から、GORGON は WRATH と DEATH STARE から、OMEGA CORTEX は OVERDRIVE から、も。そのボスのステージの背景の上で） |
+| BOSS | 中ボス・ボス（STAR CORTEX は発狂から、OUROBOROS は突進から、VULCAN PRESS は暴走・発狂から、LODESTAR は暴走から、TITAN DREDGE は薙ぎ払いと発狂から、TEMPEST は SUPERCELL から、BEHEMOTH は突進と OVERRUN から、GORGON は WRATH と DEATH STARE から、OMEGA CORTEX は OVERDRIVE から、STAR SOUL は SCATTER と SOULSTICE から、も。そのボスのステージの背景の上で） |
 | WAVES | 各ステージの全ウェーブを、そのエリアの地形と砲台つきで。最後にボス |
 | TERRAIN | エリアごとの地形の流れ、全区画を 1 つずつ静止で、IslandGen の全種類 |
-| SCENERY | 背景だけ（ステージ 1 は通常速度と 4 倍速、トンネルのあるステージは様式ごとに本編の速さと 1/4 の速さ、ステージ 4 はエリアごとの降下と基地への突入も、ステージ 5 は基地の出口と地表の様式） |
+| SCENERY | 背景だけ（ステージ 1 は通常速度と 4 倍速、トンネルのあるステージは様式ごとに本編の速さと 1/4 の速さ、ステージ 4 はエリアごとの降下と基地への突入も、ステージ 5 は基地の出口と地表の様式、ワープ空間への突入とワープ空間） |
 | FX | 爆発の大きさ別、ラザロ・ボスの最期（画面いっぱいの大爆発 `Fx.finale`、`Game.big_blast`）、自機の爆発、シールド、タイル破壊、火花、衝撃波、得点表示、弾のエネルギー化、予兆 |
 | BULLETS | 敵弾の種類と形 |
 | ITEMS | エネルギー・パワーアップ・スター |
@@ -201,7 +210,7 @@ Stages ──> StageDef（stage1.gd …）
 Godot_console.exe --headless --path . --fixed-fps 60 -- --autoplay --god --log --capture-every=1 --quit-on-clear --mute
 ```
 
-`fps=` の値だけは毎回変わるので除いて比べる。`--start=mid` / `--start=boss` / `--god` なしも合わせて見るとよい。
+`fps=` の値だけは毎回変わるので除いて比べる。`--start=mid` / `--start=boss` / `--start=boss2`（2 体目のボスのあるステージ） / `--god` なしも合わせて見るとよい。
 
 `--log` でステージをクリアすると、調整用に次の行も出る（これも毎回同じになる）。
 

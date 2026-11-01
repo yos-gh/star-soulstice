@@ -72,7 +72,7 @@ static func _home(kind: String, stages: Array[StageDef]) -> StageDef:
 	if home > 0 and home <= stages.size():
 		return stages[home - 1]
 	for d in stages:
-		if d.boss == kind:
+		if d.boss == kind or d.boss2 == kind:
 			return d
 		for w: Dictionary in d.waves:
 			for s: Array in w["spawns"]:
@@ -110,14 +110,14 @@ static func _bosses(stages: Array[StageDef]) -> Array:
 		var info := Bosses.info(kind)
 		var d := _home(kind, stages)
 		# the area it is fought over sets the scenery (a tunnel's style)
-		var area := d.boss_area if d.boss == kind else d.first_area
+		var area := d.boss_area if d.boss == kind else (d.boss2_area if d.boss2 == kind else d.first_area)
 		for w: Dictionary in d.waves:
 			for s: Array in w["spawns"]:
 				if s[1] == kind:
 					area = w["area"]
 		for demo: Array in info.get("demos", [["FULL", ""]]):
 			out.append({"name": "%s  %s" % [info.get("name", kind), demo[0]], "type": "boss", "kind": kind, "skip": demo[1], "stage": d, "area": area,
-				"scroll": d.boss_scroll if d.boss == kind else d.scroll,
+				"scroll": d.boss_scroll if (d.boss == kind or d.boss2 == kind) else d.scroll,
 				"desc": "%s：%s" % [{"mid": "中ボス", "boss": "ボス"}.get(info.get("role", ""), ""), info.get("desc", "")]})
 	return out
 
@@ -136,6 +136,9 @@ static func _waves(stages: Array[StageDef]) -> Array:
 		if d.boss != "":
 			out.append({"name": "S%d BOSS  %s" % [d.number, Bosses.title(d.boss)], "type": "boss", "kind": d.boss, "skip": "", "stage": d,
 				"area": d.boss_area, "terrain": true, "scroll": d.boss_scroll, "desc": "ステージのボス（ボス戦の地形つき）"})
+		if d.boss2 != "":
+			out.append({"name": "S%d BOSS 2  %s" % [d.number, Bosses.title(d.boss2)], "type": "boss", "kind": d.boss2, "skip": "", "stage": d,
+				"area": d.boss2_area, "terrain": true, "scroll": d.boss_scroll, "desc": "ステージの 2 体目のボス（ボス戦の背景つき）"})
 	return out
 
 
@@ -215,6 +218,15 @@ static func _scenery(stages: Array[StageDef]) -> Array:
 				"desc": "トンネル（%s）を本編の速さで。仕切りのリブ・目玉の区画・エリアの境のゲート（地形なし）" % style})
 			out.append({"name": "S%d TUNNEL  %s  SLOW" % [d.number, style.to_upper()], "type": "backdrop", "stage": d, "area": a, "scroll": d.scroll * 0.25,
 				"desc": "同じトンネルを 1/4 の速さで"})
+		# into warp space (the last boss): from the first boss's space, then
+		# held there
+		var warp: Dictionary = d.backdrop.get("warp", {})
+		for a: String in (warp.get("to", {}) as Dictionary):
+			var prev := d.boss_area if a == d.boss2_area else d.first_area
+			out.append({"name": "S%d INTO WARP" % d.number, "type": "backdrop", "stage": d, "area": prev, "then": [1.0, a], "loop": 8.0, "scroll": d.boss_scroll,
+				"desc": "宇宙が歪んでワープ空間に変わるところ（星が伸びて軌跡を残して流れ、色のついた歪みが渦巻く）"})
+			out.append({"name": "S%d WARP" % d.number, "type": "backdrop", "stage": d, "area": a, "scroll": d.boss_scroll,
+				"desc": "ワープ空間（最終ボスの背景）"})
 	return out
 
 

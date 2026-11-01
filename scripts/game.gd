@@ -19,7 +19,8 @@ extends Node3D
 ##   --autoplay        a simple bot plays
 ##   --god             the player cannot die
 ##   --stage=N         begin at stage N
-##   --start=N|mid|boss  begin at wave N, the mid-boss or the boss
+##   --start=N|mid|boss|boss2  begin at wave N, the mid-boss, the boss or
+##                     the second boss (the last stage's)
 ##   --capture=DIR     save a screenshot every --capture-every seconds (default 3)
 ##   --quit-after=S    quit after S seconds of play
 ##   --quit-on-clear   quit when the stage ends (clear or game over)
@@ -524,12 +525,15 @@ func boss_dying() -> void:
 	items.vacuum = true
 
 
-## Called by a boss when it is gone for good; the stage boss clears the stage.
+## Called by a boss when it is gone for good; the stage boss clears the
+## stage, unless a second boss follows it (StageDef.boss2).
 func boss_destroyed(b: BossBase) -> void:
 	if state == State.VIEWER:
 		viewer.on_boss_destroyed(b)
 		return
 	if not b.final:
+		return
+	if stage != null and stage.next_boss():
 		return
 	stage_cleared(stage_def.clear_note)
 
