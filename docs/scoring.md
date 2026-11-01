@@ -24,7 +24,7 @@
 | 中ボス ラザロ（撃破ボーナス） | 20,000 | 240 | `scripts/bosses/lazaro.gd` `SCORE` / `HP` |
 | ボスのポッド（4基） | 5,000 | 90 | `scripts/bosses/star_cortex.gd` `POD_SCORE` / `POD_HP` |
 | ボス STAR CORTEX のシャッター（2 枚） | 5,000 | 220 | `scripts/bosses/star_cortex.gd` `SHUTTER_SCORE` / `SHUTTER_HP` |
-| ボス STAR CORTEX の目 | 50,000 | 1,000 | `scripts/bosses/star_cortex.gd` `EYE_SCORE` / `EYE_HP` |
+| ボス STAR CORTEX の目 | 50,000 | 1,400 | `scripts/bosses/star_cortex.gd` `EYE_SCORE` / `EYE_HP` |
 | 中ボス OUROBOROS の車両（8 両） | 1,500 | 30 | `scripts/bosses/ouroboros.gd` `CAR_SCORE` / `CAR_HP` |
 | 中ボス OUROBOROS の頭（撃破） | 25,000 | 560 | `scripts/bosses/ouroboros.gd` `SCORE` / `HEAD_HP` |
 | ボス VULCAN PRESS の砲塔（2 基） | 3,000 | 70 | `scripts/bosses/vulcan_press.gd` `VENT_SCORE` / `VENT_HP` |
@@ -133,7 +133,7 @@
 
 | ステージ | 破壊 | アイテム | タイムボーナス | クリアタイム |
 |---|---:|---:|---:|---:|
-| 1 | 約 41 万 | 約 38 万（うちスター 39 個、パワーアップ 6 個） | 約 18 万 | 約 118 秒 |
+| 1 | 約 41 万 | 約 38 万（うちスター 39 個、パワーアップ 6 個） | 約 18 万 | 約 116 秒 |
 | 2（ステージ 1 から続けて） | 約 41 万 | 約 64 万（うちスター 51 個） | 約 18 万 | 約 125 秒 |
 | 2（ステージ 2 から始めて、第 1 形態から） | 約 39 万 | 約 51 万（うちスター 55 個） | 約 18 万 | 約 119 秒 |
 | 3（ステージ 2 から続けて） | 約 49 万 | 約 54 万（うちスター 38 個） | 約 18 万 | 約 118 秒 |

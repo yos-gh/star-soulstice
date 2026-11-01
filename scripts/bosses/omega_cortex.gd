@@ -152,7 +152,6 @@ var ship_last := Vector3.ZERO
 
 func setup(g: Game) -> void:
 	game = g
-	gaze = GazeStrikes.new(g, self)
 	center = Vector3(0, 0, game.field_top - 10.0)
 	ship_last = game.player.position
 	# order matters: shots test enemies in list order, so the shutters come
@@ -175,6 +174,7 @@ func setup(g: Game) -> void:
 	eye.armored = true
 	eye.score = EYE_SCORE
 	eye.blast = 6.0
+	gaze = GazeStrikes.new(g, self, eye)
 	for k in 4:
 		var e := game.spawn_part(self, "boss_pod", 1.45)
 		e.hp = POD_HP

@@ -1,8 +1,9 @@
 extends BossBase
 ## Stage 1 boss STAR CORTEX (an homage to Star Soldier's Star Brain): an
-## octagonal fortress whose great eye opens and shuts. The hull is armour
-## (two blocks on the flanks; a channel in front of the eye lets shots in);
-## four pods at the corners fire shell fans; the eye is only vulnerable while
+## octagonal fortress whose great eye opens and shuts. No invisible armour:
+## a shot that misses every part flies on past the hull (the old flank
+## armour sat right below the rear pods and swallowed shots at them); four
+## pods at the corners fire shell fans; the eye is only vulnerable while
 ## its shutters are open, and then it answers with light energy patterns.
 ## The two shutter halves can be shot off: with one gone, shots get in on
 ## that side even while the eye is shut.
@@ -22,13 +23,11 @@ const INFO := {
 	"desc": "目が開いた時だけ効く（閉じている時間より長く開く）。目を覆うシャッター（左右 2 枚）は壊せて、壊した側からは閉じていても撃ち込める。開くと針弾・照準爆撃（照準が自機を少し遅れて追い、止まるとその場が炸裂）・花びら状の物理弾。ポッドは扇状の物理弾。ポッドを失うか時間で発狂：揺れながら、閉じている間は空いた穴から渦巻き弾、開くと照準爆撃 3 つ・長い花びら・広い散弾・はじけて輪になる弾",
 	"demos": [["FULL", ""], ["ENRAGED", "B"]],
 }
-const EYE_HP := 1000.0
+const EYE_HP := 1400.0
 const EYE_SCORE := 50000
 const POD_HP := 90.0
 const POD_SCORE := 5000
 const POD_OFF := [Vector3(-5.6, 0, -2.4), Vector3(5.6, 0, -2.4), Vector3(-4.3, 0, 3.3), Vector3(4.3, 0, 3.3)]
-const ARMOUR_OFF := [Vector3(-4.0, 0, 0.0), Vector3(4.0, 0, 0.0)]
-const ARMOUR_R := 2.7
 const SHUTTER_HP := 220.0
 const SHUTTER_SCORE := 5000
 const SHUTTER_R := 1.35
@@ -41,7 +40,6 @@ const OPEN_B := 4.6
 const ENRAGE_T := 45.0
 
 var hull: MeshInstance3D
-var armour: Array[Enemy] = []
 var eye: Enemy
 var pods: Array[Enemy] = []
 var shutters: Array[Enemy] = []  # left, right: they can be shot off
@@ -65,11 +63,9 @@ var dying_t := 0.0
 
 func setup(g: Game) -> void:
 	game = g
-	gaze = GazeStrikes.new(g, self)
 	center = Vector3(0, 0, game.field_top - 9.0)
 	# order matters: shots test enemies in list order, so the shutters come
-	# before the eye they cover, and the eye and pods before the hull armour
-	# that would otherwise swallow them.
+	# before the eye they cover
 	for s in [-1, 1]:
 		var sh := game.spawn_part(self, "boss_shutter", SHUTTER_R)
 		sh.hp = SHUTTER_HP
@@ -89,6 +85,7 @@ func setup(g: Game) -> void:
 	eye.armored = true
 	eye.score = EYE_SCORE
 	eye.blast = 6.0
+	gaze = GazeStrikes.new(g, self, eye)
 	for k in 4:
 		var e := game.spawn_part(self, "boss_pod", 1.45)
 		e.hp = POD_HP
@@ -101,11 +98,6 @@ func setup(g: Game) -> void:
 	hull = MeshInstance3D.new()
 	hull.mesh = Vox.get_mesh("boss_hull")
 	add_child(hull)
-	for k in 2:
-		var a := game.spawn_part(self, "", ARMOUR_R)
-		a.armored = true
-		a.hp = 1e9
-		armour.append(a)
 	_place()
 
 
@@ -138,8 +130,6 @@ func pods_alive() -> int:
 
 func _place() -> void:
 	hull.position = center
-	for k in 2:
-		armour[k].position = center + ARMOUR_OFF[k]
 	eye.position = center + Vector3(0, -0.4, 0)
 	for k in 4:
 		if not pods[k].dead:
@@ -215,7 +205,7 @@ func tick(dt: float) -> void:
 				destroyed = true
 				finished = true
 				visible = false
-				for q in [eye] + armour + pods + shutters:
+				for q in [eye] + pods + shutters:
 					game.remove_enemy(q)
 					q.visible = false
 				game.boss_destroyed(self)
