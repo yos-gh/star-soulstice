@@ -143,9 +143,14 @@ func _gatling(dt: float) -> void:
 				phase_t = 0.0
 				shot_t = 0.0
 		2:
-			# the stream, its aim swinging after the ship
+			# the stream, its aim swinging after the ship; spun up before it is
+			# on screen, it opens up the moment it comes on (it used to give up
+			# here and wait a whole gap: yos found it slow to start)
 			gun_a = rotate_toward(gun_a, aim, GAT_TURN * dt)
 			barrels.rotation.z += dt * 40.0
+			var live := game.can_fire(position)
+			if not live and position.z < game.field_top + 1.0:
+				phase_t = 0.0
 			shot_t -= dt
 			if shot_t <= 0.0:
 				shot_t = GAT_EVERY
@@ -154,7 +159,7 @@ func _gatling(dt: float) -> void:
 					game.bullets.fire(_muzzle(), gun_a + (0.04 if shot_k % 2 == 0 else -0.04), GAT_SPEED, Bullets.ORB, self, Bullets.ROUND, 0.0, 0.0, 0.85)
 					if shot_k % 3 == 0:
 						game.fx.flash(_muzzle(), 0.25)
-			if phase_t >= GAT_T or not game.can_fire(position):
+			if phase_t >= GAT_T or (not live and position.z >= game.field_top + 1.0):
 				phase = 3
 				phase_t = 0.0
 	gun.rotation.y = atan2(-cos(gun_a), -sin(gun_a))

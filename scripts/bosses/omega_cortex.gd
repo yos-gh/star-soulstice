@@ -24,8 +24,9 @@ extends BossBase
 ##   vortex          (OVERDRIVE) the open eye drags the ship toward it, then
 ##                   the NOVA: a ring of iron balls and a ring of shells burst
 ##                   out to about where the ship is and halt there; then the
-##                   eye draws its slow bullets back in (shells that passed
-##                   the ship come back up past it)
+##                   eye draws them back in (they are tethered: hollow rings
+##                   on lines of light to the eye, so they read as coming
+##                   back; only they are drawn back)
 ## Phase A: the pods fire shell fans in turn, rail shots, arc tripwires. The
 ## eye (only vulnerable while open, open longer than shut; with a shutter
 ## shot off, shots get in on that side while it is shut) opens with a needle
@@ -98,10 +99,10 @@ const BOLT_LIVE := 0.25
 const VORTEX_AT := 2.2
 const NOVA_LOCK := 1.3
 const NOVA_FLY := 1.3
-const WELL_T := 1.4
+const WELL_T := 1.8  # (on past the eye's shutting: till the NOVA is all back)
 const PULL := 5.0  # the drag on the ship (it flies 17) ...
 const DRAG_STOP := 9.0  # ... never closer than this below the core (clear of its body)
-const WELL := 9.0
+const WELL := 14.0
 
 static var _arc_mat: ShaderMaterial
 
@@ -331,6 +332,8 @@ func tick(dt: float) -> void:
 		ship_last = p
 	pulling = false
 	game.bullets.well_pull = 0.0
+	game.bullets.tether_owner = get_instance_id()
+	game.bullets.tether_at = eye.position
 	match phase:
 		0:
 			center.z = move_toward(center.z, game.field_top + 7.0, 4.0 * dt)
@@ -432,7 +435,8 @@ func _eye_cycle(dt: float, closed_time: float, open_time: float) -> void:
 			_warn_at("shotgun1", c + 0.9 + w, w, Game.Warn.SHOT)
 			if _fire_once("shotgun1", c + 0.9 + w):
 				game.bullets.fan(eye.position, game.bullets.aim(eye.position), 11, 60.0, 9.5, Bullets.ORB, self, Bullets.NEEDLE)
-			_vortex(c + VORTEX_AT)
+	if phase == 2:
+		_vortex(c + VORTEX_AT)
 	if cycle_t > closed_time + open_time + 0.4 and not _blades_out():
 		cycle_t = 0.0
 		fired.clear()
@@ -572,6 +576,7 @@ func _vortex(at: float) -> void:
 		var v0 := 2.0 * (reach + 0.5) / NOVA_FLY
 		for k in 8:
 			game.bullets.fire(eye.position, aim + PI / 8.0 + TAU * k / 8.0, v0, Bullets.IRON, self, Bullets.ROUND, v0 / NOVA_FLY, 0.0)
+			game.bullets.tether()
 		var head := aim + (0.35 if ship_v.x > 0.0 else -0.35)
 		v0 = 2.0 * (reach + 2.0) / NOVA_FLY
 		for i in 28:
@@ -579,6 +584,7 @@ func _vortex(at: float) -> void:
 			if absf(wrapf(a - head, -PI, PI)) < TAU / 28.0 * 2.0:
 				continue
 			game.bullets.fire(eye.position, a, v0, Bullets.SHELL, self, Bullets.ROUND, v0 / NOVA_FLY, 0.0, Bullets.BIG if i % 2 == 0 else Bullets.SMALL)
+			game.bullets.tether()
 		game.flash_a = maxf(game.flash_a, 0.15)
 		game.shake(0.7)
 		game.sfx.play("exp_m")
@@ -631,7 +637,7 @@ func _rails(dt: float) -> void:
 	for i in 2:
 		rail_k = (rail_k + 1) % 2
 		var r := rails[rail_k]
-		if r.dead or not game.can_fire(r.position):
+		if r.dead or not game.boss_can_fire(r.position):
 			continue
 		var muzzle := r.position + Vector3(cos(float(rail_a[rail_k])), 0, sin(float(rail_a[rail_k]))) * RAIL_LEN
 		var tos: Array = [game.line_to_bottom(muzzle, game.player.position)]
@@ -693,7 +699,7 @@ func _mines(dt: float) -> void:
 
 
 func _launch_mines() -> void:
-	if not game.can_fire(center):
+	if not game.boss_can_fire(center):
 		return
 	var p := game.player.position
 	var hw := game.field_hw - 1.5
@@ -859,7 +865,7 @@ func _bolts(dt: float) -> void:
 		if rails[bolt_k].dead:
 			break
 	var from: Vector3 = center + RAIL_OFF[bolt_k]
-	if not game.can_fire(from):
+	if not game.boss_can_fire(from):
 		return
 	var to := game.player.position
 	var dir := to - from

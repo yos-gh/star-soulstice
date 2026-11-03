@@ -265,7 +265,7 @@ func _spray(dt: float) -> void:
 	if berserk:
 		# the head alone: rings of shells, big and small by turns
 		ring_t -= dt
-		if ring_t <= 0.0 and game.can_fire(hpos):
+		if ring_t <= 0.0 and game.boss_can_fire(hpos):
 			ring_t = 0.9
 			game.bullets.ring(hpos, 14, 4.6, Bullets.SHELL, self, life_t * 1.3)
 		return
@@ -275,7 +275,7 @@ func _spray(dt: float) -> void:
 			continue
 		car_t[i] = 1.4
 		var c := cars[i]
-		if not game.on_field(c.position, -0.5) or not game.can_fire(c.position):
+		if not game.on_field(c.position, -0.5) or not game.boss_can_fire(c.position):
 			continue
 		var out := _flat(c.position - center)
 		game.bullets.fire(c.position, _ang(out), 4.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if i % 2 == 0 else Bullets.SMALL)
@@ -285,10 +285,10 @@ func _spray(dt: float) -> void:
 ## coil.
 func _needles(at: float) -> void:
 	var k := "n%.1f" % at
-	if st >= at - Enemy.WINDUP_SHOT and not fired.has(k) and game.can_fire(hpos):
+	if st >= at - Enemy.WINDUP_SHOT and not fired.has(k) and game.boss_can_fire(hpos):
 		fired[k] = true
 		game.warn_then(head, Enemy.WINDUP_SHOT, Game.Warn.SHOT, func() -> void:
-			if game.can_fire(head.position):
+			if game.boss_can_fire(head.position):
 				game.bullets.fan(head.position, game.bullets.aim(head.position), 3, 14.0, 8.5, Bullets.ORB, self, Bullets.NEEDLE))
 
 

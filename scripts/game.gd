@@ -366,6 +366,12 @@ func can_fire(p: Vector3) -> bool:
 	return combat_on() and player.alive and on_field(p, -0.8) and p.z < player.position.z - 2.0
 
 
+## A boss's or mid-boss's core and main weapons fire even with the ship right
+## on top of them (no seal: yos); only their small guns use can_fire.
+func boss_can_fire(p: Vector3) -> bool:
+	return combat_on() and player.alive and on_field(p, -0.8)
+
+
 ## Enemies attack only during play (and in the viewer, unless it says no).
 func combat_on() -> bool:
 	return state == State.PLAY or (state == State.VIEWER and viewer.fire_on)

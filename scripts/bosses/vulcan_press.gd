@@ -320,7 +320,7 @@ func _round_b(dt: float) -> void:
 	elif cycle_t < 7.8:
 		down = 1.0 - _smooth((cycle_t - 6.4) / 1.4)
 	center.z = rest_z + ADVANCE * down
-	if cycle_t > 2.4 and cycle_t < 6.4 and game.can_fire(center + CORE_OFF):
+	if cycle_t > 2.4 and cycle_t < 6.4 and game.boss_can_fire(center + CORE_OFF):
 		spiral_t -= dt
 		if spiral_t <= 0.0:
 			spiral_t = 0.13
@@ -371,7 +371,7 @@ func _round_c(dt: float) -> void:
 	center.x = sin(st * 0.7) * 4.0
 	var cp := center + CORE_OFF + Vector3(0, 0, 1.4)
 	# twin hoses: two streams of shells swinging out and back, mirrored
-	if cycle_t < 2.4 and game.can_fire(cp):
+	if cycle_t < 2.4 and game.boss_can_fire(cp):
 		hose_t -= dt
 		if hose_t <= 0.0:
 			hose_t = 0.075
@@ -386,7 +386,7 @@ func _round_c(dt: float) -> void:
 	# slugs down three lanes, twice a round
 	_slugs("a", 2.2)
 	_slugs("b", 5.4)
-	if _once("split", 3.3) and game.can_fire(cp):
+	if _once("split", 3.3) and game.boss_can_fire(cp):
 		# three big shells that burst into rings
 		for s in [-1, 0, 1]:
 			game.bullets.fire(cp, game.bullets.aim(cp) + s * deg_to_rad(25.0), 4.5, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, 1.6)
@@ -399,7 +399,7 @@ func _round_c(dt: float) -> void:
 		game.warn(core, Enemy.WINDUP_SHOT + 0.15, Game.Warn.SHOT, core.radius)
 	if _once("core", 4.5 + Enemy.WINDUP_SHOT + 0.15):
 		var at := core.position + Vector3(0, 0, 1.6)
-		if game.can_fire(at):
+		if game.boss_can_fire(at):
 			game.bullets.fan(at, game.bullets.aim(at), 9, 36.0, 10.0, Bullets.ORB, self, Bullets.NEEDLE)
 
 
@@ -551,7 +551,7 @@ func _impact(h: Dictionary) -> void:
 ## Both vent guns: a fan of shells toward the ship (`size` BIG leads, SMALL follows).
 func _vents(size: float) -> void:
 	for v in vents:
-		if v.dead or not game.can_fire(v.position):
+		if v.dead or not game.boss_can_fire(v.position):
 			continue
 		var at := v.position + Vector3(0, 0, 1.0)
 		var off := 0.0 if size == Bullets.BIG else deg_to_rad(5.0)
@@ -561,7 +561,7 @@ func _vents(size: float) -> void:
 ## The core's telegraphed needle burst (fired WINDUP after its warning).
 func _needles() -> void:
 	var at := core.position + Vector3(0, 0, 1.6)
-	if game.can_fire(at):
+	if game.boss_can_fire(at):
 		game.bullets.fan(at, game.bullets.aim(at), 5, 18.0, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 
 

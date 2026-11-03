@@ -40,7 +40,7 @@ var col := Color(1.0, 0.35, 0.75)
 var mesh_name := ""  # LOB: a model thrown instead of a glob of light
 var track_t := 0.9  # LANCE: following the ship ...
 var lock_t := 0.45  # ... then held still (LOB: marked) ...
-var fly_t := 0.75  # ... then the shot on its way
+var fly_t := 0.95  # ... then the shot on its way
 var r := 1.9  # the burst's reach
 var peak := 6.0  # LOB: how high it arcs
 ## {a: anchor, t, shells, off: aim offset from the ship, src: Node3D,
@@ -161,8 +161,13 @@ func _at(s: Dictionary, f: float) -> Vector3:
 		return p
 	var side: float = s["side"]
 	var u := f * f * 0.45 + f * 0.55
-	var p1 := from + Vector3(side * 9.0, 0, 0.5)
-	var p2 := to + Vector3(-side * 2.0, 0, -6.0)
+	# a wide arc out to its side and back in: out past the ship's side of the
+	# screen, then down and round onto the spot from that side
+	var p1 := from + Vector3(side * 15.0, 0, -1.0)
+	var p2 := to + Vector3(side * 10.0, 0, -6.0)
+	var lim := game.field_hw - 1.0
+	p1.x = clampf(p1.x, -lim, lim)
+	p2.x = clampf(p2.x, -lim, lim)
 	var v := 1.0 - u
 	var p := from * v * v * v + p1 * 3.0 * v * v * u + p2 * 3.0 * v * u * u + to * u * u * u
 	p.y = 0.6

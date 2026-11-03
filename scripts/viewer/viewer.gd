@@ -60,6 +60,7 @@ var boss: BossBase
 var pivot: Node3D  # turntable for models
 var models: Array[MeshInstance3D] = []
 var emit_t := 0.0
+var well_t := 0.0  # the returning-ring demo: since it was fired
 var break_t := -1.0  # TILE BREAK: seconds until the tiles go
 var dummy: Enemy  # what telegraphs point at
 var stream_t := 0.0
@@ -354,6 +355,14 @@ func _step(dt: float) -> void:
 			if emit_t <= 0.0:
 				emit_t = 1.4
 				_emit_bullets()
+			if int(entry["shape"]) == -2:
+				# the returning ring: tied to where it was fired, drawn back after it halts
+				well_t += dt
+				game.bullets.tether_owner = get_instance_id()
+				game.bullets.tether_at = Vector3(0, 0, -6.0)
+				game.bullets.well = Vector3(0, 0, -6.0)
+				game.bullets.well_owner = get_instance_id()
+				game.bullets.well_pull = 14.0 if well_t > 1.8 and well_t < 4.2 else 0.0
 		"items":
 			if game.items.n == 0:
 				_line_up_items()
@@ -511,18 +520,26 @@ func _emit_bullets() -> void:
 	var shp: int = entry["shape"]
 	var at := Vector3(0, 0, -6.0)
 	loops += 1
+	if shp == -2:
+		# a ring that flies out, halts and is drawn back (tethered)
+		for i in 8:
+			game.bullets.fire(at, TAU * i / 8.0 + loops * 0.3, 12.0, k, self, Bullets.ROUND, 12.0 / 1.4, 0.0)
+			game.bullets.tether()
+		well_t = 0.0
+		emit_t = 5.0
+		return
 	if k == Bullets.IRON:
-		# three armoured balls
+		# slugs down three lines
 		for i in 3:
-			game.bullets.fire(at, PI / 2.0 + deg_to_rad(18.0) * (i - 1), 4.6, k, self)
-		emit_t = 2.6
+			game.bullets.fire(at, PI / 2.0 + deg_to_rad(18.0) * (i - 1), 14.0, k, self)
+		emit_t = 1.2
 		return
 	if shp < 0:
-		# big shells that burst into rings
+		# big ones that burst into rings
 		for s in [-1, 1]:
-			game.bullets.fire(at, PI / 2.0 + s * 0.5, 4.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, 1.6)
-			game.bullets.split(0.9, 10)
-		emit_t = 2.4
+			game.bullets.fire(at, PI / 2.0 + s * 0.5, 4.2 if k == Bullets.SHELL else 3.6, k, self, Bullets.ROUND, 0.0, 0.0, 1.6 if k == Bullets.SHELL else 1.0)
+			game.bullets.split(1.6, 10)
+		emit_t = 2.6
 		return
 	var n := 8 if k == Bullets.HEAVY else 16
 	game.bullets.ring(at, n, 3.2, k, self, loops * 0.2, 0, 0.0, shp)

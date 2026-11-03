@@ -261,7 +261,7 @@ func _round_a(dt: float) -> void:
 ## wide needle burst, rings of shells once the boulders are gone.
 func _round_b(dt: float) -> void:
 	cycle_t += dt
-	if cycle_t > 0.2 and cycle_t < 3.6 and game.can_fire(center):
+	if cycle_t > 0.2 and cycle_t < 3.6 and game.boss_can_fire(center):
 		spiral_t -= dt
 		if spiral_t <= 0.0:
 			spiral_t = 0.14
@@ -276,7 +276,7 @@ func _round_b(dt: float) -> void:
 		_needles(5, 26.0)
 	if _once("s2", 2.6):
 		_sling()
-	if _once("ring", 3.0) and _held() == 0 and game.can_fire(center):
+	if _once("ring", 3.0) and _held() == 0 and game.boss_can_fire(center):
 		game.bullets.ring(center, 16, 4.8, Bullets.SHELL, self, life_t)
 	if cycle_t >= ROUND_B:
 		cycle_t = 0.0
@@ -300,7 +300,7 @@ func _sling() -> void:
 	var best := {}
 	for r in rocks:
 		var e: Enemy = r["e"]
-		if r["state"] == "orbit" and game.can_fire(e.position) and (best.is_empty() or e.position.z > (best["e"] as Enemy).position.z):
+		if r["state"] == "orbit" and game.boss_can_fire(e.position) and (best.is_empty() or e.position.z > (best["e"] as Enemy).position.z):
 			best = r
 	if best.is_empty():
 		return
@@ -381,7 +381,7 @@ func _orbit(dt: float) -> void:
 
 func _fans(size: float) -> void:
 	for pl in pylons:
-		if pl.dead or not game.can_fire(pl.position):
+		if pl.dead or not game.boss_can_fire(pl.position):
 			continue
 		var off := 0.0 if size == Bullets.BIG else deg_to_rad(5.0)
 		game.bullets.fan(pl.position, game.bullets.aim(pl.position) + off, 5 if size == Bullets.BIG else 4, 50.0 if size == Bullets.BIG else 42.0, 5.0 if size == Bullets.BIG else 5.6, Bullets.SHELL, self, Bullets.ROUND, size)
@@ -390,7 +390,7 @@ func _fans(size: float) -> void:
 ## The core's telegraphed needle burst (fired after its warning).
 func _needles(count: int, spread: float) -> void:
 	var at := core.position + Vector3(0, 0, 1.4)
-	if game.can_fire(at):
+	if game.boss_can_fire(at):
 		game.bullets.fan(at, game.bullets.aim(at), count, spread, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 
 

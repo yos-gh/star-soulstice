@@ -428,7 +428,7 @@ func _shed(k: int, dt: float) -> void:
 		return
 	ss["shed"] = 0.09
 	var p := shards[k].position
-	if not game.can_fire(p):
+	if not game.boss_can_fire(p):
 		return
 	var a := float(ss["ang"])
 	for s in [-1.0, 1.0]:
@@ -542,7 +542,7 @@ func _brilliant(dt: float) -> void:
 			for k in range(spoke_k % 2, 8, 2):
 				var a := TAU * k / 8.0 + spin_a
 				var at := center + Vector3(cos(a), 0, sin(a)) * CoreModels.R
-				if game.can_fire(at):
+				if game.boss_can_fire(at):
 					game.bullets.fire(at, a, 4.6, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if k % 4 == 0 else Bullets.SMALL)
 	_needles("n1", 2.9, 7, 30.0, 9.0)
 	_needles("n2", 3.7, 9, 46.0, 9.5)
@@ -572,7 +572,7 @@ func _scatter(dt: float) -> void:
 			if String(shard_st[volley_k]["mode"]) != "form":
 				continue
 			var p := shards[volley_k].position
-			if game.can_fire(p):
+			if game.boss_can_fire(p):
 				game.bullets.fan(p, game.bullets.aim(p), 3, 28.0, 5.4, Bullets.SHELL, self)
 			break
 	if _once("dash1", 1.0):
@@ -597,7 +597,7 @@ func _soulstice(dt: float) -> void:
 			for k in range(spoke_k % 2, 8, 2):
 				var a := TAU * k / 8.0 + spin_a
 				var at := _tip(k)
-				if game.can_fire(at):
+				if game.boss_can_fire(at):
 					game.bullets.fire(at, a, 4.8, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if k % 4 == spoke_k % 4 else Bullets.SMALL)
 	# heavy balls that burst into rings
 	if cycle_t >= 3.4 - 0.8 and not fired.has("w_heavy"):
@@ -621,7 +621,7 @@ func _needles(key: String, at: float, count: int, spread: float, speed: float) -
 	if cycle_t >= at - w and not fired.has("w_" + key):
 		fired["w_" + key] = true
 		game.warn(heart, w, Game.Warn.SHOT, heart.radius)
-	if _once(key, at) and game.can_fire(center):
+	if _once(key, at) and game.boss_can_fire(center):
 		game.bullets.fan(center, game.bullets.aim(center), count, spread, speed, Bullets.ORB, self, Bullets.NEEDLE)
 
 

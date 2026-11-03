@@ -313,14 +313,14 @@ func _round_c(dt: float) -> void:
 	sway_t += dt
 	center.x = move_toward(center.x, sin(sway_t * 0.7) * 3.5, 4.0 * dt)
 	var cp := center + CORE_OFF + Vector3(0, 0, 1.2)
-	if ((cycle_t > 0.4 and cycle_t < 2.6) or (cycle_t > 4.8 and cycle_t < 6.6)) and game.can_fire(cp):
+	if ((cycle_t > 0.4 and cycle_t < 2.6) or (cycle_t > 4.8 and cycle_t < 6.6)) and game.boss_can_fire(cp):
 		spiral_t -= dt
 		if spiral_t <= 0.0:
 			spiral_t = 0.14
 			spiral_a += 0.39
 			for arm in 2:
 				game.bullets.fire(cp, spiral_a + arm * PI, 4.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if arm == 0 else Bullets.SMALL)
-	if _once("burst", 0.2) and game.can_fire(cp):
+	if _once("burst", 0.2) and game.boss_can_fire(cp):
 		# big shells that burst into rings
 		for s in [-1, 0, 1]:
 			game.bullets.fire(cp, game.bullets.aim(cp) + s * deg_to_rad(28.0), 4.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, 1.7)
@@ -328,7 +328,7 @@ func _round_c(dt: float) -> void:
 	_rockfall("f1", 1.0, 3)
 	_big_balls("i", 2.8)
 	for k in 3:
-		if _once("ring%d" % k, 3.6 + k * 0.5) and game.can_fire(cp):
+		if _once("ring%d" % k, 3.6 + k * 0.5) and game.boss_can_fire(cp):
 			game.bullets.ring(cp, 16, 4.6, Bullets.SHELL, self, _ring_a(k))
 	_rockfall("f2", 4.4, 4)
 	if _once("v", 5.0):
@@ -597,7 +597,7 @@ func _muzzle(dir: Vector3) -> Vector3:
 ## WINDUP_MOVE later (only if the belt brought one, unless `free`).
 func _driver_shot(key: String, at: float, free := false) -> void:
 	if _once("w_" + key, at):
-		if (ammo <= 0 and not free) or not game.can_fire(driver.position):
+		if (ammo <= 0 and not free) or not game.boss_can_fire(driver.position):
 			fired[key] = true
 			return
 		if not free:
@@ -614,7 +614,7 @@ func _driver_shot(key: String, at: float, free := false) -> void:
 ## RAMPAGE: three boulders fanned out from the driver, each line marked.
 func _driver_fan(key: String, at: float) -> void:
 	if _once("w_" + key, at):
-		if not game.can_fire(driver.position):
+		if not game.boss_can_fire(driver.position):
 			fired[key] = true
 			return
 		var d := game.player.position - driver.position
@@ -686,7 +686,7 @@ func _rockfall(key: String, at: float, n: int) -> void:
 func _vents(size: float) -> void:
 	for o: Vector3 in VENT_OFF:
 		var at := center + o + Vector3(0, 0, 0.8)
-		if not game.can_fire(at):
+		if not game.boss_can_fire(at):
 			continue
 		var off := 0.0 if size == Bullets.BIG else deg_to_rad(5.0)
 		game.bullets.fan(at, game.bullets.aim(at) + off, 7 if size == Bullets.BIG else 6, 60.0 if size == Bullets.BIG else 54.0, 5.0 if size == Bullets.BIG else 5.6, Bullets.SHELL, self, Bullets.ROUND, size)
@@ -698,7 +698,7 @@ func _core_needles(key: String, at: float, count: int, spread: float) -> void:
 		game.warn(core, Enemy.WINDUP_SHOT + 0.15, Game.Warn.SHOT, core.radius)
 	if _once(key, at + Enemy.WINDUP_SHOT + 0.15):
 		var p := core.position + Vector3(0, 0, 1.8)
-		if game.can_fire(p):
+		if game.boss_can_fire(p):
 			game.bullets.fan(p, game.bullets.aim(p), count, spread, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 
 

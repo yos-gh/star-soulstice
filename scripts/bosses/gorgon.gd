@@ -18,8 +18,8 @@ extends BossBase
 ## ship, one to the side it is heading for), and every other round they
 ## sweep their beams together across the screen: the sector each sweeps is
 ## marked first, faint, with chevrons along its far edge. The central gun
-## lobs iron balls (they can't be shot and they stop shots) that burst into
-## rings of shells; the eyes fire needle fans; the bunkers' guns rise in
+## lobs heavy energy bombs (they can't be shot, but shots pass them; a fuse
+## blinks on them) that burst into rings of shells; the eyes fire needle fans; the bunkers' guns rise in
 ## turn, four at a time, and fire spreads of needles (they hold fire with
 ## the ship close, like any ground gun); a bunker whose gun is destroyed
 ## raises a new one GUN_REARM later. The guns are the fight's energy: each
@@ -36,7 +36,7 @@ extends BossBase
 
 const INFO := {
 	"name": "GORGON", "role": "mid",
-	"desc": "クレーターの段々の台の上に組まれた剥き出しの機械の要塞（スターソルジャーのデライラ風）：真ん中の背骨と横桁と周りの桁の格子、横桁の両端の四角い装甲の筐体に目が 1 つずつ（核：それぞれ別の耐久）。背骨の根元の中央砲台と、台のまわりの 8 つのトーチカの砲台も壊せる。目と中央砲台の手前には何も置かない（下からショットが届く）。地上にあるのでスクロールといっしょに来て、真上でスクロールを止める（来る間は目の上のシャッターが閉じている）。目は自機を追う。目玉の極太レーザー（大技）：細い照準が自機を少し先読みして画面の端まで追い、止まるとビームの幅の帯になって点滅し、ビームが焼く。2 つの目で 1 本は自機、1 本は自機の向かう側。1 周おきに 2 本のビームが扇形に薙ぐ（薙ぐ範囲を薄く、奥の縁に矢印）。中央砲台から鉄球弾（撃ち落とせず、ショットを遮る）がはじけて物理弾の輪に。目から針弾の扇。トーチカから砲台が 4 基ずつ交代でせり上がって針弾の 3 方向（近いと撃てない）。壊された砲台のトーチカはしばらくして新しい砲台を上げる（砲台はエネルギーを多めに落とし、撃っていた弾もエネルギーに変わる：この戦いのホーミングの補給）。2 つの目を TWIN_WINDOW 秒以内に壊すと TWIN BREAK のボーナスでそのまま撃破（第 3 形態の 5 方向の前の斜めのショット：目はそのために左右に広く離してある。またはホーミング）。片目だけ壊すと残りの目が DEATH STARE：ビームが出たまま数秒自機を追い、壊れた筐体から物理弾が渦を巻き、残った砲台が全部上がる。両目が残ったまま砲台をトーチカの数だけ壊すか時間で WRATH：毎周の薙ぎ払いが広く、鉄球が増え、2 本の照準と全砲台。時間が来ると目を閉じて地面ごと流れ去る",
+	"desc": "クレーターの段々の台の上に組まれた剥き出しの機械の要塞（スターソルジャーのデライラ風）：真ん中の背骨と横桁と周りの桁の格子、横桁の両端の四角い装甲の筐体に目が 1 つずつ（核：それぞれ別の耐久）。背骨の根元の中央砲台と、台のまわりの 8 つのトーチカの砲台も壊せる。目と中央砲台の手前には何も置かない（下からショットが届く）。地上にあるのでスクロールといっしょに来て、真上でスクロールを止める（来る間は目の上のシャッターが閉じている）。目は自機を追う。目玉の極太レーザー（大技）：細い照準が自機を少し先読みして画面の端まで追い、止まるとビームの幅の帯になって点滅し、ビームが焼く。2 つの目で 1 本は自機、1 本は自機の向かう側。1 周おきに 2 本のビームが扇形に薙ぐ（薙ぐ範囲を薄く、奥の縁に矢印）。中央砲台から重エネルギーの爆弾（撃ち落とせないがショットは通る。導火線が点滅する）がはじけて物理弾の輪に。目から針弾の扇。トーチカから砲台が 4 基ずつ交代でせり上がって針弾の 3 方向（近いと撃てない）。壊された砲台のトーチカはしばらくして新しい砲台を上げる（砲台はエネルギーを多めに落とし、撃っていた弾もエネルギーに変わる：この戦いのホーミングの補給）。2 つの目を TWIN_WINDOW 秒以内に壊すと TWIN BREAK のボーナスでそのまま撃破（第 3 形態の 5 方向の前の斜めのショット：目はそのために左右に広く離してある。またはホーミング）。片目だけ壊すと残りの目が DEATH STARE：ビームが出たまま数秒自機を追い、壊れた筐体から物理弾が渦を巻き、残った砲台が全部上がる。両目が残ったまま砲台をトーチカの数だけ壊すか時間で WRATH：毎周の薙ぎ払いが広く、鉄球が増え、2 本の照準と全砲台。時間が来ると目を閉じて地面ごと流れ去る",
 	"demos": [["FULL", ""], ["WRATH", "W"], ["DEATH STARE", "L"]],
 }
 const EYE_HP := 620.0
@@ -501,7 +501,7 @@ func _gaze_pair() -> void:
 ## Eye k's gaze: the sight follows the ship (`side`: that far to its side).
 func _gaze(k: int, side: float, sound := true) -> void:
 	var e := eyes[k]
-	if e.dead or not game.can_fire(e.hit_pos):
+	if e.dead or not game.boss_can_fire(e.hit_pos):
 		return
 	var b := {"eye": e, "kind": "aim", "state": "track", "t": AIM_TRACK, "side": side}
 	b["ang"] = look[k]
@@ -519,7 +519,7 @@ func _cross(open: bool) -> void:
 	var first := true
 	for k in 2:
 		var e := eyes[k]
-		if e.dead or not game.can_fire(e.hit_pos):
+		if e.dead or not game.boss_can_fire(e.hit_pos):
 			continue
 		var s := -1.0 if k == 0 else 1.0
 		var x0 := s * (-3.0 if open else 14.0)
@@ -538,7 +538,7 @@ func _cross(open: bool) -> void:
 ## DEATH STARE: locked on the ship, then on for STARE_FIRE, turning after it.
 func _stare_beam(k: int) -> void:
 	var e := eyes[k]
-	if e.dead or not game.can_fire(e.hit_pos):
+	if e.dead or not game.boss_can_fire(e.hit_pos):
 		return
 	var b := {"eye": e, "kind": "stare", "state": "lock", "t": STARE_LOCK, "side": 0.0}
 	b["ang"] = look[k]
@@ -749,12 +749,12 @@ func _chevrons(o: Vector3, a0: float, a1: float) -> void:
 
 # ------------------------------------------------------------ guns
 
-## The central gun lobs `n` iron balls over `spread` degrees at the ship
+## The central gun lobs `n` heavy bombs over `spread` degrees at the ship
 ## (they burst into rings of shells; they no longer weave: yos found weaving
 ## iron balls more stress than fun). Not once
 ## it is destroyed.
 func _maw(n: int, spread: float) -> void:
-	if cannon.dead or not game.can_fire(cannon.hit_pos):
+	if cannon.dead or not game.boss_can_fire(cannon.hit_pos):
 		return
 	game.warn_then(cannon, 0.7, Game.Warn.SHOT, func() -> void:
 		var muzzle := cannon.global_position + Vector3(0, 0.7, 0) - cannon.model.global_basis.z * 1.6
@@ -762,7 +762,7 @@ func _maw(n: int, spread: float) -> void:
 		var aim := game.bullets.aim(from)
 		for i in n:
 			var a := aim + deg_to_rad(spread) * ((float(i) / maxf(n - 1, 1)) - 0.5) if n > 1 else aim
-			game.bullets.launch(muzzle, a, 5.2, Bullets.IRON, self)
+			game.bullets.launch(muzzle, a, 5.2, Bullets.HEAVY, self)
 			game.bullets.split(1.15 + 0.08 * absf(i - (n - 1) * 0.5), 12)
 		game.fx.flash(muzzle, 0.6)
 		game.shake(0.3)
@@ -772,7 +772,7 @@ func _maw(n: int, spread: float) -> void:
 ## Eye k's needle fan at the ship (announced).
 func _eye_fan(k: int, count: int, spread: float) -> void:
 	var e := eyes[k]
-	if e.dead or not game.can_fire(e.hit_pos):
+	if e.dead or not game.boss_can_fire(e.hit_pos):
 		return
 	game.warn_then(e, Enemy.WINDUP_SHOT + 0.1, Game.Warn.SHOT, func() -> void:
 		var muzzle := e.global_position + Vector3(0, 1.6, 0)
@@ -857,7 +857,7 @@ func _spray(dt: float) -> void:
 	spray_t = 0.09
 	var k := 0 if eyes[0].dead else 1
 	var at := game.to_plane(center + EYE_OFF[k] + Vector3(0, EYE_Y + 1.2, 0))
-	if not game.can_fire(at):
+	if not game.boss_can_fire(at):
 		return
 	for arm in 2:
 		game.bullets.fire(at, spray_a + PI * arm, 5.0, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if arm == 0 else Bullets.SMALL)

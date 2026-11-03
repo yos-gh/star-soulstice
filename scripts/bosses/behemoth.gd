@@ -429,7 +429,7 @@ func _flak(dt: float) -> void:
 	if phase != 3:
 		return
 	spray_t -= dt
-	if spray_t > 0.0 or not game.can_fire(core.position):
+	if spray_t > 0.0 or not game.boss_can_fire(core.position):
 		return
 	spray_t = 0.3
 	spray_k += 1
@@ -518,7 +518,7 @@ func _main_gun(key: String, at: float) -> void:
 			fired["w_" + key] = true
 		return
 	if _once("w_" + key, at):
-		if not game.can_fire(turret.position):
+		if not game.boss_can_fire(turret.position):
 			fired[key] = true
 			return
 		var ha := _heading_a()
@@ -655,7 +655,7 @@ func _sponson_fans(size: float) -> void:
 		if s.dead:
 			continue
 		var at := s.position + Vector3(0, 0, 1.0)
-		if not game.can_fire(at):
+		if not game.boss_can_fire(at):
 			continue
 		var off := 0.0 if size == Bullets.BIG else deg_to_rad(5.0)
 		game.bullets.fan(at, game.bullets.aim(at) + off, 5 if size == Bullets.BIG else 4, 46.0 if size == Bullets.BIG else 40.0, 5.0 if size == Bullets.BIG else 5.6, Bullets.SHELL, self, Bullets.ROUND, size)
@@ -668,7 +668,7 @@ func _hull_gun(key: String, at: float, count: int, spread: float) -> void:
 		game.warn(mg, Enemy.WINDUP_SHOT + 0.15, Game.Warn.SHOT, 0.9)
 	if _once(key, at + Enemy.WINDUP_SHOT + 0.15):
 		var p := mg.position
-		if game.can_fire(p):
+		if game.boss_can_fire(p):
 			game.bullets.fan(p, game.bullets.aim(p), count, spread, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 
 

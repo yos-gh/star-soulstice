@@ -265,7 +265,7 @@ func _round_b(dt: float) -> void:
 		_fork()
 	var cp := core.position + Vector3(0, 0, 1.4)
 	for k in 2:
-		if _once("ring%d" % k, 1.6 + k * 0.45) and game.can_fire(cp):
+		if _once("ring%d" % k, 1.6 + k * 0.45) and game.boss_can_fire(cp):
 			game.bullets.ring(cp, 18, 4.6, Bullets.SHELL, self, life_t * 0.9 + k * 0.17, 3, life_t * 2.3 + k)
 	if _once("f2", 2.4):
 		_fork()
@@ -305,7 +305,7 @@ func _heading_side() -> float:
 func _mast_bolt(side := 0.0, sound := true) -> void:
 	for n in COIL_OFF.size():
 		var c := coils[(coil_k + n) % coils.size()]
-		if c.dead or not game.can_fire(c.position):
+		if c.dead or not game.boss_can_fire(c.position):
 			continue
 		coil_k = (coils.find(c) + 1) % coils.size()
 		_charge(c, 0.0, side, sound)
@@ -317,7 +317,7 @@ func _mast_bolt(side := 0.0, sound := true) -> void:
 ## SUPERCELL: three bolts from the generator, through the ship and either
 ## side of it.
 func _fork() -> void:
-	if not game.can_fire(core.position):
+	if not game.boss_can_fire(core.position):
 		return
 	for a: float in [0.0, -0.42, 0.42]:
 		_charge(core, a, 0.0, a == 0.0)
@@ -470,7 +470,7 @@ func _hail(dt: float) -> void:
 		if not hail[k]:
 			continue
 		var at: Vector3 = center + ROTOR_OFF[k] + Vector3(randf_range(-0.35, 0.35), 0, 2.0)
-		if game.can_fire(at):
+		if game.boss_can_fire(at):
 			game.bullets.fire(at, PI / 2.0, HAIL_SPEED, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if (hail_k + k) % 2 == 0 else Bullets.SMALL)
 
 
@@ -478,7 +478,7 @@ func _hail(dt: float) -> void:
 ## (`size` BIG leads, SMALL follows offset).
 func _squall(size: float) -> void:
 	var at := core.position + Vector3(0, 0, 1.6)
-	if not game.can_fire(at):
+	if not game.boss_can_fire(at):
 		return
 	var off := 0.0 if size == Bullets.BIG else deg_to_rad(5.0)
 	game.bullets.fan(at, game.bullets.aim(at) + off, 9 if size == Bullets.BIG else 8, 80.0 if size == Bullets.BIG else 72.0, 4.8 if size == Bullets.BIG else 5.4, Bullets.SHELL, self, Bullets.ROUND, size)
@@ -487,7 +487,7 @@ func _squall(size: float) -> void:
 ## The generator's telegraphed needle burst (fired after its warning).
 func _needles(count: int, spread: float) -> void:
 	var at := core.position + Vector3(0, 0, 1.6)
-	if game.can_fire(at):
+	if game.boss_can_fire(at):
 		game.bullets.fan(at, game.bullets.aim(at), count, spread, 9.0, Bullets.ORB, self, Bullets.NEEDLE)
 
 

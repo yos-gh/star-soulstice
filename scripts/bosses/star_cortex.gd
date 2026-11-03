@@ -186,7 +186,7 @@ func tick(dt: float) -> void:
 					spiral_a += 0.33
 					for k in 4:
 						var at: Vector3 = center + POD_OFF[k]
-						if game.can_fire(at):
+						if game.boss_can_fire(at):
 							game.bullets.fire(at, spiral_a + k * PI / 2.0, 4.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if k % 2 == 0 else Bullets.SMALL)
 		3:
 			dying_t += dt

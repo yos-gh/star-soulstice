@@ -15,6 +15,14 @@ extends Node3D
 ##   IRON   big armoured ball (boss): cannot be shot or erased by the Spear,
 ##          and it stops your shots (after the big bullets of the NES Star
 ##          Soldier). Always announced. Violet steel, lit rim, hot core.
+## Each big boss ball shows how it will fly (yos: one look for three ways of
+## flying was a trap):
+##   - IRON always flies straight, fast: drawn as a long armoured slug along
+##     its flight (rail shots, press slugs)
+##   - anything that will `split` carries a fuse: hot seams in a cross and a
+##     ring that blink, faster and faster till it bursts
+##   - a `tether`ed bullet will come back (OMEGA CORTEX's NOVA): drawn as a
+##     hollow ring, a thin line of light tying it to where it will return
 ## A bullet can also `split` (burst into a ring of shells after a while), or
 ## `snake` (weave across its line of flight; no enemy uses it now: yos found
 ## weaving iron balls more stress than fun).
@@ -54,14 +62,20 @@ var wamp := PackedFloat32Array()  # snaking: how far it weaves either side of it
 var wfreq := PackedFloat32Array()  # snaking: rad/s
 var split_t := PackedFloat32Array()  # seconds until it splits (0 = never)
 var split_n := PackedInt32Array()  # shells in the ring it splits into
+var look := PackedInt32Array()  # 1: tethered (drawn as a ring, drawn back by the well)
 var n := 0
-## A gravity well (OMEGA CORTEX's vortex): while `well_pull` > 0 the bullets
-## of `well_owner` slower than WELL_MAX are drawn toward `well` (u/s²) and
-## swallowed there.
-const WELL_MAX := 10.0
+## A gravity well (OMEGA CORTEX's vortex): while `well_pull` > 0 the tethered
+## bullets of `well_owner` slower than WELL_MAX are drawn toward `well`
+## (u/s²) and swallowed there. Their tethers run to `tether_at` while
+## `tether_owner` lives.
+const WELL_MAX := 14.0
 var well := Vector3.ZERO
 var well_pull := 0.0
 var well_owner := 0
+var tether_at := Vector3.ZERO
+var tether_owner := 0
+var tethers: MeshInstance3D
+var tether_mesh: ImmediateMesh
 var bounds := Rect2(-30, -30, 60, 60)  # x, z
 
 var sprites: MultiMeshInstance3D
@@ -84,6 +98,7 @@ func _ready() -> void:
 	wfreq.resize(MAX)
 	split_t.resize(MAX)
 	split_n.resize(MAX)
+	look.resize(MAX)
 	sprites = MultiMeshInstance3D.new()
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -102,6 +117,16 @@ func _ready() -> void:
 	sprites.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	sprites.custom_aabb = AABB(Vector3(-60, -10, -60), Vector3(120, 20, 120))
 	add_child(sprites)
+	tether_mesh = ImmediateMesh.new()
+	tethers = MeshInstance3D.new()
+	tethers.mesh = tether_mesh
+	var tm := ShaderMaterial.new()
+	tm.shader = load("res://shaders/beam.gdshader")
+	tm.render_priority = 2
+	tethers.material_override = tm
+	tethers.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	tethers.custom_aabb = sprites.custom_aabb
+	add_child(tethers)
 
 
 func fire(p: Vector3, ang: float, speed: float, k: int, owner: Object, shp := ROUND, accel := 0.0, to_speed := 0.0, sz := 1.0) -> void:
@@ -122,6 +147,7 @@ func fire(p: Vector3, ang: float, speed: float, k: int, owner: Object, shp := RO
 	wfreq[n] = 0.0
 	split_t[n] = 0.0
 	split_n[n] = 0
+	look[n] = 0
 	n += 1
 
 
@@ -133,6 +159,13 @@ func launch(muzzle: Vector3, ang: float, speed: float, k: int, owner: Object, sh
 	fire(game.to_plane(muzzle), ang, speed, k, owner, shp)
 	lift[n - 1] = LIFT
 	lift_y[n - 1] = muzzle.y
+
+
+## The bullet fired last will come back: tied to `tether_at`, drawn back by
+## the well.
+func tether() -> void:
+	if n > 0:
+		look[n - 1] = 1
 
 
 ## The bullet fired last weaves `amp` either side of its line, `freq` rad/s.
@@ -204,6 +237,7 @@ func _remove(i: int) -> void:
 	wfreq[i] = wfreq[n]
 	split_t[i] = split_t[n]
 	split_n[i] = split_n[n]
+	look[i] = look[n]
 
 
 ## Removes the bullets fired by `owner`; returns where they were.
@@ -295,7 +329,7 @@ func tick(dt: float) -> void:
 				vel[i] = v * (ns / s)
 			if ns == tspd[i]:
 				acc[i] = 0.0
-		if well_pull > 0.0 and owner_id[i] == well_owner:
+		if well_pull > 0.0 and look[i] == 1 and owner_id[i] == well_owner:
 			var to := well - pos[i]
 			var dl := to.length()
 			if dl < 1.5:
@@ -367,7 +401,12 @@ func draw() -> void:
 		var k := kind[i]
 		var b: Basis
 		var aspect := 1.0
-		if shape[i] == NEEDLE:
+		if k == IRON and look[i] == 0 and vel[i].length_squared() > 1.0:
+			# a slug, long along its flight
+			var dir := vel[i].normalized()
+			b = Basis(Vector3(-dir.z, 0, dir.x) * SIZE[k] * 0.78, Vector3.UP, dir * SIZE[k] * 1.7)
+			aspect = 1.7 / 0.78
+		elif shape[i] == NEEDLE:
 			var dir := vel[i].normalized()
 			if dir.length_squared() < 0.5:
 				dir = Vector3(0, 0, 1)
@@ -393,4 +432,38 @@ func draw() -> void:
 			b = b.scaled(Vector3(sc, 1.0, sc))
 		mm.set_instance_transform(i, Transform3D(b, game.from_plane(pos[i], y)))
 		mm.set_instance_color(i, c)
-		mm.set_instance_custom_data(i, Color(1.0 if k == SHELL else (2.0 if k == IRON else 0.0), aspect, 0.0, 0.0))
+		# the fuse: 0 none, else how far it has burned (0..1)
+		var fuse := 0.0
+		if split_n[i] > 0 and split_t[i] > 0.0:
+			fuse = clampf(age[i] / (age[i] + split_t[i]), 0.001, 1.0)
+			# a bomb is drawn a size up, to show its seams
+			mm.set_instance_transform(i, Transform3D(b.scaled(Vector3(1.25, 1.0, 1.25)), game.from_plane(pos[i], y)))
+		mm.set_instance_custom_data(i, Color(1.0 if k == SHELL else (2.0 if k == IRON else 0.0), aspect, fuse, float(look[i])))
+	_draw_tethers()
+
+
+## The tethered bullets' lines of light back to where they will return.
+func _draw_tethers() -> void:
+	tether_mesh.clear_surfaces()
+	if tether_owner == 0 or not is_instance_id_valid(tether_owner):
+		return
+	var any := false
+	var to := tether_at + Vector3(0, 0.3, 0)
+	for i in n:
+		if look[i] != 1 or owner_id[i] != tether_owner:
+			continue
+		if not any:
+			tether_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+			any = true
+		var p := pos[i] + Vector3(0, 0.3, 0)
+		var d := to - p
+		var s := Vector3(-d.z, 0, d.x).normalized() * 0.07
+		var c: Color = COLOR[kind[i]]
+		var ca := Color(c.r, c.g, c.b, 0.55)
+		var cb := Color(c.r, c.g, c.b, 0.1)
+		for v: Array in [[p - s, 0.0, ca], [p + s, 1.0, ca], [to + s, 1.0, cb], [p - s, 0.0, ca], [to + s, 1.0, cb], [to - s, 0.0, cb]]:
+			tether_mesh.surface_set_color(v[2])
+			tether_mesh.surface_set_uv(Vector2(0, v[1]))
+			tether_mesh.surface_add_vertex(v[0])
+	if any:
+		tether_mesh.surface_end()
