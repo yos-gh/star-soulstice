@@ -60,9 +60,8 @@
 | ボス OMEGA CORTEX のレールキャノン（2 基） | 12,000 | 320 | `scripts/bosses/omega_cortex.gd` `RAIL_SCORE` / `RAIL_HP` |
 | ボス OMEGA CORTEX の電磁機雷（時間で消えたものは 0） | 500 | 8 | `scripts/bosses/omega_cortex.gd` `MINE_SCORE` / `MINE_HP` |
 | ボス OMEGA CORTEX の目 | 80,000 | 1,450 | `scripts/bosses/omega_cortex.gd` `EYE_SCORE` / `EYE_HP` |
-| 最終ボス STAR SOUL のバリアの板（10 枚、割れると数秒で張り直す。そのたびに） | 300 | 40 | `scripts/bosses/star_soul.gd` `WARD_SCORE` / `WARD_HP` |
-| 最終ボス STAR SOUL の宝石（心臓） | 150,000 | 4,500 | `scripts/bosses/star_soul.gd` `HEART_SCORE` / `HEART_HP` |
-| 最終ボス STAR SOUL のくさび（8 つ） | なし | 撃てない（ショットは素通り、体当たりだけ） | `scripts/bosses/star_soul.gd` |
+| 最終ボス STAR SOUL（結晶の全体が 1 つの耐久：どの姿でも、どこに当てても同じゲージが減る） | 150,000 | 4,000 | `scripts/bosses/star_soul.gd` `SCORE` / `HP` |
+| 最終ボス STAR SOUL のモート（6 つ）・結晶の棘 | なし | 撃てない（ショットは素通り。棘は生える瞬間だけ当たる） | `scripts/bosses/star_soul.gd` |
 
 撃破した敵の弾は消えてエネルギーになる（スコアはエネルギー取得分のみ）。
 
@@ -111,7 +110,7 @@
 | BEHEMOTH 副砲 / 主砲塔 | 10 / 16 | `scripts/bosses/behemoth.gd` |
 | GORGON トーチカの砲台（＋撃っていた弾） / 中央砲台 / 目 / 最期 | 10 / 14 / 20 / 30 | `scripts/bosses/gorgon.gd` |
 | OMEGA CORTEX ポッド / シャッター / レールキャノン / 電磁機雷 | 12 / 10 / 16 / 4 | `scripts/bosses/omega_cortex.gd` |
-| STAR SOUL バリアの板（割るたび） | 8 | `scripts/bosses/star_soul.gd` `WARD_ENERGY` |
+| STAR SOUL（耐久が 4% 減るごとに。全部で 25 回） | 6 | `scripts/bosses/star_soul.gd` `CHIP_ENERGY` / `CHIP` |
 | タイル コンテナ / タンク / 倉庫 | 2 / 5 / 10 | `scripts/terrain/island.gd` `TILE_ENERGY` |
 | 消した弾（撃破・スピア） | 1 発につき 1 | `scripts/game.gd` |
 
@@ -140,7 +139,7 @@
 | 3（ステージ 3 から始めて、第 1 形態から） | 約 47 万 | 約 42 万（うちスター 44 個） | 約 18 万 | 約 120 秒 |
 | 4（ステージ 3 から続けて） | 約 46 万 | 約 72 万（うちスター 50 個） | 約 12 万 | 約 169 秒（ボス戦が長引いた回。ボス戦は 40〜60 秒とぶれる） |
 | 4（ステージ 4 から始めて、第 1 形態から） | 約 47 万 | 約 64 万（うちスター 61 個） | 約 13 万 | 約 157 秒 |
-| 5（ステージ 5 から始めて、第 1 形態から） | 約 92 万 | 約 66 万（うちスター 48 個） | 約 9 万 | 約 260 秒（OMEGA CORTEX を約 198 秒で倒し、STAR SOUL との戦いが約 48 秒） |
+| 5（ステージ 5 から始めて、第 1 形態から） | 約 91 万 | 約 65 万（うちスター 52 個） | 約 11 万 | 約 249 秒（OMEGA CORTEX を約 198 秒で倒し、STAR SOUL との戦いが約 35 秒） |
 
 自動操縦はほぼ秒間 7.5 回連打するので、ショットはおおむね ×8（最大）。
 

@@ -22,7 +22,7 @@ extends StageDef
 ##   AREA 3 HIGH ORBIT     the climb: satellites in groups, rocks for cover
 ##   AREA 4 DEFENSE GRID   fast waves with satellites, no rocks
 ##   OMEGA CORTEX          the first of the last stage's two bosses
-##   (warp space)          STAR SOUL, the core on its own: the last boss
+##   (warp space)          STAR SOUL, the core grown into a crystal: the last boss
 
 ## the meteor stream's count (every other one a giant rock)
 var drift_n := 0
@@ -35,7 +35,7 @@ func _init() -> void:
 	boss_warning = ["WARNING", "THE STAR CORTEX REBUILT AND ARMED: OMEGA"]
 	boss2 = "star_soul"
 	boss2_area = "core"
-	boss2_warning = ["WARNING", "THE CORE ITSELF: STAR SOUL"]
+	boss2_warning = ["WARNING", "THE CORE, CRYSTALLIZED: STAR SOUL"]
 	clear_note = "ALL STAGES CLEAR"
 	# the whole stage with both bosses: a good run still earns some
 	bonus_t = 330.0
@@ -89,8 +89,8 @@ func _init() -> void:
 			"gap": [5.0, 10.0],
 		},
 		# the last boss in warp space: nothing drifts there (the wreckage
-		# left from the first fight rushes off); its barrier's panels feed
-		# the homing lasers
+		# left from the first fight rushes off); the crystal sheds energy as it
+		# is hurt, which feeds the homing lasers
 		"core": {},
 	}
 	backdrop = {

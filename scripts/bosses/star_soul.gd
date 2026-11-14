@@ -1,226 +1,287 @@
 extends BossBase
-## Stage 5's last boss STAR SOUL: the core that sat inside every Cortex,
-## out on its own in warp space, cut like a gem (CoreModels: an octagonal
-## brilliant of eight wedges round a small heart, emerald, lit from
-## inside, glints running over its facets as it turns). Only the gem (its
-## heart) can be hurt. Round it turns a barrier of hexagonal panels of
-## light (twelve slots, two left open): blue like every breakable cover, a
-## panel breaks after a few hits and builds itself back a few seconds
-## later, so the barrier takes some of the fire, never all of it.
+## Stage 5's last boss STAR SOUL: what sat at the heart of every boss so
+## far, out on its own in warp space and grown into a crystal. Nothing
+## mechanical is left of it: a long octahedron of dark glass, lines of light
+## along its edges, two rings of light round its waist and six motes (small
+## octahedra) circling there (CoreModels). It is made of eight plates round
+## a bright seed, and it attacks by changing its shape. All of it can be
+## shot, in every shape (no armour, no shutter: every hit counts on the one
+## gauge), and as its light runs down it sheds energy for the homing lasers.
 ## Three forms, one after another as its light runs down (or after a while):
-##   BRILLIANT  the whole gem, turning: shell spokes from its eight points,
-##              aimed needle volleys, a flower of shells, homing lances
-##              of light from the two points nearest the ship onto sights
-##              that follow it (MarkedStrikes); its signature, the REFRACTION: a beam into a
-##              prism of light hung over the ship, three beams fanning out
-##              of it down the screen (all the lines marked first: the ship
-##              goes between them)
-##   SCATTER    the eight wedges break away and circle the heart, firing in
-##              turn; two at a time they turn on the ship and dash straight
-##              through (the lane is marked), shedding shells, and come
-##              back in from the top; the heart shines into the three lowest
-##              and they bend its beam down at the ship
-##   SOULSTICE  (its rage) the wedges lock back on point out, a star
-##              spinning fast: spirals of shells from the points, heavy
-##              balls that burst into rings, and the PRISM CROSS: four beams
-##              from the points, swinging round with the star (run with
-##              them, or slip into the gap they never reach)
-## The wedges can't be shot (shots pass by them), but they ram. A quiet
-## moment while it changes form: the heart can be hit then too.
+##   OBELISK    the closed crystal, turning about its long axis: shell fans
+##              from the tip nearer the ship, an aimed needle volley, two
+##              homing lances (MarkedStrikes), rings of shells; a SPIRE RUN
+##              (shards grow out of the field one after another along a
+##              marked line through the ship); and its shape change, the
+##              LANCE: it draws itself out long and thin, swings its point
+##              onto the ship (the lane is marked), thrusts down the lane,
+##              hangs there a moment and draws back
+##   PRISM      it comes apart: the two pyramids stand off from the seed and
+##              turn against each other, the plates loose. Twin spirals of
+##              shells from the seed, needle volleys, three spire runs
+##              fanned out, lances; and the LATTICE: the motes fly out to
+##              the edges of the screen and string beams between them, two
+##              columns either side of the ship, a row through it, then a
+##              beam from each of two motes through the ship itself (every
+##              line a thin sight first, then a band, then it burns)
+##   SOULSTICE  (its rage) it turns its point to the camera and opens like
+##              a flower: an eight-pointed star round the bare seed,
+##              spinning. Spirals of shells from its points, heavy balls
+##              that burst into rings, shards erupting under the ship (each
+##              spot ringed first); the STAR MANDALA: the motes take the
+##              corners of a hexagon round the whole screen and draw a
+##              six-pointed star across it stroke by stroke, a beam through
+##              the ship between the strokes (a faint trace of each stroke
+##              stays a while: the finished figure hangs over the field);
+##              and the SOLSTICE: the star gathers light (its lane straight
+##              down the screen marked and filling), then a wide beam burns
+##              down it while rings of shells roll off the star
+## A quiet moment while it changes form: it can be hit then too.
 
 const MarkedStrikes := preload("res://scripts/bosses/marked_strikes.gd")
 
 const INFO := {
 	"name": "STAR SOUL", "role": "boss",
-	"desc": "最終面のボス 2 体目（最終ボス）。これまでの CORTEX の奥にあったコアだけが独立し、宝石のようにカットされて輝く（8 つのくさびが組み合った八角のブリリアントと、中の小さな心臓。エメラルド色で内から光り、回るとファセットにきらめきが走る）。当たるのは宝石（心臓）だけ。まわりを六角形の光のバリアが回る（12 枠のうち 2 枠は空き）：壊せる覆いなので青、数発で割れて数秒後に張り直す。光が減るにつれて（または時間で）姿を変える。BRILLIANT：宝石のまま回り、8 つの角から物理弾の放射、狙いの針弾、花びら、近い 2 つの角から追尾する光の槍（照準が自機を追い、点線の照準線のあと飛んでくる）。大技 REFRACTION：自機の上に光のプリズムを吊り、そこへビームを撃ち込むと 3 本に分かれて下へ広がる（線は先に予兆、あいだに入る）。SCATTER：8 つのくさびが分かれて心臓のまわりを回り、交代で撃つ。2 つずつ自機を向いて画面を突き抜け（通り道を予兆）、物理弾をこぼし、上から戻ってくる。心臓が下側の 3 つへビームを当て、くさびがそれを自機へ曲げる。SOULSTICE（発狂）：くさびが先を外へ向けて戻り、星形で速く回る。先から渦巻きの物理弾、輪にはじける大型弾、大技 PRISM CROSS（4 つの先から 4 本のビームが星といっしょに回る。ついて回るか、届かない隙間へ）。くさびは撃てない（ショットは素通り）が、体当たりあり。姿を変える間は静かで、そのあいだも宝石は撃てる",
-	"demos": [["FULL", ""], ["SCATTER", "B"], ["SOULSTICE", "C"]],
+	"desc": "最終面のボス 2 体目（最終ボス）。これまでのボスの奥にあったコアが結晶になったもの。機械らしさはなく、暗いガラスのような縦に長い八面体で、稜線が光り、腰のまわりに光の輪が 2 本と小さな八面体（モート）が 6 つ回る。8 枚の板と中の明るい種でできていて、形を変えて攻撃する。どの姿でも全体に弾が当たる（装甲なし、ゲージは 1 本）。光が減るたびにエネルギーをこぼす。光が減るにつれて（または時間で）姿を変える。OBELISK：閉じた結晶のまま軸で回り、自機に近い先端から物理弾の扇、狙いの針弾、追尾する光の槍 2 本、物理弾の輪。SPIRE RUN（自機を通る線を予兆してから、結晶の棘が手前から順に生える）。変形 LANCE：細長く伸びて先端を自機に向け（通り道を予兆）、突き出して少し止まり、引き戻る。PRISM：上下 2 つのピラミッドに分かれて種がむき出しになり、互い違いに回る。種から二重の渦巻き、針弾、3 本に広がる SPIRE RUN、光の槍。大技 LATTICE：モートが画面の縁へ飛び、そのあいだにビームを張る（自機の左右に縦 2 本、自機を通る横 1 本、続いてモート 2 つから自機を通る 1 本ずつ。どれも細い照準線、帯、照射の順）。SOULSTICE（発狂）：先端をこちらへ向けて花のように開き、種を囲む八芒星になって回る。星の先から渦巻きの物理弾、輪にはじける大型弾、自機の足もとに生える棘（落ちる所を円で予兆）。大技 STAR MANDALA：モートが画面いっぱいの六角形の角につき、ビームで六芒星を 1 画ずつ描く。画のあいだに自機を通る 1 本（描いた線は薄く残って図形になる）。大技 SOLSTICE：星が光を集め（真下への通り道を予兆）、太いビームを撃ち下ろす。そのあいだ星から物理弾の輪。姿を変える間は静かで、そのあいだも撃てる",
+	"demos": [["FULL", ""], ["PRISM", "B"], ["SOULSTICE", "C"]],
 }
 
-const HEART_HP := 4500.0
-const HEART_SCORE := 150000
+const HP := 4000.0
+const SCORE := 150000
 ## the form changes at these shares of its light left (or after FORM_T)
 const FORM_AT := [0.66, 0.33]
-const FORM_T := [42.0, 40.0]
-const MORPH := 2.2  # changing form: quiet this long
-## per form (brilliant, scatter, soulstice): the gem's hit radius, the
-## barrier's radius and turn (rad/s), the time a broken panel stays down
-const HIT_R := [2.7, 1.8, 2.3]
-const WARD_R := [5.4, 4.6, 6.3]
-const WARD_W := [0.3, -0.36, 0.48]
-const WARD_BACK := [6.5, 6.0, 4.5]
-const WARD_SLOTS := 12
-const WARD_OPEN := [0, 6]  # slots left without a panel
-const WARD_HP := 40.0
-const WARD_SCORE := 300
-const WARD_ENERGY := 8.0
-const WARD_BUILD := 0.8
-const SPIN := [0.35, 0.0, 0.9]
-## the wedges: their orbit round the heart (half width, half height, turn),
-## how far out they stand as a star, and their dash
-const ORBIT := Vector3(10.5, 6.0, 0.45)
-const STAR_D := 3.4
-const STAR_S := 0.82
-const DASH_AIM := 0.9
-const DASH_SPEED := 30.0
-const DASH_HW := 1.1
-const BACK_T := 1.3
+const FORM_T := [36.0, 34.0]
+const MORPH := 2.0  # changing form: quiet this long
+## every CHIP of its light lost, it sheds this much energy
+const CHIP := 0.04
+const CHIP_ENERGY := 6.0
+const CYCLE := [9.6, 9.8, 13.0]
+const HOME_Z := 8.0  # where it hangs, below the top edge
+const L := CoreModels.L
+const R := CoreModels.R
+## its long axis lying on the field (pointing up the screen) / at the camera
+const FLAT := -PI / 2.0
+const FACE := (90.0 - Game.CAM_PITCH) * PI / 180.0
+## its shape: how far the plates swing open about their waist edges (rad),
+## stand off along their faces, how far the two pyramids stand apart, the
+## lower one's twist against the upper, the stretch along the axis and the
+## squeeze across it, the axis's pitch and yaw, the size of the rings
+enum { OPEN, GAP, SPLIT, TWIST, STRETCH, SQUEEZE, PITCH, YAW, RING }
+const EASE := [3.2, 4.0, 4.0, 3.0, 6.0, 6.0, 2.4, 7.0, 3.0]
+const OBELISK := [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, FLAT, 0.0, 1.0]
+const LANCE := [0.0, 0.0, 0.0, 0.0, 1.45, 0.6, FLAT, 0.0, 0.72]
+const PRISM := [0.1, 0.2, 1.5, 0.0, 1.0, 1.0, FLAT, 0.0, 1.3]
+const BLOOM := [1.36, 0.0, 0.0, PI / 4.0, 1.0, 1.0, FACE, 0.0, 1.75]
+const SPIN := [0.5, 0.7, 1.4]
+const MOTE_R := 3.9  # the motes' orbit (x the ring size)
+## the LANCE: drawn out, then the lane follows the ship, holds, and it goes
+const LANCE_FORM := 0.45
+const LANCE_TRACK := 0.7
+const LANCE_LOCK := 0.35
+const LANCE_SPEED := 40.0
+const LANCE_HANG := 0.3
+const LANCE_BACK := 13.0
+const LANCE_TURN := 2.6  # how fast the point swings after the ship (rad/s)
+## spires: a run's line marked, then one after another; a single one's spot
+const RUN_MARK := 0.8
+const RUN_STEP := 0.06
+const RUN_GAP := 2.2
+const RUN_FROM := 4.0
+const ERUPT_MARK := 0.75
+const ERUPT_R := 1.4
+const SPIRE_UP := 0.1  # growing
+const SPIRE_LIVE := 0.3  # deadly
+const SPIRE_STAND := 0.55  # then it shatters
 ## beams: the sight flickers, then the band holds, then it burns
-const SIGHT := 0.45
+const SIGHT := 0.4
 const BEAM_HW := 0.5
-const BEAM_COL := Color(0.6, 1.0, 0.78)
-const CROSS_W := 0.34
-const CYCLE := [9.5, 10.0, 10.5]
+const BEAM_COL := Color(0.62, 1.0, 0.84)
+const TRACE := 3.2  # a mandala stroke's trace fades this long
+## the SOLSTICE: gathering light, then the beam
+const SOL_CHARGE := 1.4
+const SOL_BURN := 1.5
+const SOL_HW := 2.0
 
-var heart: Enemy
-var heart_mesh: MeshInstance3D
-var shards: Array[Enemy] = []
-var shard_mesh: Array[MeshInstance3D] = []
-var shard_mat: Array[ShaderMaterial] = []
-## per wedge: {mode: "form" | "aim" | "dash" | "back", t, ang (dash heading), from}
-var shard_st: Array[Dictionary] = []
-var wards: Array[Enemy] = []
-var ward_mat: Array[ShaderMaterial] = []
-var ward_slot: Array[int] = []
-var ward_down: Array[float] = []  # seconds until a broken panel builds back (0 = up)
-var ward_build: Array[float] = []  # 0..1 while it builds
-var ward_a := 0.0
-var ward_r := 5.4
-## beams: {pts (a polyline on the plane), t, lock, burn, warn (its warning's
-## `to`), tip: the wedge it shines from, turning with it (-1 = fixed)}
+static var _beam_mat: ShaderMaterial
+
+var core: Enemy  # the middle: it holds the light (hp); homing lasers lock it
+var lobes: Array[Enemy] = []  # the rest of its body: hits go to the core
+var motes: Array[Enemy] = []
+var mote_mesh: Array[MeshInstance3D] = []
+var mote_to: Array[Vector3] = []  # their posts while they are out
+var motes_out := false
+var mote_a := 0.0
+var rig: Node3D  # yaw
+var tilt: Node3D  # pitch
+var form: Node3D  # stretch and squeeze
+var turn: Node3D  # the spin about the long axis
+var plates: Array[MeshInstance3D] = []
+var seed_mi: MeshInstance3D
+var plate_mat: ShaderMaterial
+var seed_mat: ShaderMaterial
+var mote_mat: ShaderMaterial
+var halos: Array[MeshInstance3D] = []
+var halo_mat: Array[ShaderMaterial] = []
+var halo_a := 0.0
+var shape: Array[float] = []
+var want: Array[float] = []
+var hinge := Vector3.RIGHT  # a plate's waist edge (model space) ...
+var edge_mid := Vector3.ZERO  # ... its middle ...
+var face_n := Vector3.UP  # ... the plate's face normal ...
+var flip := Basis.IDENTITY  # ... and an upper plate turned into a lower one
+var spin_a := 0.0
+var spin_w := 0.5
+var counter_a := 0.0
+var center := Vector3.ZERO  # where it hangs
+var pos := Vector3.ZERO  # where it is (a thrust takes it off its place)
+var lunge := 0.0
+var lunge_to := 0.0
+var thrust := ""  # "" | form | aim | go | hang | back | ease
+var thrust_t := 0.0
+var thrust_lane := {}  # the lane's warning (its `to`)
+var lane_len := 0.0
+var hold_t := 0.0  # it stays where it is this long (the SOLSTICE)
+## beams: {pts (a polyline on the plane), t, lock, burn, hw, trace}
 var beams: Array[Dictionary] = []
-var beam_mi: MeshInstance3D
-var beam_mesh: ImmediateMesh
-var prism := Vector3.INF  # where REFRACTION's prism hangs (INF = none)
-var center := Vector3.ZERO
-var phase := 0  # 0 enter, 1 BRILLIANT, 2 SCATTER, 3 SOULSTICE, 4 dying
+var traces: Array[Dictionary] = []  # {pts, t}: what a mandala stroke leaves
+## spires: {at, t, delay, r, shells, a (anchor or null), mi, lean, turn}
+var spires: Array[Dictionary] = []
+var fx_mi: MeshInstance3D
+var fx_mesh: ImmediateMesh
+var lances: MarkedStrikes
+var phase := 0  # 0 enter, 1 OBELISK, 2 PRISM, 3 SOULSTICE, 4 dying
 var st := 0.0
 var form_t := 0.0
 var morph_t := 0.0
 var cycle_t := 0.0
 var fired := {}
-var spin_a := 0.0
-var spin_w := 0.35
-var orbit_a := 0.0
-var orbit_w := 0.0
-var spoke_t := 0.0
-var spoke_k := 0
-var volley_t := 0.0
-var volley_k := 0
+var fan_t := 0.0
+var spiral_t := 0.0
+var spiral_a := 0.0
+var spiral_k := 0
 var flower_a := 0.0
-var cross_dir := 1.0
+var web_a := 0.5
 var aim_at := Vector3.ZERO
-var lances: MarkedStrikes  # BRILLIANT's homing lances of light
+var heat := 0.0
+var glow := 0.0
+var chips := 0
+var spear_frame := -1
 var destroyed := false
 var dying_t := 0.0
-var heat := 0.0
-
-
-static var _beam_mat: ShaderMaterial
 
 
 func setup(g: Game) -> void:
 	game = g
-	center = Vector3(0, 0, game.field_top - 7.0)
-	# the barrier's panels first (shots meet them on the way in), then the
-	# gem; the wedges can't be hit, so their place in the list is no matter
-	for s in WARD_SLOTS:
-		if WARD_OPEN.has(s):
-			continue
-		var w := game.spawn_part(self, "", 1.3)
-		w.hp = WARD_HP
-		w.max_hp = WARD_HP
-		w.score = WARD_SCORE
-		w.energy_drop = WARD_ENERGY
-		w.blast = 0.6
-		w.debris_col = Color(0.4, 0.7, 1.0)
-		w.ram = false
-		w.lock = false  # the homing lasers go for the gem
-		var m := MeshInstance3D.new()
-		m.mesh = Vox.get_mesh("soul_ward")
-		var mat := (m.mesh.surface_get_material(0) as ShaderMaterial).duplicate() as ShaderMaterial
-		mat.set_shader_parameter("seed", float(s))
-		mat.set_shader_parameter("build", 0.0)
-		m.material_override = mat
-		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		w.add_child(m)
-		wards.append(w)
-		ward_mat.append(mat)
-		ward_slot.append(s)
-		ward_down.append(0.0)
-		ward_build.append(0.0)
-	heart = game.spawn_part(self, "", HIT_R[0])
-	heart.hp = HEART_HP
-	heart.max_hp = HEART_HP
-	heart.score = HEART_SCORE
-	heart.armored = true
-	heart.blast = 3.0
-	heart.debris_col = CoreModels.EMERALD
-	lances = MarkedStrikes.new(g, self, MarkedStrikes.LANCE, Color(0.3, 1.0, 0.5))
-	heart_mesh = MeshInstance3D.new()
-	heart_mesh.mesh = Vox.get_mesh("soul_heart")
-	heart_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	heart_mesh.material_override = CoreModels.gem_material("heart").duplicate()
-	heart.add_child(heart_mesh)
+	hinge = Vector3(1, 0, -1).normalized()
+	edge_mid = Vector3(R * 0.5, 0, R * 0.5)
+	face_n = Vector3(1.0 / R, 1.0 / L, 1.0 / R).normalized()
+	flip = Basis(Vector3(1, 0, 1).normalized(), PI)
+	center = Vector3(0, 0, game.field_top - 7.5)
+	pos = center
+	for v: float in OBELISK:
+		shape.append(v)
+		want.append(v)
+	core = game.spawn_part(self, "", R)
+	core.hp = HP
+	core.max_hp = HP
+	core.score = SCORE
+	core.armored = true
+	core.blast = 3.0
+	core.debris_col = CoreModels.GLASS
 	for k in 8:
-		var s := game.spawn_part(self, "", 1.6)
-		s.shootable = false  # shots pass the wedges: only the gem's heart is a target
-		s.armored = true
-		s.hp = 1e9
-		s.ram = false
+		var q := game.spawn_part(self, "", 1.0)
+		q.hp = 1e9
+		q.max_hp = 1e9
+		q.score = 0
+		q.armored = true
+		q.lock = false  # the homing lasers go for the middle
+		lobes.append(q)
+	lances = MarkedStrikes.new(g, self, MarkedStrikes.LANCE, Color(0.3, 1.0, 0.6))
+	rig = Node3D.new()
+	add_child(rig)
+	tilt = Node3D.new()
+	rig.add_child(tilt)
+	form = Node3D.new()
+	tilt.add_child(form)
+	turn = Node3D.new()
+	form.add_child(turn)
+	plate_mat = CoreModels.crystal_material("plate").duplicate() as ShaderMaterial
+	for i in 8:
 		var m := MeshInstance3D.new()
-		m.mesh = Vox.get_mesh("soul_shard")
-		var mat := CoreModels.gem_material("shard").duplicate() as ShaderMaterial
-		m.material_override = mat
-		s.add_child(m)
-		shards.append(s)
-		shard_mesh.append(m)
-		shard_mat.append(mat)
-		shard_st.append({"mode": "form", "t": 0.0, "ang": 0.0})
+		m.mesh = Vox.get_mesh("soul_plate")
+		m.material_override = plate_mat
+		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		turn.add_child(m)
+		plates.append(m)
+	seed_mat = CoreModels.crystal_material("seed").duplicate() as ShaderMaterial
+	seed_mi = MeshInstance3D.new()
+	seed_mi.mesh = Vox.get_mesh("soul_seed")
+	seed_mi.material_override = seed_mat
+	seed_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	turn.add_child(seed_mi)
+	for k in 2:
+		var h := MeshInstance3D.new()
+		h.mesh = Vox.get_mesh("soul_halo")
+		var hm := CoreModels.halo_material().duplicate() as ShaderMaterial
+		hm.set_shader_parameter("dashes", 24.0 if k == 0 else 36.0)
+		hm.set_shader_parameter("ticks", 12.0 if k == 0 else 18.0)
+		h.material_override = hm
+		h.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		tilt.add_child(h)
+		halos.append(h)
+		halo_mat.append(hm)
+	mote_mat = CoreModels.crystal_material("mote").duplicate() as ShaderMaterial
+	for i in 6:
+		var e := game.spawn_part(self, "", 0.5)
+		e.intangible = true
+		e.shootable = false
+		e.lock = false
+		e.ram = false
+		var m := MeshInstance3D.new()
+		m.mesh = Vox.get_mesh("soul_mote")
+		m.material_override = mote_mat
+		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		e.add_child(m)
+		motes.append(e)
+		mote_mesh.append(m)
+		mote_to.append(Vector3.ZERO)
 	if _beam_mat == null:
 		_beam_mat = ShaderMaterial.new()
 		_beam_mat.shader = load("res://shaders/lightning.gdshader")
 		_beam_mat.render_priority = 2
-	beam_mesh = ImmediateMesh.new()
-	beam_mi = MeshInstance3D.new()
-	beam_mi.mesh = beam_mesh
-	beam_mi.material_override = _beam_mat
-	beam_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	beam_mi.extra_cull_margin = 16384.0
-	add_child(beam_mi)
-	_place_shards(0.0, true)
-	_place_wards(0.0)
+	fx_mesh = ImmediateMesh.new()
+	fx_mi = MeshInstance3D.new()
+	fx_mi.mesh = fx_mesh
+	fx_mi.material_override = _beam_mat
+	fx_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	fx_mi.extra_cull_margin = 16384.0
+	add_child(fx_mi)
+	_pose()
+	_zones()
+	_motes(0.0, true)
+	_light(0.0)
 
 
-## A panel's last hit breaks it here, not as a kill: no fire, it shatters.
+## A hit anywhere on it is a hit on its light. The Spear reaches several of
+## its hit zones at once: only one of them counts each frame.
 func on_hit(e: Enemy, dmg: float) -> float:
-	var k := wards.find(e)
-	if k >= 0 and dmg >= e.hp:
-		_break_ward(k, true)
-		return 0.0
-	return dmg
+	if absf(dmg - Player.SPEAR_DPS * Game.DT) < 0.001 and game.player.spear_t > 0.0:
+		if spear_frame == game.frames:
+			return 0.0
+		spear_frame = game.frames
+	if e == core:
+		return dmg
+	if lobes.has(e) and not core.dead:
+		core.flash = 1.0
+		core.hp -= dmg
+		if core.hp <= 0.0:
+			game.kill(core)
+	return 0.0
 
 
 func on_part_killed(e: Enemy) -> void:
-	if e == heart:
+	if e == core:
 		_die()
-
-
-## Panel k shatters into blue sparks (its points and energy if `scored`)
-## and builds itself back later.
-func _break_ward(k: int, scored: bool) -> void:
-	var e := wards[k]
-	e.dead = true
-	game.remove_enemy(e)
-	ward_down[k] = WARD_BACK[clampi(phase - 1, 0, 2)] if scored else 0.0
-	ward_build[k] = 0.0
-	if scored:
-		game.add_score(e.score, true)
-		game.items.burst_energy(e.position, e.energy_drop)
-	for i in 6:
-		var a := TAU * i / 6.0 + randf() * 0.5
-		game.fx.sprite(e.position + Vector3(0, 0.4, 0), Vector3(cos(a), 0, sin(a)) * randf_range(3.0, 6.0), 0.5, 0.1, 0.35, Color(0.5, 0.8, 1.0), 0.0)
-	game.fx.shockwave(e.position + Vector3(0, 0.3, 0), 1.6 * e.radius, Color(0.4, 0.75, 1.0))
-	game.sfx.play("tile_break")
 
 
 func tick(dt: float) -> void:
@@ -229,16 +290,18 @@ func tick(dt: float) -> void:
 	st += dt
 	match phase:
 		0:
-			center.z = move_toward(center.z, game.field_top + 8.0, 4.2 * dt)
-			for k in wards.size():
-				ward_build[k] = minf(1.0, st / 3.6)
+			center.z = move_toward(center.z, game.field_top + HOME_Z, 4.2 * dt)
+			glow = clampf(st / 3.4, 0.0, 1.0)
 			if st > 3.8:
 				phase = 1
 				st = 0.0
-				heart.armored = false
+				core.armored = false
+				for q in lobes:
+					q.armored = false
 				game.boss_fight_started()
 		1, 2, 3:
 			form_t += dt
+			glow = 1.0
 			if morph_t > 0.0:
 				morph_t -= dt
 				if morph_t <= 0.0:
@@ -247,43 +310,174 @@ func tick(dt: float) -> void:
 			else:
 				_attacks(dt)
 			_next_form()
-			if phase >= 2:
-				center.x = move_toward(center.x, sin(form_t * 0.42) * 3.2, 3.0 * dt)
+			hold_t = maxf(0.0, hold_t - dt)
+			if thrust == "" and hold_t <= 0.0:
+				var reach := 2.0 if phase == 1 else 3.2
+				center.x = move_toward(center.x, sin(form_t * 0.42) * reach, (1.5 if phase == 1 else 3.0) * dt)
+			_shed_energy()
 		4:
 			_dying(dt)
 			if destroyed:
 				return
-	heat = move_toward(heat, 1.0 if phase >= 3 else 0.0, dt * 0.8)
-	var spin_to: float = SPIN[clampi(phase - 1, 0, 2)]
-	if _crossing():
-		spin_to = CROSS_W * cross_dir
-	spin_w = move_toward(spin_w, spin_to, dt * 1.2)
+	_thrust(dt)
+	for i in shape.size():
+		var k := 1.0 - exp(-dt * float(EASE[i]))
+		shape[i] = lerp_angle(shape[i], want[i], k) if i == YAW else lerpf(shape[i], want[i], k)
+	var w: float = SPIN[clampi(phase - 1, 0, 2)]
+	if thrust == "aim" or thrust == "go":
+		w = 5.0  # a drill
+	elif phase == 3 and _charging():
+		w = 3.2
+	elif phase == 4:
+		w = 0.6 + dying_t * 2.0
+	spin_w = move_toward(spin_w, w, dt * 3.0)
 	spin_a += spin_w * dt
-	orbit_a += orbit_w * dt
-	_place_shards(dt, false)
-	_place_wards(dt)
-	_wards(dt)
+	if phase == 2:
+		# the lower pyramid turns against the upper one
+		counter_a -= 2.0 * spin_w * dt
+	else:
+		counter_a = move_toward(counter_a, roundf(counter_a / (PI * 0.5)) * PI * 0.5, dt * 3.0)
+	pos = center + _point() * lunge
+	_pose()
+	_zones()
+	_motes(dt, false)
+	_spires(dt)
 	_beams(dt)
-	_draw_beams()
+	_draw()
 	if phase >= 1 and phase <= 3:
 		lances.tick(dt)
-	heart.radius = HIT_R[clampi(phase - 1, 0, 2)]
-	heart_mesh.rotation.y = -spin_a * 1.3
-	var hs := 0.9 if phase <= 1 else (1.3 if phase == 2 else 1.1)
-	heart_mesh.scale = heart_mesh.scale.lerp(Vector3.ONE * hs, clampf(dt * 3.0, 0.0, 1.0))
-	# hits and warnings light the gem up from inside (no overlay: a white
-	# wash would take its colour away under steady fire)
-	var glow := 1.0 + heat * 0.4 + heart.flash * 0.6 + _pulse(heart)
-	var hm := heart_mesh.material_override as ShaderMaterial
-	hm.set_shader_parameter("heat", heat)
-	hm.set_shader_parameter("light", 1.3 * glow)
-	for k in 8:
-		var m := shard_mat[k]
-		m.set_shader_parameter("heat", heat)
-		var aiming := String(shard_st[k]["mode"]) == "aim" and fmod(game.time * 10.0, 1.0) < 0.5
-		# docked, a wedge is the gem's body: it lights up with the heart
-		var own := 1.0 + heat * 0.4 + _pulse(shards[k])
-		m.set_shader_parameter("light", 2.2 if aiming else (glow if phase != 2 else own))
+	_light(dt)
+
+
+# ------------------------------------------------------------ shape
+
+func _set_shape(to: Array, keep_yaw := false) -> void:
+	for i in want.size():
+		if i == YAW and keep_yaw:
+			continue
+		want[i] = float(to[i])
+
+
+## Puts the plates, the seed and the rings where the shape says.
+func _pose() -> void:
+	rig.position = pos
+	rig.rotation.y = shape[YAW]
+	tilt.rotation.x = shape[PITCH]
+	form.scale = Vector3(shape[SQUEEZE], shape[STRETCH], shape[SQUEEZE])
+	turn.rotation.y = spin_a
+	var open := Basis(hinge, shape[OPEN])
+	var t := Transform3D(open, edge_mid - open * edge_mid + face_n * shape[GAP] + Vector3.UP * shape[SPLIT])
+	for i in 8:
+		var up := i < 4
+		var b := Basis(Vector3.UP, PI * 0.5 * (i % 4) + (0.0 if up else shape[TWIST] + counter_a))
+		if not up:
+			b = b * flip
+		plates[i].transform = Transform3D(b, Vector3.ZERO) * t
+	for k in 2:
+		var h := halos[k]
+		var s: float = MOTE_R * shape[RING] / 0.94 * (1.0 if k == 0 else 1.3)
+		h.scale = Vector3.ONE * s
+		if k == 1:
+			h.rotation = Vector3(0.42, halo_a, 0.0)
+
+
+## Its long axis, toward the upper tip (a unit vector in the world).
+func _axis() -> Vector3:
+	return tilt.global_transform.basis.y
+
+
+## Where its lower tip points, on the plane.
+func _point() -> Vector3:
+	return Vector3(sin(shape[YAW]), 0, cos(shape[YAW]))
+
+
+## Half its length on the plane (while it lies flat).
+func _reach() -> float:
+	return L * shape[STRETCH] + shape[SPLIT]
+
+
+## A tip on the plane: +1 the lower one (toward the ship at rest), -1 the upper.
+func _tip(s: float) -> Vector3:
+	return game.to_plane(pos - _axis() * (s * _reach()))
+
+
+## The tip nearer the ship.
+func _near_tip() -> float:
+	return 1.0 if (game.player.position - pos).dot(_point()) >= 0.0 else -1.0
+
+
+func _bloomed() -> bool:
+	return shape[PITCH] > -0.6
+
+
+## A point of a plate (model space) on the plane.
+func _plate_at(i: int, p: Vector3) -> Vector3:
+	return game.to_plane(plates[i].global_transform * p)
+
+
+## The hit zones follow the shape: a chain of circles along the axis while
+## it lies flat, one on each petal once it has opened toward the camera.
+func _zones() -> void:
+	var sq := shape[SQUEEZE]
+	core.position = pos
+	if _bloomed():
+		core.radius = 2.5
+		var mid := Vector3(R / 3.0, L / 3.0, R / 3.0)
+		for i in 8:
+			lobes[i].position = _plate_at(i, mid)
+			lobes[i].radius = 1.3
+			lobes[i].intangible = defeated
+		return
+	core.radius = R * sq * 0.9 + 0.1
+	var ax := _axis()
+	var h := L * shape[STRETCH]
+	var k := 0
+	for s: float in [-1.0, 1.0]:
+		for q: Array in [[0.22, 0.7], [0.62, 0.34]]:
+			lobes[k].position = game.to_plane(pos - ax * (s * (shape[SPLIT] + float(q[0]) * h)))
+			lobes[k].radius = R * sq * float(q[1]) + 0.25
+			lobes[k].intangible = defeated
+			k += 1
+	for i in range(4, 8):
+		lobes[i].position = pos
+		lobes[i].intangible = true
+
+
+## The motes: round the waist, or gliding out to their posts and back.
+func _motes(dt: float, now: bool) -> void:
+	mote_a += dt * (0.9 + heat * 0.7)
+	halo_a += dt * 0.35
+	var b := tilt.global_transform.basis
+	for i in 6:
+		var to: Vector3 = mote_to[i]
+		if not motes_out:
+			var a := mote_a + TAU * i / 6.0
+			to = pos + b * (Vector3(cos(a), 0, sin(a)) * MOTE_R * shape[RING])
+		var m := motes[i]
+		m.position = to if now else m.position.lerp(to, 1.0 - exp(-dt * (5.0 if motes_out else 6.0)))
+		mote_mesh[i].rotation += Vector3(1.3, 2.1, 0.7) * dt
+
+
+## The crystal's light: dim as it comes in, hot in its rage; hits and
+## warnings wash over it.
+func _light(dt: float) -> void:
+	heat = move_toward(heat, 1.0 if phase >= 3 else 0.0, dt * 0.8)
+	var pulse := _pulse(core)
+	var hit := core.flash if not core.dead else 0.0
+	var boost := 1.0 + 0.4 * heat + (dying_t * 0.8 if phase == 4 else 0.0)
+	plate_mat.set_shader_parameter("light", glow * boost * (1.0 + 0.5 * pulse))
+	plate_mat.set_shader_parameter("heat", heat)
+	plate_mat.set_shader_parameter("wash", hit * 0.045 + pulse * 0.12)
+	seed_mat.set_shader_parameter("light", glow * boost * (1.1 + 0.25 * sin(game.time * 6.0)))
+	seed_mat.set_shader_parameter("heat", heat)
+	seed_mat.set_shader_parameter("wash", hit * 0.15 + pulse * 0.3 + (maxf(dying_t - 2.2, 0.0) * 1.2 if phase == 4 else 0.0))
+	mote_mat.set_shader_parameter("light", glow * boost)
+	mote_mat.set_shader_parameter("heat", heat)
+	for k in 2:
+		var hm := halo_mat[k]
+		hm.set_shader_parameter("alpha", glow * (0.75 if k == 0 else 0.5) * (1.0 + 0.6 * pulse) * (maxf(0.0, 1.0 - dying_t / 2.4) if phase == 4 else 1.0))
+		hm.set_shader_parameter("heat", heat)
+		hm.set_shader_parameter("turn", game.time * (0.5 if k == 0 else -0.3) * (1.0 + heat))
 
 
 ## An attacker's warning pulse (as Enemy._shade gives a model): quickening
@@ -295,218 +489,72 @@ func _pulse(e: Enemy) -> float:
 	return (0.3 + 0.7 * f) * (0.5 + 0.5 * sin(e.warn_t * lerpf(18.0, 40.0, f)))
 
 
-## Health down to the next form's share, or the form has gone on long
-## enough: change.
+## Its light bleeding out as it is hurt: energy for the homing lasers.
+func _shed_energy() -> void:
+	var lost := 1.0 - core.hp / core.max_hp
+	while chips < int(lost / CHIP) and not core.dead:
+		chips += 1
+		game.items.burst_energy(pos, CHIP_ENERGY)
+		for i in 5:
+			var a := randf() * TAU
+			game.fx.sprite(pos + Vector3(0, 0.6, 0), Vector3(cos(a), 0, sin(a)) * randf_range(5.0, 11.0), 0.45, 0.08, 0.4, BEAM_COL, 0.0)
+
+
+# ------------------------------------------------------------ forms
+
+## Light down to the next form's share, or the form has gone on long enough.
 func _next_form() -> void:
-	if phase == 1 and (heart.hp < heart.max_hp * FORM_AT[0] or form_t > FORM_T[0]):
+	if morph_t > 0.0:
+		return
+	if phase == 1 and (core.hp < core.max_hp * FORM_AT[0] or form_t > FORM_T[0]):
 		_morph(2)
-	elif phase == 2 and morph_t <= 0.0 and (heart.hp < heart.max_hp * FORM_AT[1] or form_t > FORM_T[1]):
+	elif phase == 2 and (core.hp < core.max_hp * FORM_AT[1] or form_t > FORM_T[1]):
 		_morph(3)
 
 
 func _morph(to: int) -> void:
 	if game.log_status:
-		print("SOUL form=%d after %.1fs light=%d" % [to, form_t, int(heart.hp)])
+		print("SOUL form=%d after %.1fs light=%d" % [to, form_t, int(core.hp)])
 	phase = to
 	form_t = 0.0
 	morph_t = MORPH
 	cycle_t = 0.0
 	fired.clear()
-	_cancel_beams()
+	_call_off()
 	game.shake(1.0)
 	game.flash_a = maxf(game.flash_a, 0.2)
 	game.sfx.play("slam")
 	if to == 2:
-		# the wedges blow apart, then take their places round the heart
-		orbit_a = spin_a
-		orbit_w = 0.0
-		for k in 8:
-			shard_st[k] = {"mode": "burst", "t": 0.0, "ang": 0.0}
+		_set_shape(PRISM)
 	else:
-		orbit_w = 0.0
-		for k in 8:
-			shard_st[k] = {"mode": "form", "t": 0.0, "ang": 0.0}
+		_set_shape(BLOOM)
 		game.show_msg("SOULSTICE", "", 1.5, true)
-	for k in 8:
-		var a := TAU * k / 8.0 + spin_a
-		game.fx.sprite(center + Vector3(cos(a), 0.6, sin(a)) * 2.0, Vector3(cos(a), 0, sin(a)) * 9.0, 0.6, 0.1, 0.5, BEAM_COL, 0.0)
+	game.fx.shockwave(pos + Vector3(0, 0.5, 0), 9.0, BEAM_COL)
+	for k in 12:
+		var a := TAU * k / 12.0
+		game.fx.sprite(pos + Vector3(cos(a), 0.6, sin(a)) * 2.0, Vector3(cos(a), 0, sin(a)) * 11.0, 0.6, 0.1, 0.5, BEAM_COL, 0.0)
 
 
-func _crossing() -> bool:
-	for b in beams:
-		if int(b["tip"]) >= 0:
-			return true
-	return phase == 3 and morph_t <= 0.0 and fired.has("w_cross") and not fired.has("cross_done")
-
-
-# ------------------------------------------------------------ the wedges
-
-## Where wedge k belongs in the current form: [position, heading, scale].
-func _shard_goal(k: int) -> Array:
-	var a := TAU * k / 8.0 + spin_a
-	match phase:
-		2:
-			var o := TAU * k / 8.0 + orbit_a
-			var p := center + Vector3(cos(o) * ORBIT.x, 0, sin(o) * ORBIT.y)
-			p.z = maxf(p.z, game.field_top + 1.5)
-			return [p, -o, 1.0]
-		3:
-			var d := STAR_D + 0.35 * sin(form_t * 2.2)
-			return [center + Vector3(cos(a), 0, sin(a)) * d, -a + PI, STAR_S]
-		4:
-			return [shards[k].position, shard_mesh[k].rotation.y, shard_mesh[k].scale.x]
-	return [center + Vector3(cos(a), 0, sin(a)) * CoreModels.MID, -a, 1.0]
-
-
-func _place_shards(dt: float, now: bool) -> void:
-	for k in 8:
-		var s := shards[k]
-		var m := shard_mesh[k]
-		var ss: Dictionary = shard_st[k]
-		var goal := _shard_goal(k)
-		var to: Vector3 = goal[0]
-		var head: float = goal[1]
-		var ease := 7.0
-		ss["t"] = float(ss["t"]) + dt
-		match String(ss["mode"]):
-			"burst":
-				# flung out from the gem, then off to its place
-				var a := TAU * k / 8.0 + spin_a
-				to = center + Vector3(cos(a), 0, sin(a)) * 7.0
-				head = -a + float(ss["t"]) * 6.0
-				ease = 9.0
-				if float(ss["t"]) > 0.45:
-					ss["mode"] = "form"
-			"aim":
-				to = s.position
-				head = -float(ss["ang"]) - PI
-				ease = 0.0
-			"dash":
-				s.position += Vector3(cos(float(ss["ang"])), 0, sin(float(ss["ang"]))) * DASH_SPEED * dt
-				to = s.position
-				head = -float(ss["ang"]) - PI
-				_shed(k, dt)
-				if not game.on_field(s.position, 3.5):
-					# off the screen: back in from the top, over its place
-					ss["mode"] = "back"
-					ss["t"] = 0.0
-					s.position = Vector3(clampf(to.x, -game.hw_top, game.hw_top), 0, game.field_top - 4.0)
-					to = s.position
-			"back":
-				ease = 4.0
-				head = lerp_angle(m.rotation.y, head, clampf(dt * 4.0, 0.0, 1.0))
-				if float(ss["t"]) > BACK_T:
-					ss["mode"] = "form"
-					s.ram = phase != 1
-		if now:
-			s.position = to
-			m.rotation.y = head
-			m.scale = Vector3.ONE * float(goal[2])
-		elif ease > 0.0:
-			s.position = s.position.lerp(to, 1.0 - exp(-dt * ease))
-			m.rotation.y = lerp_angle(m.rotation.y, head, 1.0 - exp(-dt * ease * 1.4))
-			m.scale = m.scale.lerp(Vector3.ONE * float(goal[2]), clampf(dt * 3.0, 0.0, 1.0))
-		else:
-			m.rotation.y = lerp_angle(m.rotation.y, head, 1.0 - exp(-dt * 10.0))
-		# docked in the gem the heart takes the rams; out on their own they ram
-		s.ram = phase == 2 or phase == 3
-		s.radius = 1.5 if phase == 2 else 1.2
-	heart.position = center
-
-
-## A wedge's point (its inner edge, out at the star's points).
-func _tip(k: int) -> Vector3:
-	var a := TAU * k / 8.0 + spin_a
-	return shards[k].position + Vector3(cos(a), 0, sin(a)) * CoreModels.MID * STAR_S
-
-
-## A dashing wedge sheds shells either side of its track.
-func _shed(k: int, dt: float) -> void:
-	var ss: Dictionary = shard_st[k]
-	ss["shed"] = float(ss.get("shed", 0.0)) - dt
-	if float(ss["shed"]) > 0.0:
-		return
-	ss["shed"] = 0.09
-	var p := shards[k].position
-	if not game.boss_can_fire(p):
-		return
-	var a := float(ss["ang"])
-	for s in [-1.0, 1.0]:
-		game.bullets.fire(p, a + s * PI * 0.5, 2.4, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.SMALL)
-
-
-## Two wedges turn on the ship (their lanes marked), then dash through.
-func _dash(pick: Array) -> void:
-	var first := true
-	for k: int in pick:
-		var ss: Dictionary = shard_st[k]
-		if String(ss["mode"]) != "form":
+## Whatever it was at is off: beams, a thrust, spires not yet up, the motes
+## home again (the lances already on their way fly on).
+func _call_off() -> void:
+	beams.clear()
+	thrust = ""
+	thrust_lane = {}
+	hold_t = 0.0
+	motes_out = false
+	for s: Dictionary in spires.duplicate():
+		if float(s["t"]) < float(s["delay"]):
+			_drop_spire(s)
+	var i := 0
+	while i < game.warnings.size():
+		var w: Dictionary = game.warnings[i]
+		var nd = w["node"]
+		if is_instance_valid(nd) and (nd == core or motes.has(nd)):
+			game.warnings.remove_at(i)
 			continue
-		var p := shards[k].position
-		var d := game.player.position - p
-		var a := atan2(d.z, d.x)
-		var end := p + Vector3(cos(a), 0, sin(a)) * 60.0
-		shard_st[k] = {"mode": "aim", "t": 0.0, "ang": a}
-		game.warn(shards[k], DASH_AIM, Game.Warn.MOVE, 1.5, {"lane": PackedVector3Array([p, end]), "hw": DASH_HW, "show": true}, first)
-		first = false
-		var kk := k
-		get_tree().create_timer(DASH_AIM, false, true).timeout.connect(func() -> void: _go(kk))
-
-
-func _go(k: int) -> void:
-	if destroyed or defeated or String(shard_st[k]["mode"]) != "aim":
-		return
-	shard_st[k]["mode"] = "dash"
-	shard_st[k]["t"] = 0.0
-	game.sfx.play("exp_s")
-
-
-# ------------------------------------------------------------ the barrier
-
-func _place_wards(dt: float) -> void:
-	var want: float = WARD_R[clampi(phase - 1, 0, 2)]
-	if phase == 0:
-		want = WARD_R[0]
-	ward_r = move_toward(ward_r, want, dt * 2.5)
-	ward_a += WARD_W[clampi(phase - 1, 0, 2)] * dt
-	# a slot's arc: the panels fit it with no gap between their hit circles
-	var slot := TAU * ward_r / WARD_SLOTS
-	var r := minf(1.35, slot * 0.5 - 0.05)
-	for k in wards.size():
-		var w := wards[k]
-		var a := ward_a + TAU * ward_slot[k] / WARD_SLOTS
-		w.position = center + Vector3(cos(a), 0, sin(a)) * ward_r
-		w.radius = r
-		w.rotation.y = -a
-		w.scale = Vector3.ONE * (r * 1.08)
-
-
-func _wards(dt: float) -> void:
-	for k in wards.size():
-		var w := wards[k]
-		var mat := ward_mat[k]
-		if ward_down[k] > 0.0 and phase >= 1 and phase <= 3:
-			ward_down[k] -= dt
-			if ward_down[k] <= 0.0:
-				ward_down[k] = 0.0
-				ward_build[k] = 0.0
-				w.visible = true
-			elif ward_down[k] < WARD_BUILD:
-				# building back (not solid yet)
-				w.visible = true
-				ward_build[k] = 1.0 - ward_down[k] / WARD_BUILD
-		if w.dead and ward_down[k] <= 0.0 and phase >= 1 and phase <= 3:
-			# up again
-			w.dead = false
-			w.flash = 0.0
-			w.hp = WARD_HP
-			w.visible = true
-			ward_build[k] = 1.0
-			game.enemies.append(w)
-			game.sfx.play("shield")
-		mat.set_shader_parameter("build", ward_build[k])
-		mat.set_shader_parameter("hit", w.flash if not w.dead else 0.0)
-		mat.set_shader_parameter("wear", 1.0 - w.hp / WARD_HP if not w.dead else 0.0)
+		i += 1
+	core.warn_t = 0.0
 
 
 # ------------------------------------------------------------ attacks
@@ -522,218 +570,427 @@ func _attacks(dt: float) -> void:
 	cycle_t += dt
 	match phase:
 		1:
-			_brilliant(dt)
+			_obelisk(dt)
 		2:
-			_scatter(dt)
+			_prism(dt)
 		3:
 			_soulstice(dt)
-	if cycle_t > CYCLE[phase - 1]:
+	if cycle_t > CYCLE[phase - 1] and thrust == "":
 		cycle_t = 0.0
 		fired.clear()
 
 
-func _brilliant(dt: float) -> void:
-	# spokes: shells out of the eight points, turning with the gem
-	if cycle_t > 0.3 and cycle_t < 2.7:
-		spoke_t -= dt
-		if spoke_t <= 0.0:
-			spoke_t = 0.2
-			spoke_k += 1
-			for k in range(spoke_k % 2, 8, 2):
-				var a := TAU * k / 8.0 + spin_a
-				var at := center + Vector3(cos(a), 0, sin(a)) * CoreModels.R
-				if game.boss_can_fire(at):
-					game.bullets.fire(at, a, 4.6, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if k % 4 == 0 else Bullets.SMALL)
-	_needles("n1", 2.9, 7, 30.0, 9.0)
-	_needles("n2", 3.7, 9, 46.0, 9.5)
-	_refraction(4.6)
-	for i in 3:
-		if _once("flower%d" % i, 7.1 + i * 0.3):
-			flower_a += 0.2
-			game.bullets.ring(center, 18, 4.2, Bullets.SHELL, self, flower_a)
-	# homing lances of light from the two points nearest the ship, onto
-	# sights that follow it
-	for i in 2:
-		if _once("lance%d" % i, 7.2 + i * 0.4):
-			var d := game.player.position - center
-			var a := atan2(d.z, d.x) + (0.5 if i == 0 else -0.5)
-			var side := signf(cos(a)) if absf(cos(a)) > 0.1 else (1.0 if i == 0 else -1.0)
-			lances.drop(heart, Vector3(cos(a), 0, sin(a)) * CoreModels.R, Vector3.ZERO, 0, i == 0, side)
-
-
-func _scatter(dt: float) -> void:
-	orbit_w = move_toward(orbit_w, 0.0 if _refracting() else ORBIT.z, dt * 1.5)
-	# the wedges fire in turn: small aimed shell fans
-	volley_t -= dt
-	if volley_t <= 0.0:
-		volley_t = 0.5
-		for i in 8:
-			volley_k = (volley_k + 1) % 8
-			if String(shard_st[volley_k]["mode"]) != "form":
-				continue
-			var p := shards[volley_k].position
+func _obelisk(dt: float) -> void:
+	# shell fans off the tip nearer the ship
+	if cycle_t > 0.4 and cycle_t < 2.3:
+		fan_t -= dt
+		if fan_t <= 0.0:
+			fan_t = 0.5
+			var p := _tip(_near_tip())
 			if game.boss_can_fire(p):
-				game.bullets.fan(p, game.bullets.aim(p), 3, 28.0, 5.4, Bullets.SHELL, self)
-			break
-	if _once("dash1", 1.0):
-		_dash(_pair(0))
-	if _once("dash2", 4.0):
-		_dash(_pair(1))
-	_needles("n1", 5.5, 11, 60.0, 9.5)
-	_refraction2(6.6)
+				game.bullets.fan(p, game.bullets.aim(p), 3, 28.0, 5.2, Bullets.SHELL, self)
+	if _once("run", 0.8):
+		_run(0.0, true)
+	_needles("n1", 7.0, 7, 26.0, 9.0)
+	if _once("thrust", 2.4):
+		_start_thrust()
+	_lances(7.6)
 	for i in 2:
-		if _once("flower%d" % i, 9.1 + i * 0.3):
-			flower_a += 0.25
-			game.bullets.ring(center, 16, 4.4, Bullets.SHELL, self, flower_a)
+		if _once("flower%d" % i, 8.4 + i * 0.35):
+			flower_a += 0.2
+			game.bullets.ring(pos, 16, 4.2, Bullets.SHELL, self, flower_a)
+
+
+func _prism(dt: float) -> void:
+	# twin spirals out of the bare seed, one each way
+	if cycle_t > 0.3 and cycle_t < 2.6:
+		spiral_t -= dt
+		if spiral_t <= 0.0 and game.boss_can_fire(pos):
+			spiral_t = 0.16
+			spiral_a += 0.31
+			for s: float in [0.0, PI]:
+				game.bullets.fire(pos, spiral_a + s, 4.6, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG)
+				game.bullets.fire(pos, -spiral_a * 0.8 + s + 0.5, 4.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.SMALL)
+	if _once("run", 5.2):
+		for i in 3:
+			_run((i - 1) * 0.42, i == 0)
+	_needles("n1", 6.9, 9, 40.0, 9.5)
+	_lattice(0.8)
+	_lances(7.7)
+	_needles("n2", 8.9, 9, 46.0, 9.5)
 
 
 func _soulstice(dt: float) -> void:
 	# spirals out of the star's points
-	if cycle_t > 0.2 and cycle_t < 3.0:
-		spoke_t -= dt
-		if spoke_t <= 0.0:
-			spoke_t = 0.14
-			spoke_k += 1
-			for k in range(spoke_k % 2, 8, 2):
-				var a := TAU * k / 8.0 + spin_a
-				var at := _tip(k)
+	if (cycle_t > 0.3 and cycle_t < 2.4) or (cycle_t > 11.0 and cycle_t < 12.6):
+		spiral_t -= dt
+		if spiral_t <= 0.0:
+			spiral_t = 0.14
+			spiral_k += 1
+			for i in range(spiral_k % 2, 8, 2):
+				var at := _plate_at(i, Vector3(0, L, 0))
+				var d := at - pos
 				if game.boss_can_fire(at):
-					game.bullets.fire(at, a, 4.8, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if k % 4 == spoke_k % 4 else Bullets.SMALL)
+					game.bullets.fire(at, atan2(d.z, d.x), 4.8, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.BIG if i % 4 == spiral_k % 4 else Bullets.SMALL)
+	_mandala(0.6)
 	# heavy balls that burst into rings
-	if cycle_t >= 3.4 - 0.8 and not fired.has("w_heavy"):
+	if cycle_t >= 7.2 - 0.8 and not fired.has("w_heavy"):
 		fired["w_heavy"] = true
 		aim_at = game.player.position
-		game.warn(heart, 0.8, Game.Warn.MOVE, heart.radius, aim_at)
-	if _once("heavy", 3.4):
-		var d := aim_at - center
+		game.warn(core, 0.8, Game.Warn.MOVE, core.radius, aim_at)
+	if _once("heavy", 7.2) and game.boss_can_fire(pos):
+		var d := aim_at - pos
 		var base := atan2(d.z, d.x)
 		for i in 3:
-			game.bullets.fire(center, base + (i - 1) * 0.42, 5.0, Bullets.HEAVY, self)
+			game.bullets.fire(pos, base + (i - 1) * 0.42, 5.0, Bullets.HEAVY, self)
 			game.bullets.split(1.5, 10)
 		game.sfx.play("exp_m")
-	_cross(5.0)
-	_needles("n1", 9.4, 9, 40.0, 9.5)
+	_solstice(8.0)
+	# shards erupting under the ship
+	for i in 3:
+		if _once("erupt%d" % i, 11.2 + i * 0.5):
+			_erupt(i == 0)
 
 
-## An aimed volley of energy needles from the gem (announced).
+## An aimed volley of energy needles from its middle (announced).
 func _needles(key: String, at: float, count: int, spread: float, speed: float) -> void:
 	var w := Enemy.WINDUP_SHOT
 	if cycle_t >= at - w and not fired.has("w_" + key):
 		fired["w_" + key] = true
-		game.warn(heart, w, Game.Warn.SHOT, heart.radius)
-	if _once(key, at) and game.boss_can_fire(center):
-		game.bullets.fan(center, game.bullets.aim(center), count, spread, speed, Bullets.ORB, self, Bullets.NEEDLE)
+		game.warn(core, w, Game.Warn.SHOT, core.radius)
+	if _once(key, at) and game.boss_can_fire(pos):
+		game.bullets.fan(pos, game.bullets.aim(pos), count, spread, speed, Bullets.ORB, self, Bullets.NEEDLE)
 
 
-## Two wedges across from each other for a dash (`n` picks which pair:
-## the ones lowest on the screen first).
-func _pair(n: int) -> Array:
-	var order: Array = range(8)
-	order.sort_custom(func(a: int, b: int) -> bool: return shards[a].position.z > shards[b].position.z)
-	var first: int = order[n % 8]
-	var out := [first]
-	# its partner: the next-lowest on the other side of the heart
-	for k: int in order:
-		if k != first and signf(shards[k].position.x - center.x) != signf(shards[first].position.x - center.x):
-			out.append(k)
-			break
-	return out
+## Two homing lances of light, one from each tip, onto sights that follow
+## the ship.
+func _lances(at: float) -> void:
+	for i in 2:
+		if _once("lance%d" % i, at + i * 0.4):
+			var s := 1.0 if i == 0 else -1.0
+			var off := _tip(s) - pos
+			var side := signf(off.x) if absf(off.x) > 0.5 else s
+			lances.drop(core, off, Vector3.ZERO, 0, i == 0, side)
+
+
+# ------------------------------------------------------------ the LANCE
+
+## Its shape change in OBELISK: drawn out long and thin, its point swung
+## onto the ship (the lane marked and following, then held), a thrust down
+## the lane, a moment's hang, and back.
+func _start_thrust() -> void:
+	thrust = "form"
+	thrust_t = 0.0
+	_set_shape(LANCE, true)
+	game.sfx.play("slam")
+
+
+func _thrust(dt: float) -> void:
+	if thrust == "":
+		lunge = move_toward(lunge, 0.0, 20.0 * dt)
+		return
+	thrust_t += dt
+	match thrust:
+		"form":
+			_swing(dt)
+			if thrust_t >= LANCE_FORM:
+				thrust = "aim"
+				thrust_t = 0.0
+				game.warn(core, LANCE_TRACK + LANCE_LOCK, Game.Warn.MOVE, core.radius, {"lane": _lane(), "hw": _lane_hw(), "show": true})
+				thrust_lane = game.warnings[game.warnings.size() - 1]["to"]
+		"aim":
+			if thrust_t < LANCE_TRACK:
+				_swing(dt)
+			thrust_lane["lane"] = _lane()
+			if thrust_t >= LANCE_TRACK + LANCE_LOCK:
+				thrust = "go"
+				thrust_t = 0.0
+				lunge_to = maxf(lane_len - _reach(), 0.0)
+				game.sfx.play("exp_s")
+				game.shake(0.4)
+		"go":
+			lunge = move_toward(lunge, lunge_to, LANCE_SPEED * dt)
+			_shed(dt)
+			if lunge >= lunge_to:
+				thrust = "hang"
+				thrust_t = 0.0
+		"hang":
+			if thrust_t >= LANCE_HANG:
+				thrust = "back"
+		"back":
+			lunge = move_toward(lunge, 0.0, LANCE_BACK * dt)
+			if lunge <= 0.0:
+				thrust = "ease"
+				thrust_t = 0.0
+				_set_shape(OBELISK)
+		"ease":
+			if thrust_t >= 0.5:
+				thrust = ""
+
+
+## The point swings after the ship, and the lane reaches past where the
+## ship is (not much further than the screen).
+func _swing(dt: float) -> void:
+	var d := game.player.position - center
+	var far := Vector2(d.x, d.z).length()
+	if far > 1.0:
+		want[YAW] = rotate_toward(want[YAW], atan2(d.x, d.z), LANCE_TURN * dt)
+	shape[YAW] = want[YAW]
+	var dir := _point()
+	var least := L * float(LANCE[STRETCH]) + 3.0
+	var edge := center.distance_to(_edge(center, atan2(dir.z, dir.x)))
+	lane_len = clampf(far + 3.0, least, maxf(edge + 1.0, least))
+
+
+func _lane() -> PackedVector3Array:
+	return PackedVector3Array([center, center + _point() * lane_len])
+
+
+func _lane_hw() -> float:
+	return R * float(LANCE[SQUEEZE]) + 0.4
+
+
+## Thrusting, it sheds shells either side of its track.
+func _shed(dt: float) -> void:
+	fan_t -= dt
+	if fan_t > 0.0:
+		return
+	fan_t = 0.06
+	if not game.boss_can_fire(pos):
+		return
+	var dir := _point()
+	var a := atan2(dir.z, dir.x)
+	for s: float in [-1.0, 1.0]:
+		game.bullets.fire(pos, a + s * PI * 0.5, 2.3, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.SMALL)
+
+
+# ------------------------------------------------------------ spires
+
+## A shard will grow out of the field at `at` after `delay` (deadly within
+## `r` as it comes up), then shatter into `shells` slow shells.
+func _spire(at: Vector3, delay: float, r: float, shells: int, anchor: Enemy = null) -> void:
+	spires.append({"at": at, "t": 0.0, "delay": delay, "r": r, "shells": shells, "a": anchor, "lean": randf_range(-0.28, 0.28), "turn": randf() * TAU})
+
+
+## A SPIRE RUN: a line from the crystal through the ship (turned `off`
+## radians from it) to the edge of the screen, marked, then the shards come
+## up along it one after another.
+func _run(off: float, sound: bool) -> void:
+	var d := game.player.position - pos
+	var a := atan2(d.z, d.x) + off
+	var dir := Vector3(cos(a), 0, sin(a))
+	var p := pos + dir * RUN_FROM
+	var path := PackedVector3Array([p])
+	var k := 0
+	while k < 16 and game.on_field(p, 0.5):
+		_spire(p, RUN_MARK + k * RUN_STEP, 1.0, 4 if k % 3 == 2 else 0)
+		p += dir * RUN_GAP
+		k += 1
+	path.append(p)
+	if k > 0:
+		game.warn(core, RUN_MARK + k * RUN_STEP, Game.Warn.MOVE, core.radius, {"laser": path}, sound)
+
+
+## One shard under the ship: its spot ringed, then it comes up.
+func _erupt(sound: bool) -> void:
+	var a := game.spawn_part(self, "", 0.6)
+	a.intangible = true
+	a.shootable = false
+	a.lock = false
+	a.ram = false
+	var p := game.player.position
+	var z := clampf(p.z, game.field_top + 2.0, game.field_bottom - 0.5)
+	var w := game.half_width_at(z) - 0.5
+	a.position = Vector3(clampf(p.x, -w, w), 0, z)
+	a.hit_pos = a.position
+	game.warn(a, ERUPT_MARK, Game.Warn.MOVE, 1.2, {"r": ERUPT_R}, sound)
+	_spire(a.position, ERUPT_MARK, ERUPT_R, 4, a)
+
+
+func _spires(dt: float) -> void:
+	for s: Dictionary in spires.duplicate():
+		var was: float = float(s["t"]) - float(s["delay"])
+		s["t"] = float(s["t"]) + dt
+		var t := was + dt
+		if t < 0.0:
+			continue
+		var at: Vector3 = s["at"]
+		var r: float = s["r"]
+		if was < 0.0:
+			# up it comes: leaning up the screen, so its length shows
+			var mi := MeshInstance3D.new()
+			mi.mesh = Vox.get_mesh("soul_spire")
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			var y := Vector3(float(s["lean"]), 0.75, -0.66).normalized()
+			var x := y.cross(Vector3(0, 0, 1)).normalized()
+			mi.transform = Transform3D(Basis(x, y, x.cross(y)) * Basis(Vector3.UP, float(s["turn"])), at)
+			add_child(mi)
+			s["mi"] = mi
+			game.fx.sprite(at + Vector3(0, 0.4, 0), Vector3.ZERO, r * 2.4, r * 0.6, 0.14, Color(1, 1, 1), 0.0)
+			game.sfx.play("tile_break")
+		var f := clampf(t / SPIRE_UP, 0.0, 1.0)
+		var up := 1.0 - pow(1.0 - f, 3.0)
+		var k := r * randf_range(0.98, 1.02)
+		(s["mi"] as MeshInstance3D).scale = Vector3(k * (0.5 + 0.5 * up), k * maxf(up, 0.02), k * (0.5 + 0.5 * up))
+		if t < SPIRE_LIVE and game.combat_on():
+			var d := game.player.position - at
+			if Vector2(d.x, d.z).length() < r + Player.HIT_R:
+				game.touch_player("soul spire")
+		if t >= SPIRE_STAND:
+			_shatter(s)
+
+
+## A spire's time is up: it breaks into sparks (and a few slow shells).
+func _shatter(s: Dictionary) -> void:
+	var at: Vector3 = s["at"]
+	var r: float = s["r"]
+	var top := at + Vector3(0, 1.2, -1.0) * r
+	for i in 5:
+		var a := randf() * TAU
+		game.fx.sprite(at.lerp(top, randf()), Vector3(cos(a), 0, sin(a)) * randf_range(3.0, 8.0), 0.5, 0.08, 0.35, BEAM_COL, 0.0)
+	game.fx.shockwave(at + Vector3(0, 0.3, 0), r * 1.3, BEAM_COL)
+	var n := int(s["shells"])
+	if n > 0 and game.boss_can_fire(at):
+		var a0 := randf() * TAU
+		for k in n:
+			game.bullets.fire(at, a0 + TAU * k / n, 3.2, Bullets.SHELL, self, Bullets.ROUND, 0.0, 0.0, Bullets.SMALL)
+	_drop_spire(s)
+
+
+func _drop_spire(s: Dictionary) -> void:
+	if s.has("mi"):
+		(s["mi"] as MeshInstance3D).queue_free()
+	var a = s["a"]
+	if a != null and is_instance_valid(a):
+		game.remove_enemy(a)
+		(a as Enemy).queue_free()
+	spires.erase(s)
 
 
 # ------------------------------------------------------------ beams
 
-## REFRACTION (BRILLIANT): a prism of light hung over the ship, a beam
-## into it from the gem and three fanning out of it down the screen.
-func _refraction(at: float) -> void:
-	var lock := 1.1
-	if cycle_t >= at and not fired.has("refraction"):
-		fired["refraction"] = true
-		var pp := game.player.position
-		prism = Vector3(clampf(pp.x, -9.0, 9.0), 0, lerpf(center.z, pp.z, 0.45))
-		var d := pp - prism
-		var base := atan2(d.z, d.x)
-		_beam(PackedVector3Array([center, prism]), lock, 1.0, heart, true)
-		for s in [-1.0, 0.0, 1.0]:
-			_beam(PackedVector3Array([prism, _edge(prism, base + s * 0.5)]), lock, 1.0, heart, false)
-		game.sfx.play("slam")
-
-
-## The heart shines into the three lowest wedges and they bend the beam
-## down at the ship (SCATTER; they stop turning round it meanwhile).
-func _refraction2(at: float) -> void:
-	if cycle_t >= at and not fired.has("refraction"):
-		fired["refraction"] = true
-		var order: Array = []
-		for k in 8:
-			if String(shard_st[k]["mode"]) == "form":
-				order.append(k)
-		order.sort_custom(func(a: int, b: int) -> bool: return shards[a].position.z > shards[b].position.z)
-		var pp := game.player.position
-		var first := true
-		for i in mini(3, order.size()):
-			var p := shards[order[i]].position
-			var off: float = [-4.5, 0.0, 4.5][i] if order.size() >= 3 else 0.0
-			var to := game.line_to_bottom(p, pp + Vector3(off, 0, 0))
-			_beam(PackedVector3Array([center, p, to]), 1.1, 1.1, shards[order[i]], first)
-			first = false
-		game.sfx.play("slam")
-
-
-func _refracting() -> bool:
-	for b in beams:
-		if int(b["tip"]) < 0:
-			return true
-	return false
-
-
-## The PRISM CROSS (SOULSTICE): four beams from every other point of the
-## star, swinging round with it.
-func _cross(at: float) -> void:
-	var lock := 1.2
-	var burn := 3.2
-	if cycle_t >= at - 0.6 and not fired.has("w_cross"):
-		fired["w_cross"] = true
-		cross_dir = -cross_dir
-	if cycle_t >= at and not fired.has("cross"):
-		fired["cross"] = true
-		var first := true
-		for k in [0, 2, 4, 6]:
-			_beam(PackedVector3Array([_tip(k), _tip(k)]), lock, burn, shards[k], first, k)
-			first = false
-		game.sfx.play("slam")
-	if fired.has("cross") and beams.is_empty() and not fired.has("cross_done"):
-		fired["cross_done"] = true
-
-
 ## Starts a beam along `pts` (the path is marked for `lock`, then burns for
-## `burn`), announced on `node`; `tip` >= 0: it shines out of that wedge's
-## point and turns with the star.
-func _beam(pts: PackedVector3Array, lock: float, burn: float, node: Enemy, sound: bool, tip := -1) -> void:
-	var b := {"pts": pts, "t": 0.0, "lock": lock, "burn": burn, "tip": tip}
-	if tip >= 0:
-		b["pts"] = _tip_pts(tip)
-	game.warn(node, lock + burn, Game.Warn.MOVE, node.radius, _bot_mark(b), sound)
-	b["warn"] = game.warnings[game.warnings.size() - 1]["to"]
-	beams.append(b)
+## `burn`), announced on `node`; with `trace` it leaves a faint line behind.
+func _beam(pts: PackedVector3Array, lock: float, burn: float, node: Enemy, sound: bool, trace := false) -> void:
+	beams.append({"pts": pts, "t": 0.0, "lock": lock, "burn": burn, "hw": BEAM_HW, "trace": trace})
+	game.warn(node, lock + burn, Game.Warn.MOVE, 0.8, {"laser": pts}, sound)
 
 
-## What the autopilot keeps out of: the path, or for a turning beam the
-## sector it has still to sweep.
-func _bot_mark(b: Dictionary) -> Dictionary:
-	var tip := int(b["tip"])
-	if tip < 0:
-		return {"laser": b["pts"]}
-	var pts: PackedVector3Array = b["pts"]
-	var a := atan2(pts[1].z - pts[0].z, pts[1].x - pts[0].x)
-	var left := float(b["lock"]) + float(b["burn"]) - float(b["t"])
-	return {"sector": [center, a, a + spin_w * maxf(left, 0.0)], "hw": BEAM_HW}
+## A beam strung between motes i and j (out at their posts), on past both.
+func _chord(i: int, j: int, lock: float, burn: float, sound: bool) -> void:
+	var a := mote_to[i]
+	var b := mote_to[j]
+	var d := (b - a).normalized()
+	_beam(PackedVector3Array([a - d * 8.0, b + d * 8.0]), lock, burn, motes[i], sound, true)
+	game.sfx.play("slam")
 
 
-## From a wedge's point straight out to the edge of the screen.
-func _tip_pts(k: int) -> PackedVector3Array:
-	var a := TAU * k / 8.0 + spin_a
-	var from := _tip(k)
-	return PackedVector3Array([from, _edge(from, a)])
+## A beam from mote i (out at its post) through the ship and on.
+func _ray(i: int, lock: float, burn: float, sound: bool) -> void:
+	var a := mote_to[i]
+	var d := game.player.position - a
+	d.y = 0.0
+	d = d.normalized() if d.length() > 1.0 else Vector3(0, 0, 1)
+	_beam(PackedVector3Array([a - d * 8.0, a + d * 60.0]), lock, burn, motes[i], sound)
+
+
+## The LATTICE (PRISM): the motes out to the edges of the screen, beams
+## strung between them round the ship, then two through it.
+func _lattice(at: float) -> void:
+	if _once("lat_out", at):
+		var p := game.player.position
+		var zt := game.field_top + 1.3
+		var zb := game.field_bottom - 2.4
+		var x := clampf(p.x, -9.0, 9.0)
+		var z := clampf(p.z, game.field_top + 5.0, game.field_bottom - 3.0)
+		var w := game.half_width_at(z) - 1.0
+		var posts := [Vector3(x - 3.0, 0, zt), Vector3(x - 3.0, 0, zb), Vector3(x + 3.0, 0, zt), Vector3(x + 3.0, 0, zb), Vector3(-w, 0, z), Vector3(w, 0, z)]
+		for i in 6:
+			mote_to[i] = posts[i]
+		motes_out = true
+		game.sfx.play("deflect")
+	if _once("lat_cols", at + 0.75):
+		_chord(0, 1, 1.0, 0.6, true)
+		_chord(2, 3, 1.0, 0.6, false)
+	if _once("lat_row", at + 1.35):
+		_chord(4, 5, 1.0, 0.6, true)
+	if _once("lat_ray0", at + 2.0):
+		_ray(0, 0.9, 0.5, true)
+	if _once("lat_ray1", at + 2.5):
+		_ray(2, 0.9, 0.5, true)
+	if _once("lat_in", at + 4.0):
+		motes_out = false
+
+
+## The STAR MANDALA (SOULSTICE): the motes at the corners of a hexagon round
+## the whole screen draw a six-pointed star across it stroke by stroke, a
+## beam through the ship between the strokes.
+func _mandala(at: float) -> void:
+	if _once("man_out", at):
+		web_a += 0.4
+		for i in 6:
+			mote_to[i] = _border(web_a + TAU * i / 6.0)
+		motes_out = true
+		game.sfx.play("deflect")
+	var seq := [[0, 2], [4, -1], [2, 4], [0, -1], [4, 0], [2, -1], [1, 3], [3, 5], [5, 1]]
+	for k in seq.size():
+		if _once("man%d" % k, at + 0.8 + k * 0.5):
+			var q: Array = seq[k]
+			if int(q[1]) < 0:
+				_ray(q[0], 0.85, 0.35, true)
+			else:
+				_chord(q[0], q[1], 0.85, 0.35, true)
+	if _once("man_in", at + 0.8 + seq.size() * 0.5 + 1.0):
+		motes_out = false
+
+
+## A point on the edge of the screen (a little inside it), `theta` round
+## from the middle of the field.
+func _border(theta: float) -> Vector3:
+	var z0 := game.field_top + 1.3
+	var z1 := game.field_bottom - 2.4
+	var d := Vector3(cos(theta), 0, sin(theta))
+	var t := 1e9
+	if absf(d.x) > 0.001:
+		t = minf(t, 15.5 / absf(d.x))
+	if absf(d.z) > 0.001:
+		t = minf(t, (z1 - z0) * 0.5 / absf(d.z))
+	var p := Vector3(0, 0, (z0 + z1) * 0.5) + d * t
+	var w := game.half_width_at(p.z) - 1.0
+	p.x = clampf(p.x, -w, w)
+	return p
+
+
+## The SOLSTICE (SOULSTICE): the star gathers light, its lane straight down
+## the screen marked and filling; then a wide beam burns down the lane
+## while rings of shells roll off the star.
+func _solstice(at: float) -> void:
+	var end := Vector3(pos.x, 0, game.field_bottom + 3.0)
+	if _once("sol_w", at):
+		hold_t = SOL_CHARGE + SOL_BURN + 0.3
+		game.warn(core, SOL_CHARGE, Game.Warn.MOVE, core.radius, {"lane": PackedVector3Array([pos, end]), "hw": SOL_HW + 0.3, "show": true})
+		game.sfx.play("slam")
+	if _charging():
+		# light pouring in
+		for i in 2:
+			var a := randf() * TAU
+			var off := Vector3(cos(a), 0, sin(a)) * randf_range(7.0, 13.0)
+			game.fx.sprite(pos + off + Vector3(0, 0.6, 0), -off / 0.5, 0.4, 0.08, 0.5, BEAM_COL.lerp(CoreModels.FIRE, 0.6), 0.0)
+	if _once("sol", at + SOL_CHARGE):
+		beams.append({"pts": PackedVector3Array([pos, end]), "t": 0.0, "lock": 0.0, "burn": SOL_BURN, "hw": SOL_HW, "trace": false})
+		game.warn(core, SOL_BURN, Game.Warn.MOVE, core.radius, {"lane": PackedVector3Array([pos, end]), "hw": SOL_HW + 0.3}, false)
+		game.flash_a = maxf(game.flash_a, 0.3)
+		game.shake(1.2)
+		game.sfx.play("exp_l")
+		game.fx.shockwave(pos + Vector3(0, 0.5, 0), 8.0, CoreModels.FIRE)
+	for i in 3:
+		if _once("sol_ring%d" % i, at + SOL_CHARGE + 0.2 + i * 0.5) and game.boss_can_fire(pos):
+			flower_a += 0.2
+			game.bullets.ring(pos, 16, 4.4, Bullets.SHELL, self, flower_a)
+
+
+func _charging() -> bool:
+	return phase == 3 and morph_t <= 0.0 and fired.has("sol_w") and not fired.has("sol")
 
 
 ## Where a ray on the plane from `from` at angle `a` leaves the screen.
@@ -750,94 +1007,111 @@ func _edge(from: Vector3, a: float) -> Vector3:
 
 
 func _beams(dt: float) -> void:
-	for b in beams.duplicate():
+	for b: Dictionary in beams.duplicate():
 		b["t"] = float(b["t"]) + dt
-		var tip := int(b["tip"])
-		if tip >= 0:
-			b["pts"] = _tip_pts(tip)
-		(b["warn"] as Dictionary).merge(_bot_mark(b), true)
 		var lock := float(b["lock"])
-		if b["t"] >= lock + float(b["burn"]):
+		var pts: PackedVector3Array = b["pts"]
+		if float(b["t"]) >= lock + float(b["burn"]):
+			if b["trace"]:
+				traces.append({"pts": pts, "t": 0.0})
 			beams.erase(b)
 			continue
-		if b["t"] >= lock and game.combat_on():
-			var pts: PackedVector3Array = b["pts"]
+		if float(b["t"]) >= lock and game.combat_on():
+			var hw := float(b["hw"])
 			for i in pts.size() - 1:
-				if _on_beam(pts[i], pts[i + 1], game.player.position):
+				if _on_beam(pts[i], pts[i + 1], game.player.position, hw):
 					game.touch_player("star soul beam")
 			if randf() < 0.5:
 				var i := randi() % maxi(pts.size() - 1, 1)
-				game.fx.spark(pts[i].lerp(pts[i + 1], randf()) + Vector3(0, 0.4, 0), BEAM_COL, 1, 0.3)
-	if not _refracting() and prism != Vector3.INF and not fired.has("refraction_keep"):
-		prism = Vector3.INF
+				var q := pts[i].lerp(pts[i + 1], randf())
+				if game.on_field(q, 0.0):
+					game.fx.spark(q + Vector3(randf_range(-hw, hw), 0.4, 0), BEAM_COL, 1, 0.3)
+	for tr: Dictionary in traces.duplicate():
+		tr["t"] = float(tr["t"]) + dt
+		if float(tr["t"]) >= TRACE:
+			traces.erase(tr)
 
 
-func _cancel_beams() -> void:
-	beams.clear()
-	prism = Vector3.INF
-	var i := 0
-	while i < game.warnings.size():
-		var w: Dictionary = game.warnings[i]
-		var nd = w["node"]
-		if is_instance_valid(nd) and nd is Enemy and (nd as Enemy).controller == self and w["kind"] == Game.Warn.MOVE:
-			game.warnings.remove_at(i)
-			continue
-		i += 1
-
-
-func _on_beam(from: Vector3, to: Vector3, pp: Vector3) -> bool:
+func _on_beam(from: Vector3, to: Vector3, pp: Vector3, hw: float) -> bool:
 	var c := Geometry3D.get_closest_point_to_segment(Vector3(pp.x, 0, pp.z), from, to)
-	return Vector2(pp.x - c.x, pp.z - c.z).length() < BEAM_HW + Player.HIT_R
+	return Vector2(pp.x - c.x, pp.z - c.z).length() < hw + Player.HIT_R
 
 
-## Every beam (in world space, just over the plane): the flickering sight,
-## then the band with the bright line in it (blinking at the end), then the
-## beam; and REFRACTION's prism, a turning star of light.
-func _draw_beams() -> void:
-	beam_mesh.clear_surfaces()
-	if beams.is_empty() and prism == Vector3.INF:
+## Everything it draws flat on the field (just over the plane): the marks
+## where spires will come up (white, closing in), the traces a mandala
+## leaves, and every beam: the flickering sight, then the band with the
+## bright line in it (blinking at the end), then the beam.
+func _draw() -> void:
+	fx_mesh.clear_surfaces()
+	if beams.is_empty() and traces.is_empty() and spires.is_empty():
 		return
-	beam_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
-	for b in beams:
+	var any := false
+	fx_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	var white := Color(1, 1, 1)
+	for s: Dictionary in spires:
+		var t := float(s["t"])
+		var delay := float(s["delay"])
+		if t >= delay:
+			continue
+		any = true
+		var f := t / delay
+		var at: Vector3 = s["at"]
+		var r: float = s["r"]
+		_diamond(at, r, 0.07, 0.75, white)
+		_diamond(at, r * lerpf(2.0, 1.0, f * f), 0.05, 0.3 + 0.5 * f, white)
+	for tr: Dictionary in traces:
+		any = true
+		var pts: PackedVector3Array = tr["pts"]
+		_seg(pts[0], pts[1], 0.08, 0.5 * (1.0 - float(tr["t"]) / TRACE), BEAM_COL)
+	for b: Dictionary in beams:
+		any = true
 		var pts: PackedVector3Array = b["pts"]
 		var t := float(b["t"])
 		var lock := float(b["lock"])
+		var hw := float(b["hw"])
 		for i in pts.size() - 1:
 			var p0 := pts[i]
 			var p1 := pts[i + 1]
-			if t < SIGHT:
-				_seg(p0, p1, 0.06, 0.4 + 0.2 * sin(game.time * 70.0))
+			if t < minf(SIGHT, lock):
+				_seg(p0, p1, 0.06, 0.45 + 0.25 * sin(game.time * 70.0), white)
 			elif t < lock:
 				var left := lock - t
-				_seg(p0, p1, BEAM_HW, 0.16)
+				_seg(p0, p1, hw, 0.16, BEAM_COL)
 				if left > 0.15 or int(left * 40.0) % 2 == 0:
-					_seg(p0, p1, 0.1, 1.0)
+					_seg(p0, p1, 0.1, 1.0, white)
 			else:
-				var w := BEAM_HW * (1.0 + 0.08 * sin(game.time * 60.0))
-				var f := clampf((lock + float(b["burn"]) - t) / 0.2, 0.0, 1.0)
-				_seg(p0, p1, w * 1.7, 0.4 * f)
-				_seg(p0, p1, w, f)
-	if prism != Vector3.INF:
-		var r := 1.1 + 0.15 * sin(game.time * 9.0)
-		for i in 2:
-			var a := game.time * 2.0 + i * PI * 0.5
-			var d := Vector3(cos(a), 0, sin(a)) * r
-			_seg(prism - d, prism + d, 0.22, 0.9)
-	beam_mesh.surface_end()
+				var w := hw * (1.0 + 0.08 * sin(game.time * 60.0))
+				var f := clampf((lock + float(b["burn"]) - t) / 0.2, 0.0, 1.0) * clampf((t - lock) / 0.06 + 0.3, 0.0, 1.0)
+				var col := BEAM_COL if hw < 1.0 else BEAM_COL.lerp(CoreModels.FIRE, 0.7)
+				_seg(p0, p1, w * 1.6, 0.35 * f, col)
+				_seg(p0, p1, w * 1.05, f, col)
+				if hw >= 1.0:
+					# a wide beam: its edges drawn, so its reach is plain
+					var side := Vector3(-(p1 - p0).z, 0, (p1 - p0).x).normalized() * hw
+					_seg(p0 + side, p1 + side, 0.12, f, white)
+					_seg(p0 - side, p1 - side, 0.12, f, white)
+	if not any:
+		# (a surface must hold something)
+		_seg(Vector3.ZERO, Vector3(0.01, 0, 0), 0.0, 0.0, white)
+	fx_mesh.surface_end()
 
 
-func _seg(p0: Vector3, p1: Vector3, w: float, a: float) -> void:
-	var col := Color(BEAM_COL.r, BEAM_COL.g, BEAM_COL.b, a)
+func _diamond(at: Vector3, r: float, w: float, a: float, col: Color) -> void:
+	var c := [Vector3(r, 0, 0), Vector3(0, 0, r), Vector3(-r, 0, 0), Vector3(0, 0, -r)]
+	for i in 4:
+		_seg(at + c[i], at + c[(i + 1) % 4], w, a, col)
+
+
+func _seg(p0: Vector3, p1: Vector3, w: float, a: float, c: Color) -> void:
+	var col := Color(c.r, c.g, c.b, a)
 	var q0 := p0 + Vector3(0, 0.36, 0)
 	var q1 := p1 + Vector3(0, 0.36, 0)
 	var dd := q1 - q0
-	if dd.length_squared() < 0.0001:
-		return
 	var s := Vector3(-dd.z, 0, dd.x).normalized() * w
 	for q: Array in [[q0 - s, 0.0], [q0 + s, 1.0], [q1 + s, 1.0], [q0 - s, 0.0], [q1 + s, 1.0], [q1 - s, 0.0]]:
-		beam_mesh.surface_set_color(col)
-		beam_mesh.surface_set_uv(Vector2(0, q[1]))
-		beam_mesh.surface_add_vertex(q[0])
+		fx_mesh.surface_set_color(col)
+		fx_mesh.surface_set_uv(Vector2(0, q[1]))
+		fx_mesh.surface_add_vertex(q[0])
 
 
 # ------------------------------------------------------------ the end
@@ -845,55 +1119,55 @@ func _seg(p0: Vector3, p1: Vector3, w: float, a: float) -> void:
 func gauge() -> Dictionary:
 	if phase < 1 or phase >= 4:
 		return {}
-	return {"frac": heart.hp / heart.max_hp, "color": Color(0.4, 1.0, 0.66) if not heart.armored else Color(0.55, 0.6, 0.65), "name": INFO["name"], "name_color": Color(0.75, 1.0, 0.85), "x": 0.2, "w": 0.6, "h": 8.0, "name_y": 72.0}
+	return {"frac": core.hp / core.max_hp, "color": Color(0.5, 1.0, 0.76).lerp(Color(1.0, 0.9, 0.7), heat), "name": INFO["name"], "name_color": Color(0.8, 1.0, 0.9), "x": 0.2, "w": 0.6, "h": 8.0, "name_y": 72.0}
 
 
 func force_defeat() -> void:
 	if phase < 4:
-		game.kill(heart)
+		game.kill(core)
 
 
-## "B": straight into SCATTER, "C": into SOULSTICE (its light down to there).
+## "B": straight into PRISM, "C": into SOULSTICE (its light down to there).
 func viewer_skip(to: String) -> void:
 	if to != "B" and to != "C":
 		return
-	center.z = game.field_top + 8.0
+	center.z = game.field_top + HOME_Z
+	pos = center
 	st = 0.0
-	heart.armored = false
-	for k in wards.size():
-		ward_build[k] = 1.0
+	glow = 1.0
+	core.armored = false
+	for q in lobes:
+		q.armored = false
 	if to == "B":
-		heart.hp = heart.max_hp * (FORM_AT[0] - 0.01)
+		core.hp = core.max_hp * (FORM_AT[0] - 0.01)
 		phase = 1
 		_morph(2)
 	else:
-		heart.hp = heart.max_hp * (FORM_AT[1] - 0.01)
+		core.hp = core.max_hp * (FORM_AT[1] - 0.01)
 		phase = 2
 		_morph(3)
-	_place_shards(0.0, true)
-	_place_wards(0.0)
+	chips = int((1.0 - core.hp / core.max_hp) / CHIP)
+	for i in shape.size():
+		shape[i] = want[i]
+	_pose()
+	_zones()
+	_motes(0.0, true)
 
 
 func debug_state() -> String:
-	var names := ["enter", "BRILLIANT", "SCATTER", "SOULSTICE", "dying"]
-	var up := 0
-	for w in wards:
-		if not w.dead:
-			up += 1
-	return "form %s %.1fs%s  heart %d/%d  wards %d/%d  beams %d" % [names[phase], form_t, " (morph)" if morph_t > 0.0 else "", int(maxf(heart.hp, 0.0)), int(HEART_HP), up, wards.size(), beams.size()]
+	var names := ["enter", "OBELISK", "PRISM", "SOULSTICE", "dying"]
+	return "form %s %.1fs%s  light %d/%d  cycle %.1f%s  beams %d  spires %d" % [names[phase], form_t, " (morph)" if morph_t > 0.0 else "", int(maxf(core.hp, 0.0)), int(HP), cycle_t, ("  thrust " + thrust) if thrust != "" else "", beams.size(), spires.size()]
 
 
 func _die() -> void:
 	defeated = true
 	phase = 4
 	dying_t = 0.0
-	_cancel_beams()
+	_call_off()
+	traces.clear()
+	for s: Dictionary in spires.duplicate():
+		_drop_spire(s)
 	lances.clear()
-	for k in wards.size():
-		if not wards[k].dead:
-			_break_ward(k, false)
-		wards[k].visible = false
-		ward_down[k] = 0.0
 	disarm()
 	var conv := game.bullets.cancel_all()
 	for b in conv:
@@ -901,57 +1175,53 @@ func _die() -> void:
 	game.boss_dying()
 
 
-## Its death: the gem shakes and cracks, light bursting out of it, the
-## wedges fly apart, then the heart goes up in the last blast and space
-## drops out of warp.
+## Its death: whatever shape it was in, it draws itself shut, shaking,
+## cracks of light opening between its plates; then the plates fly apart,
+## the seed swells white and goes up in the last blast, and space drops out
+## of warp.
 func _dying(dt: float) -> void:
 	dying_t += dt
 	heat = 1.0
-	center.z += dt * 0.6
+	center.z += dt * 0.5
+	var jit := minf(dying_t, 2.0) * 0.12
+	center.x += randf_range(-jit, jit)
 	if int(dying_t * 9.0) != int((dying_t - dt) * 9.0):
-		var off := Vector3(randf_range(-4.0, 4.0), 0, randf_range(-3.0, 3.0))
-		game.fx.explode(center + off, randf_range(1.2, 2.4), Vector3.ZERO, CoreModels.EMERALD, Color(0.55, 1.0, 0.75))
+		var off := Vector3(randf_range(-4.5, 4.5), 0, randf_range(-4.0, 4.0))
+		game.fx.explode(pos + off, randf_range(1.2, 2.4), Vector3.ZERO, CoreModels.GLASS, Color(0.55, 1.0, 0.8))
 		game.sfx.play("exp_m")
 		game.shake(0.4)
 		for i in 3:
 			var a := randf() * TAU
-			game.fx.sprite(center + Vector3(0, 0.6, 0), Vector3(cos(a), 0, sin(a)) * randf_range(8.0, 16.0), 0.7, 0.1, 0.5, BEAM_COL, 0.0)
-	var jit := Vector3(randf_range(-0.15, 0.15), 0, randf_range(-0.15, 0.15)) * minf(dying_t, 2.0)
+			game.fx.sprite(pos + Vector3(0, 0.6, 0), Vector3(cos(a), 0, sin(a)) * randf_range(8.0, 16.0), 0.7, 0.1, 0.5, BEAM_COL, 0.0)
 	if dying_t < 2.4:
-		# the wedges close in on the heart, shaking
-		for k in 8:
-			var a := TAU * k / 8.0 + spin_a
-			var to := center + jit + Vector3(cos(a), 0, sin(a)) * (CoreModels.MID + dying_t * 0.25)
-			shards[k].position = shards[k].position.lerp(to, 1.0 - exp(-dt * 5.0))
+		want[OPEN] = 0.0
+		want[SPLIT] = 0.0
+		want[STRETCH] = 1.0
+		want[SQUEEZE] = 1.0
+		want[GAP] = 0.15 + dying_t * 0.2
 	else:
-		# then fly apart, tumbling
-		for k in 8:
-			var out := shards[k].position - center
-			out.y = 0.0
-			shards[k].position += out.normalized() * dt * 22.0
-			shard_mesh[k].rotation.y += dt * (5.0 + k)
-	spin_a += dt * (0.4 + dying_t * 1.5)
-	heart.position = center
-	heart_mesh.scale = Vector3.ONE * (1.0 + dying_t * 0.35)
-	for m in shard_mat:
-		m.set_shader_parameter("light", 1.0 + dying_t * 1.2)
-		m.set_shader_parameter("heat", 1.0)
+		# apart: no easing now, the plates just go
+		shape[GAP] += dt * 16.0 * (dying_t - 2.3)
+		want[GAP] = shape[GAP]
+		shape[OPEN] += dt * 1.5
+		want[OPEN] = shape[OPEN]
+		seed_mi.scale = Vector3.ONE * (1.0 + (dying_t - 2.4) * 1.6)
 	if dying_t > 3.6:
-		game.big_blast(center, 1.0, CoreModels.EMERALD)
+		game.big_blast(pos, 1.0, CoreModels.GLASS)
 		for k in 6:
 			var a := TAU * k / 6.0
-			game.fx.explode(center + Vector3(cos(a) * 8.0, 0, sin(a) * 5.0), 4.0, Vector3.ZERO, CoreModels.EMERALD, Color(0.55, 1.0, 0.75))
+			game.fx.explode(pos + Vector3(cos(a) * 8.0, 0, sin(a) * 5.0), 4.0, Vector3.ZERO, CoreModels.GLASS, Color(0.55, 1.0, 0.8))
 		for i in 40:
 			var a := randf() * TAU
-			game.fx.sprite(center + Vector3(0, 0.6, 0), Vector3(cos(a), 0, sin(a)) * randf_range(14.0, 40.0), 0.9, 0.12, randf_range(0.6, 1.0), BEAM_COL, 0.0)
+			game.fx.sprite(pos + Vector3(0, 0.6, 0), Vector3(cos(a), 0, sin(a)) * randf_range(14.0, 40.0), 0.9, 0.12, randf_range(0.6, 1.0), BEAM_COL, 0.0)
 		game.sfx.play("exp_l")
 		game.shake(2.2)
 		game.backdrop.warp_out(0.3)
 		destroyed = true
 		finished = true
 		visible = false
-		beam_mesh.clear_surfaces()
-		for q in [heart] + wards + shards:
+		fx_mesh.clear_surfaces()
+		for q in [core] + lobes + motes:
 			game.remove_enemy(q)
 			q.visible = false
 		game.boss_destroyed(self)

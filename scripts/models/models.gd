@@ -27,7 +27,7 @@ extends RefCounted
 ## The models live in one script per group (each extends this one, so the
 ## colours below are at hand): ShipModels, EnemyModels, BossModels,
 ## ItemModels, GroundModels, TunnelModels, BeltModels, PlanetModels,
-## SurfaceModels, CoreModels (stage 5's last boss: cut facets, not
+## SurfaceModels, CoreModels (stage 5's last boss: a crystal of flat facets, not
 ## voxels). To add a model, add its name to the group's
 ## NAMES and build it in the group's make(); Vox.get_mesh(name) finds it
 ## and the viewer's MODELS list shows it.

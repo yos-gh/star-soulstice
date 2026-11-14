@@ -11,9 +11,9 @@
 | `scripts/game.gd` | 世界（カメラ・地形・ユニット・弾・エフェクト）とルール（スコア・当たり・残機・状態遷移）。ステージの中身は持たない |
 | `scripts/stage/` | `stage_def.gd`（ステージ定義の基底）、`stage1.gd` 〜 `stage5.gd`（各ステージの中身）、`stages.gd`（ステージの並び）、`stage.gd`（定義を実行する：ウェーブ・エリア・ボス戦）、`formations.gd`（編隊の雛形） |
 | `scripts/enemies/` | `enemy.gd`（敵の共通部分）、種類ごとのスクリプト（`dart.gd` など）、`enemy_kinds.gd`（種類の登録表） |
-| `scripts/bosses/` | `boss_base.gd`（中ボス・ボスの共通部分）、`lazaro.gd` / `star_cortex.gd`（ステージ 1）、`ouroboros.gd` / `vulcan_press.gd`（ステージ 2）、`lodestar.gd` / `titan_dredge.gd`（ステージ 3）、`tempest.gd` / `behemoth.gd`（ステージ 4）、`gorgon.gd` / `omega_cortex.gd` / `star_soul.gd`（ステージ 5 の中ボスとボス 2 体：最後が最終ボス）、`marked_strikes.gd`（狙った所へ撃ち込む攻撃の共通部品：照準や落ちる所を予兆してから、ホーミングの槍（STAR CORTEX・OMEGA CORTEX・STAR SOUL）や山なりの塊（VULCAN PRESS・TITAN DREDGE）が飛んで炸裂）、`bosses.gd`（登録表） |
+| `scripts/bosses/` | `boss_base.gd`（中ボス・ボスの共通部分）、`lazaro.gd` / `star_cortex.gd`（ステージ 1）、`ouroboros.gd` / `vulcan_press.gd`（ステージ 2）、`lodestar.gd` / `titan_dredge.gd`（ステージ 3）、`tempest.gd` / `behemoth.gd`（ステージ 4）、`gorgon.gd` / `omega_cortex.gd` / `star_soul.gd`（ステージ 5 の中ボスとボス 2 体：最後が最終ボス）、`marked_strikes.gd`（狙った所へ撃ち込む攻撃の共通部品：照準や落ちる所を予兆してから、ホーミングの槍（STAR CORTEX・OMEGA CORTEX・STAR SOUL の両端）や山なりの塊（VULCAN PRESS・TITAN DREDGE）が飛んで炸裂）、`bosses.gd`（登録表） |
 | `scripts/terrain/` | `terrain.gd`（地上の区画を流す）、`backdrop.gd`（星雲・惑星・星・深層の構造物・トンネル・降下する空・ワープ空間）、`tunnel.gd`（トンネル・惑星の地表の区間を流す）、`islandgen.gd`（区画の生成）、`island.gd`（区画とタイル） |
-| `scripts/models/` | `models.gd`（共通の色と振り分け）、`ship_models.gd` / `enemy_models.gd` / `boss_models.gd` / `item_models.gd` / `ground_models.gd` / `tunnel_models.gd`（トンネルの区間） / `belt_models.gd`（ステージ 3 の巨大岩・敵・ボス・背景の岩） / `planet_models.gd`（ステージ 4 の雲の峰・KESTREL・TEMPEST・BEHEMOTH・基地の扉と隔壁） / `surface_models.gd`（ステージ 5 の惑星の地表の区間・GORGON） / `core_models.gd`（ステージ 5 の最終ボス STAR SOUL：宝石のファセットとバリアの板。ボクセルではない） |
+| `scripts/models/` | `models.gd`（共通の色と振り分け）、`ship_models.gd` / `enemy_models.gd` / `boss_models.gd` / `item_models.gd` / `ground_models.gd` / `tunnel_models.gd`（トンネルの区間） / `belt_models.gd`（ステージ 3 の巨大岩・敵・ボス・背景の岩） / `planet_models.gd`（ステージ 4 の雲の峰・KESTREL・TEMPEST・BEHEMOTH・基地の扉と隔壁） / `surface_models.gd`（ステージ 5 の惑星の地表の区間・GORGON） / `core_models.gd`（ステージ 5 の最終ボス STAR SOUL：結晶の板・種・モート・棘と光の輪。ボクセルではなく、平らな面と光る稜線の立体） |
 | `scripts/viewer/` | 閲覧モード（`viewer.gd`）、一覧の組み立て（`viewer_catalog.gd`）、左の情報パネル（`viewer_panel.gd`） |
 | `scripts/bot.gd` | 自動操縦（`--autoplay` と閲覧モードの B） |
 | その他 `scripts/*.gd` | 自機・ショット・敵弾・アイテム・エフェクト・HUD・効果音・配色・入力・ボクセル |
@@ -76,6 +76,9 @@ Stages ──> StageDef（stage1.gd …）
    - `gauge()` の辞書に `fracs`（割合の配列）を入れると、ゲージが核ごとに横に並ぶ（GORGON の 2 つの目）。
    - 体力が尽きて最期の演出に入るときは `disarm()` を呼ぶ（全部位の当たり判定が消え、自機がぶつからず、弾も素通りする）。最後の大爆発は `game.big_blast(位置, 大きさ, 破片の色)`（1 = ボス、0.7 = 中ボス）。
    - ステージのボス（`final`）は、倒れきったら `game.boss_destroyed(self)` を呼ぶとステージクリアになる（`boss2` のあるステージでは 2 体目へ）。中ボスは去るときに `finished = true` にして `game.remove_boss(self)`。
+   - 形を変えるボス（STAR SOUL）：見た目はボクセルではなく、`CoreModels` の板 8 枚（縦に長い八面体の面 1 つずつ）と中の種を、ボスが毎フレーム並べ直す（`star_soul.gd` の `_pose`）。形は数値の組（板の開き・面に沿った浮き・上下の離れ・ひねり・軸方向の伸びと絞り・軸の向き・輪の大きさ：`OBELISK` / `LANCE` / `PRISM` / `BLOOM`）で、目標へなめらかに寄せる（`_set_shape`）。軸はプレイ面に寝かせる（`FLAT`：画面では縦長の菱形、見た目どおりに当たる）か、カメラへ向ける（`FACE`：八芒星）。当たりは形に合わせて毎フレーム置き直す（`_zones`：寝ている間は軸に沿った円の列、開いたら花びらごとの円）。どの円への命中も核の体力に入れる（`on_hit` で核へ回す。スピアは複数の円に同時に届くので 1 フレームに 1 回だけ数える）。結晶の材質は `shaders/crystal.gdshader`（面ごとに平らな明暗、頂点色に入れた重心座標から稜線を光らせる。`light` / `heat` / `wash` をボスが毎フレーム入れる）、光の輪は `shaders/halo.gdshader`。
+   - 画面の縁から張るビーム（STAR SOUL の LATTICE / STAR MANDALA）：モート（当たりのない部位）を縁の持ち場へ飛ばし（`mote_to`、`motes_out`）、持ち場どうしを結ぶ線（`_chord`）か持ち場から自機を通る線（`_ray`）を `_beam` で出す（細い照準線、帯、照射の順。予兆はモートに出し、道筋は `{"laser": 点の列}`）。
+   - 足もとから生えるもの（STAR SOUL の結晶の棘）：`_spire(地点, 待ち, 半径, 弾数)`。1 本だけなら見えない部位を置いて `{"r": 半径}` の予兆（`_erupt`）、列なら核に `{"laser": 道筋}` の予兆を 1 つ出して、地点の白い菱形はボスが描く（`_run`）。
 2. `scripts/bosses/bosses.gd` の `KINDS` に足す。
 3. モデルを `scripts/models/boss_models.gd`（またはそのステージのモデルのグループ：ステージ 5 は `surface_models.gd`）に足す。
 4. ステージ定義の `boss`、または中ボスのウェーブに名前を書く。
@@ -169,7 +172,7 @@ Stages ──> StageDef（stage1.gd …）
 | SHIP | 自機の 3 形態、並べた比較、形態ごとの武器（連射・スピア・ホーミング 8 発） |
 | SMALL | 小型機の編隊（`INFO.demos` の数だけ） |
 | MEDIUM | 中型機・コンテナ・小惑星・砲台（その敵が最初に出るステージの地形・背景の上で） |
-| BOSS | 中ボス・ボス（STAR CORTEX は発狂から、OUROBOROS は突進から、VULCAN PRESS は暴走・発狂から、LODESTAR は暴走から、TITAN DREDGE は薙ぎ払いと発狂から、TEMPEST は SUPERCELL から、BEHEMOTH は突進と OVERRUN から、GORGON は WRATH と DEATH STARE から、OMEGA CORTEX は OVERDRIVE から、STAR SOUL は SCATTER と SOULSTICE から、も。そのボスのステージの背景の上で） |
+| BOSS | 中ボス・ボス（STAR CORTEX は発狂から、OUROBOROS は突進から、VULCAN PRESS は暴走・発狂から、LODESTAR は暴走から、TITAN DREDGE は薙ぎ払いと発狂から、TEMPEST は SUPERCELL から、BEHEMOTH は突進と OVERRUN から、GORGON は WRATH と DEATH STARE から、OMEGA CORTEX は OVERDRIVE から、STAR SOUL は PRISM と SOULSTICE から、も。そのボスのステージの背景の上で） |
 | WAVES | 各ステージの全ウェーブを、そのエリアの地形と砲台つきで。最後にボス |
 | TERRAIN | エリアごとの地形の流れ、全区画を 1 つずつ静止で、IslandGen の全種類 |
 | SCENERY | 背景だけ（ステージ 1 は通常速度と 4 倍速、トンネルのあるステージは様式ごとに本編の速さと 1/4 の速さ、ステージ 4 はエリアごとの降下と基地への突入も、ステージ 5 は基地の出口と地表の様式、ワープ空間への突入とワープ空間） |

@@ -6,7 +6,7 @@ extends RefCounted
 ## ring dodges it, and nothing is left on the field to block shots. They
 ## replace the old weaving iron balls (big dodges, shots swallowed).
 ## Two styles:
-##   LANCE  the eye of STAR CORTEX / OMEGA CORTEX, the points of STAR SOUL:
+##   LANCE  the eye of STAR CORTEX / OMEGA CORTEX, the tips of STAR SOUL:
 ##          a sight drops onto the ship and follows it a little slower than
 ##          it flies (a ship on the move leaves it trailing), a dotted line
 ##          of sight running to it from where the shot will come from
