@@ -25,7 +25,8 @@ extends Enemy
 ## Rocks (solid) stop the gun's rounds too. It rams like any small craft.
 ## Both lock on as they come over the top edge and open fire the moment
 ## they are on the screen.
-## params: x, z, arm, deg, turn
+## params: x, z, arm, deg, turn, slow (x its drift: a slower one gives more
+## time before its beam has swept the screen)
 
 const INFO := {
 	"name": "SATELLITE", "category": "small",
@@ -70,6 +71,7 @@ var beam_mesh: ImmediateMesh
 var beam_warn: Dictionary = {}
 var ang := PI / 2.0  # where the lance points (PI/2 = down the screen)
 var turn := 0.0  # rad/s, + = clockwise on the screen
+var slow := 1.0
 var beam_t := BEAM_MIN
 
 
@@ -79,6 +81,7 @@ func _init_kind() -> void:
 	radius = 1.15
 	score = 700 if arm == "gatling" else 1200
 	turn = deg_to_rad(float(p.get("turn", 0.0)))
+	slow = float(p.get("slow", 1.0))
 	marked = arm == "lance"  # the autopilot keeps out of its beam (and what it will sweep)
 	ang = deg_to_rad(float(p.get("deg", 90.0)))
 	energy_drop = 4.0
@@ -167,7 +170,7 @@ func _gatling(dt: float) -> void:
 
 ## How fast it comes down the screen.
 func _drift() -> float:
-	return minf(game.scroll_speed * DRIFT, DRIFT_MAX)
+	return minf(game.scroll_speed * DRIFT, DRIFT_MAX) * slow
 
 
 ## On (or just coming onto) the screen, above the ship: time to lock on.

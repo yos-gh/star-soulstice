@@ -182,5 +182,8 @@ func build_waves(f: Formations) -> void:
 	wave("orbit", f.chasers(0.0, 4, -1) + f.chasers(1.2, 4, 1) + f.pincer(2.4, 3) + f.sats(2.0, [[-0.7, "gatling"], [0.7, "gatling"]]), 11.0)
 	wave("orbit", f.kestrel(0.0, -1, -0.45) + f.kestrel(0.6, 1, 0.45) + f.sweep(2.0, 1, 7, 0.18) + f.sats(3.0, [[0.65, "lance", 0.0, 172.0, -26.0], [0.3, "gatling", 5.0]]), 15.0)
 	wave("orbit", f.swirls(0.0, -1, 6, 0.2) + f.swirls(0.5, 1, 6, 0.2) + f.vform(1.6, 1) + f.vform(2.1, -1) + f.sats(1.0, [[-0.65, "lance", 0.0, 8.0, 26.0], [-0.35, "gatling", 5.0]]), 12.0)
-	wave("orbit", f.halberd(0.0, 0.0) + f.flankers(2.0, -1, 4) + f.flankers(3.2, 1, 4) + f.sats(4.0, [[-0.65, "lance", 0.0, -20.0, 26.0], [0.65, "lance", 0.0, 200.0, -26.0]]), 17.0)
+	# (the HALBERD with doors from both sides: the lances come late, start
+	# well above level and drift down slowly, the right one a little behind,
+	# so the pocket under them stays open about 3 s: yos found the pinch too quick)
+	wave("orbit", f.halberd(0.0, 0.0) + f.flankers(2.0, -1, 4) + f.flankers(3.2, 1, 4) + f.sats(5.5, [[-0.65, "lance", 0.0, -25.0, 20.0, 0.6], [0.65, "lance", 3.0, 205.0, -20.0, 0.6]]), 19.0)
 	wave("orbit", f.col(0.0, -0.75, 6, 0.16, 1) + f.col(0.4, 0.75, 6, 0.16, -1) + f.sats(0.8, [[-0.65, "lance", 0.0, 8.0, 26.0], [0.65, "lance", 16.0, 172.0, -26.0], [0.0, "gatling", 3.0], [-0.3, "gatling", 9.0], [0.3, "gatling", 9.0]]) + f.rammers(2.8, [-0.4, 0.4], 0.3), 12.0)
