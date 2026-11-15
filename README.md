@@ -1,61 +1,97 @@
-# STAR SOULSTICE（仮）— prototype（2 ステージ）
+# STAR SOULSTICE
 
-スターソルジャーのオマージュ STG の試作（Godot 4.7 / GDScript）。ステージ 1・2 まで遊べる。
-モデル・地形・効果音はすべてコード生成（アセットファイルなし）。
+Break everything. A 3D vertical shooter about tapping fast and spending energy.
 
-## 起動
+[Download for Windows](https://github.com/yos-gh/star-soulstice/releases) — run the single executable.
 
-`play.bat` をダブルクリック（スクリプトの登録を毎回更新してから起動）。
+Fly through five stages, from an orbital fortress down to the surface of a dead world.
+Almost everything on screen can be destroyed: enemies, their bullets, and the armoured
+tiles of the terrain below. Tap the shot button fast to power it up, collect the energy
+that destroyed things leave behind, and release it as homing lasers with the Spear.
 
-## 操作
+## Controls
 
-| | キーボード | パッド |
-|---|---|---|
-| 移動 | 矢印 / WASD | D-pad / 左スティック |
-| メインショット | Z / Space / `.` | A（ボタン1） |
-| スピア + ホーミング | X / Enter / `/` | B（ボタン2） |
-| ポーズ / タイトルへ | Esc, P / Q | Start / Back |
-| 配色の切り替え | F2 | |
+| Action | Keyboard | Gamepad |
+| --- | --- | --- |
+| Move | Arrow keys / `WASD` | D-pad / left stick |
+| Shot (tap fast to power up, hold for auto fire) | `Z` / `Space` / `.` | A / Cross |
+| Spear + homing lasers | `X` / `Enter` / `/` | B / Circle |
+| Pause | `Esc` / `P` | Start |
+| Return to title from pause | `Q` | Back |
+| Fullscreen | `F11` | — |
+| Switch color palette | `F2` | — |
 
-## 実装した内容
+On the title screen, choose GAME START or VIEWER with up / down. On GAME START, left / right
+picks the stage to start from.
 
-- **メインショット**: 押すたびに即発射、押しっぱなしで 12 連/秒のオート。直近 1 秒の押下回数から集中ゲージを算出し、秒間 7.5 回で最大 ×8（オートでは溜まらない）。ショットは倍率に合わせて太くなり、×4 で 2 倍の金色、×8 で白熱した色。
-- **自機の変形**: Form I（前 2 発）→ II（連射速度・速度 Up、後方 1 発）→ III（前 3way + 後 2way、1 回耐えるシールド。被弾で II に戻る）。
-- **スピア**: 前方の短い強力なブレード（長さ 15）+ 自機周囲のオーラで敵弾消去（重エネルギー弾と体当たりは防げない）。クールタイム 4 秒。
-- **ホーミング**: スピアと同時に後方から発射。エネルギー 10 につき 1 発、最大 8 発。タイルは狙わない。
-- **エネルギー**: 敵撃破・弾消し（撃破した敵の弾／スピアで消した弾）・タイル破壊で出現。硬いタイルほど多い。
-- **敵弾**: 形は共通（球・針）。物理弾＝寒色・中心が暗く輪郭が明るい（撃って壊せる、自機のショットを遮る）、エネルギー弾＝暖色・中心が白く光る（スピアか撃破でしか消えない）。 ボスはこれに加えて鉄球弾（紫の大きな球。蛇行して飛び、撃ち落とせず、スピアでも消えず、自機のショットを遮る。予兆あり）と、はじけて物理弾の輪になる大きな物理弾を使う。
-- **予兆**: 危険な攻撃（破壊不能弾の発射、突進、ラザロの分裂・挟み込み・弾、ボスのエネルギー弾）の前に、攻撃する敵へ白いロックオン風の照準（四隅の括弧が回転しながら閉じ、下に残り時間のゲージ、直前に点滅。突進や大技は二重の括弧）が出て、敵本体が白く脈打ち、突進は進路に矢印が流れ、短い警告音が鳴る。破壊できる物理弾には予兆なし。
-- **アイテム**: 自機に引き寄せる範囲が広く（6.8）、パワーアップも同じく自動回収。エネルギーは回転しない黄色い半透明の立方体（辺が少し明るい）。
-- **ステージ 1 ORBITAL FORTRESS**: 軌道要塞の上空を飛ぶ 3 エリア + ボス。AREA 1 DEBRIS BELT（残骸と漂う小惑星）→ AREA 2 OUTER HULL（装甲甲板・トレンチ・ソーラーアレイ、砲台）→ 開けた宇宙でラザロ → AREA 3 CORE BLOCK（密集した機械区画・リアクター）→ STAR CORTEX。
-- **ステージ 2 ARMS FOUNDRY**: 要塞の兵器工場の中のトンネルを高速スクロール（ステージ 1 の 1.5 倍）で進む。床と左右の壁が近くを流れ、エリアごとに様子が変わる（境目に防爆扉の枠）。AREA 1 INTAKE DUCT（冷たい鋼・水色の灯・壁から壁へ渡る足場）→ AREA 2 ASSEMBLY LINE（ベルトコンベア・組立アーム）→ 搬送ホールで中ボス OUROBOROS → AREA 3 FURNACE ROW（溶けた鉄の溝・熱の通気口・坩堝）→ ボス VULCAN PRESS。雑魚はステージ 1 と同じ顔ぶれ。ステージ 1 をクリアすると形態・シールド・エネルギー・スコアを持ち越して続く。タイトルの GAME START で ← → を押すとステージ 2 から始められる。
-- **地形**: 要塞の区画（`islandgen.gd`：hull / trench / solar / reactor / fragment / asteroid / bridge（トンネルの壁から壁へ渡る足場））に 2×2 の破壊可能ハッチ 3 種（耐久 0.5/1/1.5、硬いほどエネルギーが多い。壊して余った威力で弾が貫通する）。地面は暗く彩度を落とした専用マテリアルで、敵と弾より引っ込んで見える。ボス戦中も区画が流れる（砲台なし）。ショットを吸うので敵に弾が通りにくくなる。まれにスコアスターが隠れている。
-- **見た目**: 自機は白×赤×青、敵は金・ブロンズ×ガンメタルに赤い目、地面はティール系の要塞鋼。遠景に環のある惑星と要塞の巨大構造物（被写界深度でぼかし）。
-- **敵**: 編隊雑魚、コンテナ（パワーアップ）、島の砲台、中型機バルワーク、中ボス LAZARO（分裂→包囲→挟み込み）、ボス STAR CORTEX（スターブレインのオマージュ）。ステージ 2 は中型機 RAILJACK（壁の上のレールを下りてきて横から物理弾の扇で掃く）、中ボス OUROBOROS（装甲列車：とぐろを巻いて車両から物理弾、予兆のあと頭が一直線に突っ込む。車両は 1 両ずつ壊せる）、ボス VULCAN PRESS（トンネル幅の大きなプレス機：回る装甲板の隙間から核を撃つ。ハンマーが自機の列を予兆つきで打ち下ろす。暴走すると本体ごと迫り出す）。
-- **ボスの発狂**: 主な攻撃手段を壊されると激しい攻撃に変わる。STAR CORTEX は目を覆うシャッター（左右 2 枚）を壊せて、壊した側からは閉じていても撃ち込める。ポッドを全部失うと ENRAGED（揺れながら、閉じている間は空いた穴から渦巻き弾、開くと鉄球弾 3 つ・長い花びら弾・広い散弾・はじける弾）。VULCAN PRESS は核を覆う装甲板（3 枚）を壊せる。硬いハンマーを両方失うと MELTDOWN（前に出て大きく揺れ、2 本の物理弾の薙ぎ払い、蛇行する鉄球弾、空いた穴から自機の列と両脇へ鉄球弾を 2 回、はじける弾、広い針弾）。OUROBOROS は車両を全部失うと BERSERK（速く小さくとぐろを巻き、頭から物理弾の輪）。
-- **早回し**: ステージ 1 は 19 ウェーブ + ラザロ、ステージ 2 は 18 ウェーブ + OUROBOROS。ウェーブの敵を一掃するか時間切れで次へ。全ウェーブ後にボス。
-- **スコア**: 破壊・タイル・アイテム + クリアタイムボーナス（(260 秒 − クリアタイム) × 1300）。エクステンド 20 万 / 60 万 / 120 万（仮）。
+## How to Play
 
-- **配色**: 4 パターン（`palette.gd`）。fortress（現行）/ apollo（Lospec の Apollo パレット準拠）/ treasure（斑鳩・アンダーディフィート風の寒色モノトーン）/ nova（80〜90年代アーケード風の藍と錆色）。F2 か `--palette=名前` で切り替え。地面はパレットごとにコントラストを抑えて敵と弾を浮かせる。
+- **Shot and Concentration** — Every press fires at once, and holding the button fires 12
+  shots a second. Tapping fast builds Concentration: at 7.5 presses a second your shots reach
+  ×8 power and burn white. Auto fire does not build it.
+- **Forms** — Power-ups change the ship. Form I fires two shots forward. Form II fires faster,
+  moves faster, and adds a rear shot. Form III fires a 3-way spread forward and 2-way behind,
+  and carries a shield that takes one hit before dropping back to Form II.
+- **Spear** — A short, powerful blade in front of the ship, with an aura that erases nearby
+  bullets. It has a 4 second cooldown, and it also launches homing lasers from behind: one
+  for every 10 energy, up to 8.
+- **Energy** — Destroyed enemies, erased bullets, and broken tiles drop energy. Harder tiles
+  drop more.
+- **Enemy bullets** — Cool-colored physical bullets can be shot down, and they block your shots.
+  Warm, white-centered energy bullets only disappear when the Spear erases them or their
+  shooter is destroyed. Bosses also throw purple iron balls that nothing can stop.
+- **Warnings** — Before a dangerous attack, a white lock-on reticle closes on the attacker and
+  a short alarm sounds.
 
-- **稼ぎ**: スターはステージ内の取得数で ×1→×2→×4→×8、第2形態でのパワーアップ取得も ×1→×8（持ち越し・ミスで戻る）。基本スコアの一覧は [docs/scoring.md](docs/scoring.md)。
+## Stages
 
-## 閲覧モード（VIEWER）
+Each stage has a mid-boss halfway through and a boss at the end. Breaking a boss's main
+weapons drives it into a fiercer attack. Clearing a stage carries your form, shield, energy, and score into the next.
 
-タイトルで ↑↓ から「VIEWER」を選ぶと、自機・敵（編隊の動き）・中型機・中ボス・ボス・各ウェーブ・地形の区画・背景・爆発などのエフェクト・敵弾・アイテム・全モデルを 1 つずつ確認できます。
-本編と同じ世界で動くので見た目も動きも本編どおりで、Esc でいつでも世界ごと止めてカメラを回り込ませたり寄ったりできます（F で 1 フレームずつ、1〜5 で速さ）。
-キーの一覧は画面左のパネルと [docs/architecture.md](docs/architecture.md#閲覧モードviewer) にあります。
+| Stage | Setting | Mid-boss | Boss |
+| --- | --- | --- | --- |
+| 1 | ORBITAL FORTRESS | LAZARO | STAR CORTEX |
+| 2 | ARMS FOUNDRY | OUROBOROS | VULCAN PRESS |
+| 3 | ASTEROID BELT | LODESTAR | TITAN DREDGE |
+| 4 | PLANETFALL | TEMPEST | BEHEMOTH |
+| 5 | DEAD WORLD | GORGON | OMEGA CORTEX, then STAR SOUL |
 
-## コードの構成
+## Scoring
 
-ステージ・敵・ボス・地形・背景・モデルは登録表とステージ定義に分けてあり、足したものは本編と閲覧モードの両方に自動で出ます。
-足し方は [docs/architecture.md](docs/architecture.md) にまとめています。
+Destroying enemies and tiles and collecting items scores points, and each stage ends with a
+time bonus for a fast clear. Stars hidden under tiles score ×1, ×2, ×4, then ×8 as you
+collect more in a stage. Power-ups collected in Form III chain the same way across stages
+until you lose a life. Extra lives are awarded at 200,000, 600,000, and 1,200,000 points.
 
-## テスト用オプション
+## Viewer
 
+Choose VIEWER on the title screen to look at the ship, every enemy and boss, each wave, the
+terrain sections, backgrounds, effects, bullets, and models one at a time. They run in the
+same world as the game, so they look and move exactly as they do in play. Press `Esc` to
+freeze the world and orbit the camera, `F` to step one frame, and `1`–`5` to change speed.
+The full key list is on the panel at the left of the screen.
+
+## Run and build
+
+Open `project.godot` in **Godot 4.7** and press **F5**. Models, terrain, and sound effects are
+all generated in code, so the project has no asset files.
+
+To build the Windows executable, install the matching export templates and run:
+
+```powershell
+Godot_console.exe --headless --path . --export-release "Windows Desktop" build/STAR-SOULSTICE.exe
 ```
-Godot_console.exe --path . --fixed-fps 60 -- --autoplay --god --stage=1 --start=6|mid|boss --log --capture=captures --capture-every=3 --quit-after=60 --quit-on-clear --mute
+
+The game is packaged as one executable. `build/` is ignored by Git.
+
+Options for testing go after `--`:
+
+```powershell
+Godot_console.exe --path . --fixed-fps 60 -- --autoplay --god --stage=1 --start=6|mid|boss --log --quit-on-clear --mute
 ```
 
-見た目の切り分け用に `--hide=sprites,debris,lights,bullets,shots,items,units,player,islands,tiles,rock,turrets,labels,dof,glow,shadow` も使えます。
-閲覧モードへ直接入るには `--viewer`（`--viewer=boss:1` のように分類と番号も指定可）、全項目を順に撮るには `--viewer-tour=2.5 --capture=captures/tour`。
+[Code structure and how to add content](docs/architecture.md) · [Score table](docs/scoring.md) (both in Japanese)
+
+## Inspiration
+
+STAR SOULSTICE is an original shooter inspired by Hudson's Star Soldier series.
