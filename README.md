@@ -95,3 +95,7 @@ Godot_console.exe --path . --fixed-fps 60 -- --autoplay --god --stage=1 --start=
 ## Inspiration
 
 STAR SOULSTICE is an original shooter inspired by Hudson's Star Soldier series.
+
+## License
+
+STAR SOULSTICE is released under the [MIT License](LICENSE).
