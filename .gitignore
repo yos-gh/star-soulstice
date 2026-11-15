@@ -1,3 +1,18 @@
+# Only what the game needs to build and run is tracked.
+# Everything at the top level is ignored unless listed below,
+# so a new top-level file or folder must be added here to be committed.
+/*
+!/.gitignore
+!/project.godot
+!/main.tscn
+!/export_presets.cfg
+!/scripts/
+!/shaders/
+!/README.md
+!/docs/
+
+# Godot cache, captures and scratch files, wherever they appear
 .godot/
-*.tmp
 captures/
+*.tmp
+*.log

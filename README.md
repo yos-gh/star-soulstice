@@ -1,7 +1,7 @@
 # STAR SOULSTICE（仮）— prototype（2 ステージ）
 
 スターソルジャーのオマージュ STG の試作（Godot 4.7 / GDScript）。ステージ 1・2 まで遊べる。
-草案は [docs/drafts.md](docs/drafts.md)。モデル・地形・効果音はすべてコード生成（アセットファイルなし）。
+モデル・地形・効果音はすべてコード生成（アセットファイルなし）。
 
 ## 起動
 
