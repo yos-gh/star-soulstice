@@ -131,6 +131,8 @@ var blade_pts: Array[PackedVector3Array] = [PackedVector3Array(), PackedVector3A
 var blade_len: Array[PackedFloat32Array] = [PackedFloat32Array(), PackedFloat32Array()]
 var eye_round := 0
 var pulling := false
+var pull_vis := 0.0  # how strongly the drag is shown (fades in and out)
+var pull_ring := 0.0
 var arcs: MeshInstance3D
 var arc_mesh: ImmediateMesh
 var arc_tris: Array = []  # [p, color, uv] collected for this frame's arcs
@@ -396,6 +398,7 @@ func tick(dt: float) -> void:
 	eye.armored = phase == 0 or phase == 3 or (open < 0.7 and shutters_alive() == 2)
 	eye.model.rotation.y += dt * (2.2 if phase == 2 else 0.6)
 	_place(dt)
+	pull_vis = move_toward(pull_vis, 1.0 if pulling else 0.0, dt * 4.0)
 	_draw_arcs()
 
 
@@ -560,6 +563,7 @@ func _vortex(at: float) -> void:
 		fired["w_nova"] = true
 		game.warn(eye, NOVA_LOCK, Game.Warn.MOVE, eye.radius * 1.6)
 		game.sfx.play("slam")
+		game.show_msg("GRAVITY WELL", "", 1.4, true)
 	pulling = cycle_t >= at and cycle_t < halt_at
 	if cycle_t >= well_at and cycle_t < well_at + WELL_T:
 		game.bullets.well = eye.position
@@ -592,7 +596,10 @@ func _vortex(at: float) -> void:
 
 ## The ship drawn toward the eye (it can fly against it), streaks pouring in;
 ## the drag gives out short of the fortress, so it never pulls the ship into
-## the hull.
+## the hull. Shown on the ship itself (yos: the pull was not plain to see):
+## a tractor beam from the eye down to the ship with chevrons running up it
+## (_draw_arcs), rings closing in on the ship, sparks torn off it toward
+## the eye, and GRAVITY WELL on the screen as it starts.
 func _drag(dt: float) -> void:
 	var d := eye.position - game.player.position
 	d.y = 0.0
@@ -602,6 +609,15 @@ func _drag(dt: float) -> void:
 			v.z = 0.0
 		game.player.drift(v, dt)
 	_inflow(8.0, 20.0)
+	var pp := game.player.position + Vector3(0, 0.6, 0)
+	var up := (eye.position - game.player.position).normalized()
+	pull_ring -= dt
+	if pull_ring <= 0.0:
+		pull_ring = 0.22
+		game.fx.sprite(pp, Vector3.ZERO, 3.4, 0.6, 0.3, ARC_COL, 2.0)
+	for k in 2:
+		var off := Vector3(randf_range(-0.9, 0.9), 0, randf_range(-0.6, 0.9))
+		game.fx.sprite(pp + off, up * randf_range(9.0, 14.0), 0.35, 0.1, 0.45, ARC_COL, 0.0)
 
 
 func _inflow(r0: float, r1: float) -> void:
@@ -908,6 +924,8 @@ func _draw_arcs() -> void:
 	arc_mesh.clear_surfaces()
 	arc_tris.clear()
 	var tm := game.time
+	if pull_vis > 0.0 and game.player.alive:
+		_tractor(pull_vis)
 	for nt: Dictionary in nets:
 		var st_n := int(nt["state"])
 		if st_n == 0:
@@ -951,6 +969,36 @@ func _draw_arcs() -> void:
 
 ## A jagged ribbon from a to b just over the plane: kinks every ~1.1 units
 ## jumping about (`jag` at most) as the game clock runs.
+## The vortex's tractor beam: a faint funnel from the eye widening down to
+## the ship, chevrons streaming up it toward the eye (the way it pulls).
+func _tractor(k: float) -> void:
+	var top := eye.position
+	var bot := game.player.position
+	var d := top - bot
+	d.y = 0.0
+	var len := d.length()
+	if len < 2.0:
+		return
+	var up := d / len
+	var side := Vector3(-up.z, 0, up.x)
+	var col := Color(ARC_COL.r, ARC_COL.g, ARC_COL.b, 0.07 * k)
+	for e: float in [-1.0, 1.0]:
+		_zap(top + side * e * 0.6, bot + side * e * 2.6, 0.08, 0.35 * k, 0, 0.0)
+	var q0 := Vector3(top.x, 0.36, top.z)
+	var q1 := Vector3(bot.x, 0.36, bot.z)
+	for v: Array in [[q0 - side * 0.6, 0.0], [q0 + side * 0.6, 1.0], [q1 + side * 2.6, 1.0], [q0 - side * 0.6, 0.0], [q1 + side * 2.6, 1.0], [q1 - side * 2.6, 0.0]]:
+		arc_tris.append([v[0], col, Vector2(0, v[1])])
+	var s := fmod(game.time * 9.0, 2.2)
+	while s < len - 1.5:
+		var f := s / len
+		var w := lerpf(2.0, 0.5, f)
+		var tip := bot + up * (s + 0.7)
+		var a := clampf(minf(s / 2.0, (len - 1.5 - s) / 3.0), 0.0, 1.0) * k
+		_zap(tip - up * 0.7 + side * w, tip, 0.12, a, 0, 0.0)
+		_zap(tip - up * 0.7 - side * w, tip, 0.12, a, 0, 0.0)
+		s += 2.2
+
+
 func _zap(a: Vector3, b: Vector3, w: float, alpha: float, seed: int, jag: float) -> void:
 	var d := b - a
 	d.y = 0.0
